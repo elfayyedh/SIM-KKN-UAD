@@ -232,7 +232,7 @@
                                             <li class="previous"><a href="javascript: void(0);"
                                                     class="btn btn-primary"><i class="bx bx-chevron-left me-1"></i>
                                                     Sebelumnya</a></li>
-                                            <li class="next" id="kegiatanNextButton"><a href="javascript: void(0);"
+                                            <li class="next" ><a href="javascript: void(0);"
                                                     class="btn btn-primary">Berikutnya <i
                                                         class="bx bx-chevron-right ms-1"></i></a></li>
                                         </ul>
