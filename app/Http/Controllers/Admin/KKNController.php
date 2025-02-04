@@ -8,6 +8,7 @@ use App\Models\BidangProker;
 use App\Models\KKN;
 use App\Models\QueueProgress;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class KKNController extends Controller
 {
@@ -42,6 +43,7 @@ class KKNController extends Controller
             "file_excel" => 'required',
             "fields" => 'required|array'
         ]);
+        Log::info('Request Payload:', $request->all());
 
         $kkn = KKN::firstOrCreate([
             'nama' => $validated['nama'],
