@@ -32,14 +32,14 @@
                                             </div>
                                         @endif
                                         <div
-                                            class="mb-3 @error('email')
+                                            class="mb-3 @error('identifier')
                                         has-error
                                         @enderror ">
-                                            <label class="form-label" for="email">Email</label>
-                                            <input type="email" class="form-control" id="email"
-                                                placeholder="Enter email" name="email" value="{{ old('email') }}">
+                                            <label class="form-label" for="identifier">Email atau NIM</label>
+                                            <input type="text" class="form-control" id="identifier"
+                                                placeholder="Masukkan email atau NIM" name="identifier" value="{{ old('identifier') }}">
                                             <span class="text-danger">
-                                                @error('email')
+                                                @error('identifier')
                                                     {{ $message }}
                                                 @enderror
                                             </span>
