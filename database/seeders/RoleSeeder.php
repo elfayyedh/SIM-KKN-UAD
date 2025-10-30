@@ -53,9 +53,9 @@ class RoleSeeder extends Seeder
 
         $kkn = KKN::firstOrCreate([
             'nama' => 'KKN Reguler 119',
-            'thn_ajaran' => '2024/2025',
-            'tanggal_mulai' => '2024-07-19',
-            'tanggal_selesai' => '2024-08-31',
+            'thn_ajaran' => '2025/2026',
+            'tanggal_mulai' => '2025-07-19',
+            'tanggal_selesai' => '2026-03-31',
             'status' => 1,
         ]);
 
@@ -95,8 +95,8 @@ class RoleSeeder extends Seeder
         $unit = Unit::firstOrCreate([
             'nama' => 'XXI.A.1',
             'id_dpl' => $dpl->id,
-            'tanggal_penerjunan' => '2024-07-22',
-            'tanggal_penarikan' => '2024-08-31',
+            'tanggal_penerjunan' => '2025-07-22',
+            'tanggal_penarikan' => '2026-03-31',
             'id_lokasi' => $lokasi->id,
             'id_kkn' => $kkn->id,
         ]);
