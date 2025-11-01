@@ -18,6 +18,21 @@ class UnitController extends Controller
      * Display a listing of the resource.
      */
 
+    public function showUnits()
+    {
+        $userRole = Auth::user()->userRoles()->with('dpl')->find(session('selected_role'));
+
+        if (!$userRole || !$userRole->dpl) {
+            abort(403, 'Data DPL tidak ditemukan.');
+        }
+        $dpl = $userRole->dpl;
+        $units = $dpl->units() 
+                     ->with(['lokasi.kecamatan.kabupaten']) 
+                     ->withCount('mahasiswa')
+                     ->get(); 
+        return view('dpl.manajemen unit.unit', compact('dpl', 'units'));
+    }
+
     private function idUserRole()
     {
         return Auth::user()->userRoles->find(session('selected_role'));
@@ -28,19 +43,39 @@ class UnitController extends Controller
      */
     public function show(string $id = null)
     {
-        if ($id == null) {
-            $id = $this->idUserRole()->mahasiswa->id_unit;
-        } else if ($this->idUserRole()->role->nama_role == "Mahasiswa" && $this->idUserRole()->mahasiswa->id_unit != $id) {
+        $userRole = $this->idUserRole();
+        $roleName = $userRole->role->nama_role;
+        if ($roleName == 'Mahasiswa') {
+            $mahasiswaUnitId = $userRole->mahasiswa->id_unit;
+            
+            if ($id == null) {
+                $id = $mahasiswaUnitId;
+            } else if ($id != $mahasiswaUnitId) {
+                return view('not-found');
+            }
+        } else if ($roleName == 'DPL') {
+            if ($id == null) {
+                return view('not-found');
+            }
+        } else {
             return view('not-found');
         }
         try {
-            $unit = Unit::with(['kkn', 'dpl', 'lokasi'])->findOrFail($id);
-
-
-            return view('mahasiswa.manajemen unit.profil-unit', compact('unit'));
+            $unit = Unit::with([
+                'kkn', 
+                'dpl', 
+                'lokasi.kecamatan.kabupaten', 
+                'mahasiswa.prodi' 
+            ])->findOrFail($id);
         } catch (\Exception $e) {
             return view('not-found');
         }
+        if ($roleName == 'Mahasiswa') {
+            return view('mahasiswa.manajemen unit.profil-unit', compact('unit'));
+        } else if ($roleName == 'DPL') {
+            return view('dpl.manajemen unit.profil-unit', compact('unit'));
+        }
+        return view('not-found');
     }
 
     public function getAnggota(string $id)
@@ -235,11 +270,14 @@ class UnitController extends Controller
                 if ($role == "Mahasiswa" && $this->idUserRole()->mahasiswa->id_unit != $id) {
                     return view('not-found');
                 }
-
                 $unit = Unit::with(['kkn', 'dpl', 'lokasi', 'mahasiswa'])->findOrFail($id);
-                return view('mahasiswa.manajemen unit.edit-unit', compact('unit'));
+                if ($role == "Mahasiswa") {
+                    return view('mahasiswa.manajemen unit.edit-unit', compact('unit'));
+                } else {
+                    return view('dpl.manajemen unit.edit-unit', compact('unit'));
+                }
+
             } else {
-                // Throw new exception
                 throw new \Exception('Anda tidak mempunyai akses untuk unit ini');
             }
         } catch (\Exception $e) {
@@ -321,5 +359,18 @@ class UnitController extends Controller
         } catch (\Exception) {
             return response()->json(['message' => 'Data not found.'], 404);
         }
+    }
+    public function getUnitTable()
+    {
+        $userRole = $this->idUserRole(); // Asumsi helper-mu
+        if (!$userRole || !$userRole->dpl) {
+            return '<p class="text-danger">Error: Data DPL tidak ditemukan.</p>';
+        }
+        $dpl = $userRole->dpl;
+        $units = $dpl->units() 
+                     ->with(['lokasi.kecamatan.kabupaten']) 
+                     ->withCount('mahasiswa') 
+                     ->get();
+        return view('components.unit-table', compact('units'));
     }
 }

@@ -1,3 +1,4 @@
+@props(['units'])
 <div>
     <table class="datatable-buttons table table-striped table-bordered dt-responsive nowrap w-100">
         <thead>
@@ -11,15 +12,17 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($unit as $item)
+            @foreach ($units as $item)
                 <tr>
                     <td>{{ $item->nama }}</td>
                     <td>{{ $item->lokasi->nama }}</td>
                     <td>{{ $item->lokasi->kecamatan->nama }}</td>
                     <td>{{ $item->lokasi->kecamatan->kabupaten->nama }}</td>
-                    <td>{{ $item->total_jkem }}</td>
+                    <td>{{ $item->mahasiswa_count }}</td>
                     <td>
-                        Edit
+                        <a href="{{ route('unit.show', $item->id) }}" class="btn btn-primary btn-sm">
+                            <i class="bx bx-show-alt me-1"></i> Detail Unit
+                        </a>
                     </td>
                 </tr>
             @endforeach

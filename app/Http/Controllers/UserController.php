@@ -7,10 +7,12 @@ use App\Models\KKN;
 use App\Models\Mahasiswa;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Dpl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
@@ -137,9 +139,17 @@ class UserController extends Controller
         } else if ($role == "Admin") {
             echo "Under maintenance";
         } else if ($role == "DPL") {
-            echo "Under maintenance";
-        } else if ($role == "Tim Monev") {
-            echo "Under maintenance";
+            try {
+                $id_dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl->id;
+                $dpl = Dpl::with([
+                    'userRole.user', 
+                    'kkn', 
+                    'units.lokasi.kecamatan.kabupaten'
+                ])->findOrFail($id_dpl);                
+                return view('dpl.profil-user', compact('dpl'));
+            } catch (\Exception $e) {
+                return view('not-found');
+            }
         }
     }
 
@@ -156,6 +166,12 @@ class UserController extends Controller
             $user = User::where('id', $id)->first();
             return view('user-edit', compact('user'));
         } else if ($role == "Admin") {
+            $user = User::where('id', $id)->first();
+            return view('user-edit', compact('user'));
+        } else if ($role == "DPL") {
+            if (Auth::user()->id != $id) {
+                return view('not-found');
+            }
             $user = User::where('id', $id)->first();
             return view('user-edit', compact('user'));
         } else {
@@ -206,7 +222,7 @@ class UserController extends Controller
             $user = User::where('id', $id)->first();
             $user->update($request->all());
             return redirect()->back()->with('success_user', 'Data user berhasil diubah');
-        } else if ($role == "Mahasiswa") {
+        } else if ($role == "Mahasiswa" || $role == "DPL") {
             if (Auth::user()->id != $id) {
                 return view('not-found');
             }

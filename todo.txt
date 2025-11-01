@@ -1,8 +1,4 @@
-TODO:
-- Buat supaya save init ambil data id_mahasiswa, id_kkn, dan id_unit dari blade create
-- Buat program dapat men trigger tempat dan sasaran sesuai id_proker dan id_mahasiswa
-- Ubah controller dengan catatan todo menggunakan auth untuk mendapatkan id
-
-
-Perhatian!!
-- Anda perlu memeriksa kembali authorization setiap transaksi ke database (edit, add, dan delete data proker, kkn, dan lain lain)
+- [x] Ubah LoginRequest untuk menerima 'identifier' sebagai required field
+- [x] Ubah AuthController untuk mendukung login dengan email atau NIM
+- [x] Ubah view login untuk input "Email atau NIM"
+- [x] Test login functionality (Server running, manual testing required)

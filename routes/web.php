@@ -18,6 +18,7 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthenticatedUser;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Controllers\Dpl\UnitController as DplUnitController;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware([Authenticate::class])->name('dashboard');
 Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('chart-data');
@@ -89,10 +90,17 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
 });
 // ! End Admin
 
+// DPL
+// Route::middleware([Authenticate::class])
+//     ->prefix('dpl')->name('dpl.')->group(function () {
+//     Route::get('/manajemen-unit', [DplUnitController::class, 'index'])->name('units.index');
+// });
 
 //! Unit
 Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/edit/{id}', [UnitController::class, 'edit'])->name('unit.edit');
+    Route::get('/get-table', [UnitController::class, 'getUnitTable'])->name('unit.getTable');
+    Route::get('/', [UnitController::class, 'showUnits'])->name('unit.index');
     Route::get('/detail/{id?}', [UnitController::class, 'show'])->name('unit.show');
     Route::get('/getProker/{id}/{id_kkn}', [UnitController::class, 'getProkerUnit'])->name('unit.getProker');
     Route::get('/getMatriks/{id}/{id_kkn}', [UnitController::class, 'getMatriks'])->name('unit.getMatriks');
