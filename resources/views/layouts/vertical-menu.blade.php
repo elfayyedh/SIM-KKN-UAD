@@ -316,7 +316,19 @@
                             <span data-key="t-pages">Logbook Sholat</span>
                         </a>
                     </li>
-                @endif
+                    @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'DPL')
+                        <li>
+                            <a href="javascript: void(0);" class="has-arrow">
+                                <i data-feather="layers"></i>
+                                <span data-key="t-pages">Manajemen Unit</span>
+                            </a>
+                            <ul class="sub-menu" aria-expanded="false">
+                                <li><a href="{{ route('unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
+                                <!-- <li><a href="{{ route('kalender') }}" data-key="t-starter-page">Kalender kegiatan </a> -->
+                                </li>
+                            </ul>
+                        </li>
+                    @endif
                 <li class="menu-title" data-key="t-menu">Informasi</li>
                 <li>
                     <a href="javascript: void(0);" class="has-arrow">

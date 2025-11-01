@@ -5,6 +5,7 @@
     @include('layouts.head')
     @include('layouts.head-style')
     @yield('styles')
+    @yield('pageStyle')
     <script>
         // Menjalankan script ini secepat mungkin untuk mengatur tema
         (function() {
