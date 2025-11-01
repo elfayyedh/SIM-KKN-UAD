@@ -19,7 +19,24 @@ class AuthController extends Controller
     public function login(LoginRequest $request)
     {
         // Ambil kredensial dari request
-        $credentials = $request->only('email', 'password');
+        $identifier = $request->input('identifier');
+        $password = $request->input('password');
+
+        // Cek apakah identifier adalah email atau NIM
+        $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'nim';
+
+        // Jika field adalah nim, cari user melalui mahasiswa
+        if ($field === 'nim') {
+            $mahasiswa = \App\Models\Mahasiswa::where('nim', $identifier)->first();
+            if ($mahasiswa) {
+                $user = $mahasiswa->userRole->user;
+                $credentials = ['email' => $user->email, 'password' => $password];
+            } else {
+                return redirect()->back()->with(['error' => 'NIM atau Password yang Anda masukkan salah']);
+            }
+        } else {
+            $credentials = ['email' => $identifier, 'password' => $password];
+        }
 
         // Coba autentikasi
         if (Auth::attempt($credentials)) {
@@ -27,7 +44,7 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
         } else {
             // Autentikasi gagal, redirect kembali dengan pesan error
-            return redirect()->back()->with(['error' => 'Email atau Password yang Anda masukkan salah']);
+            return redirect()->back()->with(['error' => 'Email/NIM atau Password yang Anda masukkan salah']);
         }
     }
 
