@@ -72,12 +72,18 @@ class EntriDataKKN implements ShouldQueue
 
             try {
                 foreach ($this->jsonData as $dplData) {
+                    // Buat password dpl
+                    $namaLengkapDpl = $dplData['DPL'];       // Contoh: "Jefree Fahana S.T., M.Kom."
+                    $emailDpl = $dplData['email'];         // Contoh: "jefree.fahana@tif.uad.ac.id"
+                    $nipDpl = $dplData['password'];      // NIP disimpan di key 'password' oleh worker
+
+                    $passwordDefault = 'password';
                     // Simpan data DPL
                     $user = User::firstOrCreate([
-                        'email' => $dplData['email'],
+                        'email' => $emailDpl,
                     ], [
-                        'nama' => $dplData['DPL'],
-                        'password' => bcrypt($dplData['password']),
+                        'nama' => $namaLengkapDpl,
+                        'password' => bcrypt($passwordDefault),
                     ]);
 
                     // ! !!!! Perlu no_telp dan jenis_kelamin !!!
@@ -90,7 +96,7 @@ class EntriDataKKN implements ShouldQueue
                     $dpl = Dpl::firstOrCreate([
                         'id_user_role' => $role->id,
                         'id_kkn' => $this->id_kkn,
-                        'nip' => $dplData['password'],
+                        'nip' => $nipDpl,
                     ]);
 
                     $currentStep++;

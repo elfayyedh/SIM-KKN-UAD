@@ -42,8 +42,10 @@ class MahasiswaController extends Controller
      */
     public function show(string $id)
     {
+        $userRole = Auth::user()->userRoles->find(session('selected_role'));
+        $roleName = $userRole->role->nama_role;
         $data = Mahasiswa::select('id_unit')->find($id);
-        if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "Mahasiswa" && Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id_unit != $data->id_unit) {
+        if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $data->id_unit) {
             return view('not-found');
         }
         try {
@@ -71,8 +73,14 @@ class MahasiswaController extends Controller
                 $item->total_jkem_bidang = $totalJKEM;
             });
 
+            if ($roleName == "Mahasiswa") {
+                return view('mahasiswa.profil-user', compact('user', 'prokerData'));
+            } else if ($roleName == "DPL") {
+                return view('dpl.manajemen unit.profil-mahasiswa', compact('user', 'prokerData'));
+            } else {
+                return view('not-found');
+            }
 
-            return view('mahasiswa.profil-user', compact('user', 'prokerData'));
         } catch (\Exception $e) {
             return view('not-found');
         }

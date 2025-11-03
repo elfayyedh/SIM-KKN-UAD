@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -28,7 +29,17 @@ class DashboardController extends Controller
             $user = User::where('id', Auth::user()->id)->first();
             $kkn = KKN::all();
             return view('administrator.dasbboard', compact('user', 'kkn'));
+        } elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "DPL") {
+            $email = Auth::user()->userRoles->find(session('selected_role'))->dpl->email; 
+            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->dpl->id_kkn; 
+            return view('dpl.dashboard', compact('email', 'id_kkn')); 
+        } else {
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('login.index')->with('error', 'Role tidak valid atau tidak dikenali.');
         }
+            
     }
 
     public function getCardValue(Request $request)

@@ -14,9 +14,9 @@
                         <div class="page-title-right">
                             <ol class="breadcrumb m-0">
                                 <li class="breadcrumb-item"><a href="javascript: void(0);">Manajemen Unit</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('unit.show') }}">Unit {{ $unit->nama }}</a>
-                                </li>
-                                <li class="breadcrumb-item active">Edit Unit</li>
+                                <li class="breadcrumb-item"><a href="{{ route('unit.index') }}">Unit Bimbingan</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('unit.show', $unit->id) }}">Unit {{ $unit->nama }}</a></li>
+                                <li class="breadcrumb-item active"><a href="{{ route('unit.edit', $unit->id) }}">Edit Unit</a></li>
                             </ol>
                         </div>
                     </div>
@@ -25,6 +25,32 @@
             {{-- End Page title --}}
 
             <x-alert-component />
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="text-primary fw-bold mb-3">#Profil unit</div>
+                                <form action="{{ route('unit.updateProfilUnit') }}" method="POST">
+                                    @csrf
+                                    @method('PUT')
+                                    <div class="form-group mb-3">
+                                        <input type="hidden" name="id" value="{{ $unit->id }}">
+                                        <label for="tanggal_penerjunan" class="form-label">Tanggal penerjunan</label>
+                                        <input type="date" class="form-control datepicker-basic"
+                                            name="tanggal_penerjunan"
+                                            value="{{ $unit->tanggal_penerjunan ? \Carbon\Carbon::parse($unit->tanggal_penerjunan)->format('Y-m-d') : '' }}">
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label for="tanggal_penarikan" class="form-label">Tanggal penarikan</label>
+                                        <input type="date" class="form-control datepicker-basic" name="tanggal_penarikan"
+                                            value="{{ $unit->tanggal_penarikan ? \Carbon\Carbon::parse($unit->tanggal_penarikan)->format('Y-m-d') : '' }}">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Simpan</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             <div class="row">
                 <div class="col-12">
                     <div class="card">
@@ -64,25 +90,39 @@
 @endsection
 @section('pageScript')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-    <!-- datepicker js -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.16.9/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    
     <script>
         $(document).ready(function() {
-            const minFormatted = moment($('#kkn_mulai').val(), "DD-MM-YYYY").format("YYYY-MM-DD");
-            const maxFormatted = moment($('#kkn_selesai').val(), "DD-MM-YYYY").format("YYYY-MM-DD");
-
-            flatpickr(".datepicker-basic", {
+            let kknMulai = $('#kkn_mulai').val();
+            let kknSelesai = $('#kkn_selesai').val();
+            
+            let flatpickrConfig = {
                 locale: "id",
                 altInput: true,
-                minDate: minFormatted,
-                maxDate: maxFormatted,
                 altFormat: "l, j F Y",
                 dateFormat: "Y-m-d",
-            });
+            };
+
+            if (kknMulai) {
+                // 👇 HAPUS "DD-MM-YYYY" DARI SINI
+                let minFormatted = moment(kknMulai).format("YYYY-MM-DD"); 
+                if (moment(minFormatted).isValid()) {
+                    flatpickrConfig.minDate = minFormatted;
+                }
+            }
+            
+            if (kknSelesai) {
+                // 👇 HAPUS "DD-MM-YYYY" DARI SINI
+                let maxFormatted = moment(kknSelesai).format("YYYY-MM-DD");
+                if (moment(maxFormatted).isValid()) {
+                    flatpickrConfig.maxDate = maxFormatted;
+                }
+            }
+            
+            flatpickr(".datepicker-basic", flatpickrConfig);
         });
     </script>
 @endsection
