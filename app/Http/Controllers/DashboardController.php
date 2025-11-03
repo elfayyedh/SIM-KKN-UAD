@@ -30,50 +30,10 @@ class DashboardController extends Controller
             $kkn = KKN::all();
             return view('administrator.dasbboard', compact('user', 'kkn'));
         } elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "DPL") {
-            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
-            $id_kkn = $dpl->id_kkn;
-            
-            // Get units untuk DPL ini
-            $units = Unit::where('id_dpl', $dpl->id)->get();
-            $unit_ids = $units->pluck('id');
-            
-            // Count total mahasiswa dari unit yang di-handle DPL ini
-            $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
-                ->where('id_kkn', $id_kkn)
-                ->count();
-            
-            // Count total unit
-            $total_unit = $units->count();
-            
-            // Get data lokasi untuk DPL
-            $data_lokasi = DB::table('unit')
-                ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
-                ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
-                ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
-                ->select(
-                    DB::raw('COUNT(unit.id) AS total_unit'),
-                    'kecamatan.nama AS kecamatan',
-                    'kabupaten.nama AS kabupaten'
-                )
-                ->where('unit.id_dpl', $dpl->id)
-                ->where('unit.id_kkn', $id_kkn)
-                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
-                ->get();
-            
-            // Get data prodi untuk DPL
-            $data_prodi = DB::table('mahasiswa')
-                ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
-                ->whereIn('mahasiswa.id_unit', $unit_ids)
-                ->where('mahasiswa.id_kkn', $id_kkn)
-                ->select(
-                    'prodi.nama_prodi',
-                    DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
-                    DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
-                )
-                ->groupBy('prodi.id', 'prodi.nama_prodi')
-                ->get();
-            
-            return view('dpl.dashboard', compact('dpl', 'id_kkn', 'total_mahasiswa', 'total_unit', 'data_lokasi', 'data_prodi')); 
+            $email = Auth::user()->userRoles->find(session('selected_role'))->dpl->email; 
+            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->dpl->id_kkn;
+            $kkn = KKN::all();
+            return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn')); 
         } else {
             Auth::logout();
             request()->session()->invalidate();
@@ -86,40 +46,76 @@ class DashboardController extends Controller
     public function getCardValue(Request $request)
     {
         $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
-        if ($role != "Admin") {
+        
+        // Handle Admin
+        if ($role == "Admin") {
+            $periode = $request->input('periode');
+            if ($periode == 'semua') {
+                $total_mahasiswa = Mahasiswa::all()->count();
+                $total_unit = Unit::all()->count();
+                $total_dpl = Dpl::all()->count();
+                $total_tim_monev = TimMonev::all()->count();
+            } else {
+                $total_mahasiswa = Mahasiswa::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+                $total_unit = Unit::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+                $total_dpl = Dpl::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+                $total_tim_monev = TimMonev::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+            }
+
             return response()->json([
-                'data' => null
+                'status' => 'success',
+                'total_mahasiswa' => $total_mahasiswa,
+                'total_unit' => $total_unit,
+                'total_dpl' => $total_dpl,
+                'total_tim_monev' => $total_tim_monev,
             ]);
         }
+        
+        // Handle DPL
+        if ($role == "DPL") {
+            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $periode = $request->input('periode');
+            
+            // Jika periode adalah "semua", ambil semua unit DPL ini
+            if ($periode == 'semua') {
+                $units = Unit::where('id_dpl', $dpl->id)->get();
+                $unit_ids = $units->pluck('id');
+                
+                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)->count();
+                $total_unit = $units->count();
+            } else {
+                // Filter berdasarkan periode tertentu
+                $units = Unit::where('id_dpl', $dpl->id)
+                    ->where('id_kkn', $periode)
+                    ->get();
+                $unit_ids = $units->pluck('id');
+                
+                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
+                    ->where('id_kkn', $periode)
+                    ->count();
+                $total_unit = $units->count();
+            }
 
-        $periode = $request->input('periode');
-        if ($periode == 'semua') {
-            $total_mahasiswa = Mahasiswa::all()->count();
-            $total_unit = Unit::all()->count();
-            $total_dpl = Dpl::all()->count();
-            $total_tim_monev = TimMonev::all()->count();
-        } else {
-            $total_mahasiswa = Mahasiswa::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-            $total_unit = Unit::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-            $total_dpl = Dpl::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-            $total_tim_monev = TimMonev::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
+            return response()->json([
+                'status' => 'success',
+                'total_mahasiswa' => $total_mahasiswa,
+                'total_unit' => $total_unit,
+            ]);
         }
-
+        
+        // Role lain tidak punya akses
         return response()->json([
-            'status' => 'success',
-            'total_mahasiswa' => $total_mahasiswa,
-            'total_unit' => $total_unit,
-            'total_dpl' => $total_dpl,
-            'total_tim_monev' => $total_tim_monev,
-        ]);
+            'status' => 'error',
+            'message' => 'Unauthorized'
+        ], 403);
     }
     /**
      * Show the form for creating a new resource.
@@ -190,59 +186,135 @@ class DashboardController extends Controller
 
     public function getProdiData(Request $request)
     {
-        $id_kkn = $request->input('periode');
+        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
+        
+        // Handle Admin
+        if ($role == "Admin") {
+            $id_kkn = $request->input('periode');
 
-        // Jika periode adalah "semua", ambil semua data
-        if ($id_kkn === 'semua') {
-            $data = DB::table('mahasiswa')
+            // Jika periode adalah "semua", ambil semua data
+            if ($id_kkn === 'semua') {
+                $data = DB::table('mahasiswa')
+                    ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
+                    ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                    ->select(
+                        'prodi.nama_prodi',
+                        DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
+                        DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
+                    )
+                    ->groupBy('prodi.id', 'prodi.nama_prodi')
+                    ->get();
+            } else {
+                // Jika periode adalah id_kkn tertentu, ambil data berdasarkan id_kkn
+                $data = DB::table('mahasiswa')
+                    ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
+                    ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                    ->where('mahasiswa.id_kkn', $id_kkn)
+                    ->select(
+                        'prodi.nama_prodi',
+                        DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
+                        DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
+                    )
+                    ->groupBy('prodi.id', 'prodi.nama_prodi')
+                    ->get();
+            }
+            
+            return response()->json($data);
+        }
+        
+        // Handle DPL
+        if ($role == "DPL") {
+            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $periode = $request->input('periode');
+            
+            // Get units untuk DPL ini
+            $query = Unit::where('id_dpl', $dpl->id);
+            
+            // Filter berdasarkan periode jika bukan "semua"
+            if ($periode !== 'semua') {
+                $query->where('id_kkn', $periode);
+            }
+            
+            $units = $query->get();
+            $unit_ids = $units->pluck('id');
+            
+            $dataQuery = DB::table('mahasiswa')
                 ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
-                ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                ->whereIn('mahasiswa.id_unit', $unit_ids)
                 ->select(
                     'prodi.nama_prodi',
                     DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
                     DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
                 )
-                ->groupBy('prodi.id', 'prodi.nama_prodi') // Tambahkan 'prodi.nama_prodi' ke group by
-                ->get();
-        } else {
-            // Jika periode adalah id_kkn tertentu, ambil data berdasarkan id_kkn
-            $data = DB::table('mahasiswa')
-                ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
-                ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
-                ->where('mahasiswa.id_kkn', $id_kkn) // Filter berdasarkan id_kkn
-                ->select(
-                    'prodi.nama_prodi',
-                    DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
-                    DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
-                )
-                ->groupBy('prodi.id', 'prodi.nama_prodi')
-                ->get();
+                ->groupBy('prodi.id', 'prodi.nama_prodi');
+            
+            // Filter berdasarkan periode jika bukan "semua"
+            if ($periode !== 'semua') {
+                $dataQuery->where('mahasiswa.id_kkn', $periode);
+            }
+            
+            $data = $dataQuery->get();
+                
+            return response()->json($data);
         }
 
-        return response()->json($data); // Kembalikan data dalam format JSON
+        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
     }
 
     public function getUnitData(Request $request)
     {
-        $periode = $request->periode;
+        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
+        
+        // Handle Admin
+        if ($role == "Admin") {
+            $periode = $request->periode;
 
-        $query = DB::table('unit')
-            ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
-            ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
-            ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
-            ->select(
-                DB::raw('COUNT(unit.id) AS total_unit'),
-                'kecamatan.nama AS kecamatan',
-                'kabupaten.nama AS kabupaten'
-            )
-            ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama');
+            $query = DB::table('unit')
+                ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                ->select(
+                    DB::raw('COUNT(unit.id) AS total_unit'),
+                    'kecamatan.nama AS kecamatan',
+                    'kabupaten.nama AS kabupaten'
+                )
+                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama');
 
-        if ($periode !== 'semua') {
-            $query->where('unit.id_kkn', $periode);
+            if ($periode !== 'semua') {
+                $query->where('unit.id_kkn', $periode);
+            }
+
+            $data = $query->get();
+            return response()->json($data);
+        }
+        
+        // Handle DPL
+        if ($role == "DPL") {
+            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $periode = $request->periode;
+            
+            $query = DB::table('unit')
+                ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                ->select(
+                    DB::raw('COUNT(unit.id) AS total_unit'),
+                    'kecamatan.nama AS kecamatan',
+                    'kabupaten.nama AS kabupaten'
+                )
+                ->where('unit.id_dpl', $dpl->id)
+                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama');
+            
+            // Filter berdasarkan periode jika bukan "semua"
+            if ($periode !== 'semua') {
+                $query->where('unit.id_kkn', $periode);
+            }
+            
+            $data = $query->get();
+                
+            return response()->json($data);
         }
 
-        $data = $query->get();
-
-        return response()->json($data);
+        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
     }
 }

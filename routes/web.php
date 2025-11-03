@@ -23,8 +23,8 @@ use App\Http\Controllers\Dpl\UnitController as DplUnitController;
 Route::get('/', [DashboardController::class, 'index'])->middleware([Authenticate::class])->name('dashboard');
 Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('chart-data');
 Route::get('/get-donut-chart', [DashboardController::class, 'getDonutChart'])->middleware([Authenticate::class, AdminMiddleware::class])->name('donut-chart');
-Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('prodi-data');
-Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('unit-data');
+Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class])->name('prodi-data');
+Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class])->name('unit-data');
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
 Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->name('choose.role');
@@ -71,7 +71,7 @@ Route::prefix('/bidang')->middleware([Authenticate::class, AdminMiddleware::clas
     Route::delete('/destroy/{id}', [BidangProkerController::class, 'destroy'])->name('bidang.destroy');
 });
 
-Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class, AdminMiddleware::class])->name('card.value');
+Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class])->name('card.value');
 
 
 

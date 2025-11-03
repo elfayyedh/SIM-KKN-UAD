@@ -1,6 +1,6 @@
 @extends('layouts.index')
 
-@section('title', 'Dashboard | SIM KKN UAD')
+@section('title', 'Dashboard DPL | SIM KKN UAD')
 
 @section('content')
     <div class="page-content">
@@ -17,6 +17,7 @@
                                 <li class="breadcrumb-item active">Dashboard</li>
                             </ol>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -24,14 +25,19 @@
 
             <div class="row mb-3">
                 <div class="col-12 col-md-6">
-                    <p class="fw-bold mb-1">Halo, {{ $dpl->userRole->user->nama ?? 'User DPL' }}</p>
+                    <p class="fw-bold mb-1">Halo, User DPL</p>
                     <p>Selamat datang di SIM KKN UAD</p>
                 </div>
-                <div class="col-12 col-md-6 justify-content-md-end">
-                    <div class="form-group">
+                <div class="col-12 col-md-6 d-flex justify-content-md-end">
+                    <div class="form-group w-100">
                         <label for="periode" class="form-label">Pilih periode KKN</label>
                         <select name="periode" id="periode" class="form-select">
                             <option value="semua">Semua Periode</option>
+                            @foreach ($kkn as $item)
+                                <option value="{{ $item->id }}" {{ $item->id == $id_kkn ? 'selected' : '' }}>
+                                    {{ $item->nama }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -44,7 +50,9 @@
                             <p class="fw-bold font-size-17 card-title">Total Mahasiswa</p>
                             <div class="d-flex w-100 position-relative">
                                 <div class="konten">
-                                    <h2 class="total-mahasiswa">{{ $total_mahasiswa }}</h2>
+                                    <h2 class="total-mahasiswa">
+                                        <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
+                                    </h2>
                                     <a class="text-decoration-none" href="#">Lihat semua mahasiswa</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-success"
@@ -61,7 +69,9 @@
                             <p class="fw-bold font-size-17 card-title">Total Unit</p>
                             <div class="d-flex w-100 position-relative">
                                 <div class="konten">
-                                    <h2 class="total-unit">{{ $total_unit }}</h2>
+                                    <h2 class="total-unit">
+                                        <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
+                                    </h2>
                                     <a class="text-decoration-none" href="#">Lihat semua unit</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-info"
@@ -94,17 +104,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="data-lokasi">
-                                    @forelse($data_lokasi as $lokasi)
-                                        <tr>
-                                            <td>{{ $lokasi->total_unit }}</td>
-                                            <td>{{ $lokasi->kecamatan }}</td>
-                                            <td>{{ $lokasi->kabupaten }}</td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="3" class="text-center text-muted">Tidak ada data lokasi</td>
-                                        </tr>
-                                    @endforelse
+
                                 </tbody>
                             </table>
                         </div>
@@ -129,17 +129,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="data-prodi" style="overflow-y: auto; width: 100%;">
-                                    @forelse($data_prodi as $prodi)
-                                        <tr>
-                                            <td>{{ $prodi->nama_prodi }}</td>
-                                            <td>{{ $prodi->total_unit }}</td>
-                                            <td>{{ $prodi->total_mahasiswa }}</td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="3" class="text-center text-muted">Tidak ada data program studi</td>
-                                        </tr>
-                                    @endforelse
+
                                 </tbody>
                             </table>
                         </div>
@@ -149,7 +139,104 @@
         </div>
     </div>
 @endsection
-
 @section('pageScript')
-    {{-- Script untuk dashboard DPL --}}
+    <script>
+        $(document).ready(function() {
+            // Load data on page load
+            loadAllData();
+            
+            // Reload data when periode changes
+            $('#periode').on('change', function() {
+                loadAllData();
+            });
+        });
+
+        function loadAllData() {
+            loadCardValues();
+            loadLokasiData();
+            loadProdiData();
+        }
+
+        function loadCardValues() {
+            const periode = $('#periode').val();
+            
+            $.ajax({
+                url: '/card-value',
+                type: 'GET',
+                data: { periode: periode },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.status === 'success') {
+                        $('.total-mahasiswa').html(response.total_mahasiswa);
+                        $('.total-unit').html(response.total_unit);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading card values:', error);
+                    $('.total-mahasiswa').html('0');
+                    $('.total-unit').html('0');
+                }
+            });
+        }
+
+        function loadLokasiData() {
+            const periode = $('#periode').val();
+            
+            $.ajax({
+                url: '/get-unit-data',
+                type: 'GET',
+                data: { periode: periode },
+                dataType: 'json',
+                success: function(data) {
+                    let html = '';
+                    if (data.length > 0) {
+                        data.forEach(function(item) {
+                            html += '<tr>';
+                            html += '<td>' + item.total_unit + '</td>';
+                            html += '<td>' + item.kecamatan + '</td>';
+                            html += '<td>' + item.kabupaten + '</td>';
+                            html += '</tr>';
+                        });
+                    } else {
+                        html = '<tr><td colspan="3" class="text-center text-muted">Tidak ada data lokasi</td></tr>';
+                    }
+                    $('#data-lokasi').html(html);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading lokasi data:', error);
+                    $('#data-lokasi').html('<tr><td colspan="3" class="text-center text-danger">Error loading data</td></tr>');
+                }
+            });
+        }
+
+        function loadProdiData() {
+            const periode = $('#periode').val();
+            
+            $.ajax({
+                url: '/get-prodi-data',
+                type: 'GET',
+                data: { periode: periode },
+                dataType: 'json',
+                success: function(data) {
+                    let html = '';
+                    if (data.length > 0) {
+                        data.forEach(function(item) {
+                            html += '<tr>';
+                            html += '<td>' + item.nama_prodi + '</td>';
+                            html += '<td>' + item.total_unit + '</td>';
+                            html += '<td>' + item.total_mahasiswa + '</td>';
+                            html += '</tr>';
+                        });
+                    } else {
+                        html = '<tr><td colspan="3" class="text-center text-muted">Tidak ada data program studi</td></tr>';
+                    }
+                    $('#data-prodi').html(html);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading prodi data:', error);
+                    $('#data-prodi').html('<tr><td colspan="3" class="text-center text-danger">Error loading data</td></tr>');
+                }
+            });
+        }
+    </script>
 @endsection
