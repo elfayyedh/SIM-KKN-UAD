@@ -35,9 +35,9 @@
                                             class="mb-3 @error('email')
                                         has-error
                                         @enderror ">
-                                            <label class="form-label" for="email">Email</label>
-                                            <input type="email" class="form-control" id="email"
-                                                placeholder="Enter email" name="email" value="{{ old('email') }}">
+                                            <label class="form-label" for="email">Username</label>
+                                            <input class="form-control" id="email"
+                                                placeholder="Enter username" name="email" value="{{ old('email') }}">
                                             <span class="text-danger">
                                                 @error('email')
                                                     {{ $message }}
