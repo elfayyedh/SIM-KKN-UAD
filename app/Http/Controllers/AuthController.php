@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Mahasiswa;
 
 class AuthController extends Controller
 {
@@ -16,21 +17,46 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
+    // public function login(LoginRequest $request)
+    // {
+    //     // Ambil kredensial dari request
+    //     $credentials = $request->only('email', 'password');
+
+    //     // Coba autentikasi
+    //     if (Auth::attempt($credentials)) {
+    //         // Autentikasi berhasil, redirect ke dashboard
+    //         return redirect()->route('dashboard');
+    //     } else {
+    //         // Autentikasi gagal, redirect kembali dengan pesan error
+    //         return redirect()->back()->with(['error' => 'Email atau Password yang Anda masukkan salah']);
+    //     }
+    // }
+
     public function login(LoginRequest $request)
     {
-        // Ambil kredensial dari request
-        $credentials = $request->only('email', 'password');
+        $loginInput = $request->input('email');
+        $password = $request->input('password');
 
-        // Coba autentikasi
-        if (Auth::attempt($credentials)) {
-            // Autentikasi berhasil, redirect ke dashboard
+        $credentials = [];
+
+        if (is_numeric($loginInput)) {
+            $mahasiswa = Mahasiswa::where('nim', $loginInput)
+                                    ->with('userRole.user')
+                                    ->first();
+            if ($mahasiswa && $mahasiswa->userRole && $mahasiswa->userRole->user) {
+                $emailAsli = $mahasiswa->userRole->user->email;
+                
+                $credentials = ['email' => $emailAsli, 'password' => $password];
+            }
+        } else {
+            $credentials = ['email' => $loginInput, 'password' => $password];
+        }
+        if (!empty($credentials) && Auth::attempt($credentials)) {
             return redirect()->route('dashboard');
         } else {
-            // Autentikasi gagal, redirect kembali dengan pesan error
-            return redirect()->back()->with(['error' => 'Email atau Password yang Anda masukkan salah']);
+            return redirect()->back()->with(['error' => 'Username atau Password yang Anda masukkan salah']);
         }
     }
-
 
     public function logout(Request $request)
     {
