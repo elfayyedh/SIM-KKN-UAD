@@ -38,7 +38,7 @@
             </div>
 
             <div class="row mb-3">
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-6 col-md-6">
                     <div class="card">
                         <div class="card-body">
                             <p class="fw-bold font-size-17 card-title">Total Mahasiswa</p>
@@ -55,7 +55,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6">
+                <div class="col-xl-6 col-md-6">
                     <div class="card">
                         <div class="card-body">
                             <p class="fw-bold font-size-17 card-title">Total Unit</p>
@@ -67,40 +67,6 @@
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-info"
                                     style="width: 50px; height: 50px;">
                                     <i class="mdi mdi-account-group-outline font-size-24"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <p class="fw-bold font-size-17 card-title">Total DPL</p>
-                            <div class="d-flex w-100 position-relative">
-                                <div class="konten">
-                                    <h2 class="total-dpl">1</h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua DPL</a>
-                                </div>
-                                <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-warning"
-                                    style="width: 50px; height: 50px;">
-                                    <i class="mdi mdi-account-tie-outline font-size-24"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card">
-                        <div class="card-body">
-                            <p class="fw-bold font-size-17 card-title">Total Tim Monev</p>
-                            <div class="d-flex w-100 position-relative">
-                                <div class="konten">
-                                    <h2 class="total-tim_monev">0</h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua Tim Monev</a>
-                                </div>
-                                <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-secondary"
-                                    style="width: 50px; height: 50px;">
-                                    <i class="mdi mdi-account-tie-voice-outline font-size-24"></i>
                                 </div>
                             </div>
                         </div>
