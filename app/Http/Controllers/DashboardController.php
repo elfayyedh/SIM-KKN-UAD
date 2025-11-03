@@ -30,9 +30,50 @@ class DashboardController extends Controller
             $kkn = KKN::all();
             return view('administrator.dasbboard', compact('user', 'kkn'));
         } elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "DPL") {
-            $email = Auth::user()->userRoles->find(session('selected_role'))->dpl->email; 
-            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->dpl->id_kkn; 
-            return view('dpl.dashboard', compact('email', 'id_kkn')); 
+            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $id_kkn = $dpl->id_kkn;
+            
+            // Get units untuk DPL ini
+            $units = Unit::where('id_dpl', $dpl->id)->get();
+            $unit_ids = $units->pluck('id');
+            
+            // Count total mahasiswa dari unit yang di-handle DPL ini
+            $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
+                ->where('id_kkn', $id_kkn)
+                ->count();
+            
+            // Count total unit
+            $total_unit = $units->count();
+            
+            // Get data lokasi untuk DPL
+            $data_lokasi = DB::table('unit')
+                ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                ->select(
+                    DB::raw('COUNT(unit.id) AS total_unit'),
+                    'kecamatan.nama AS kecamatan',
+                    'kabupaten.nama AS kabupaten'
+                )
+                ->where('unit.id_dpl', $dpl->id)
+                ->where('unit.id_kkn', $id_kkn)
+                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
+                ->get();
+            
+            // Get data prodi untuk DPL
+            $data_prodi = DB::table('mahasiswa')
+                ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
+                ->whereIn('mahasiswa.id_unit', $unit_ids)
+                ->where('mahasiswa.id_kkn', $id_kkn)
+                ->select(
+                    'prodi.nama_prodi',
+                    DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
+                    DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
+                )
+                ->groupBy('prodi.id', 'prodi.nama_prodi')
+                ->get();
+            
+            return view('dpl.dashboard', compact('dpl', 'id_kkn', 'total_mahasiswa', 'total_unit', 'data_lokasi', 'data_prodi')); 
         } else {
             Auth::logout();
             request()->session()->invalidate();
