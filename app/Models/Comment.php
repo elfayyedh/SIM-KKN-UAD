@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class BidangProker extends Model
+class Comment extends Model
 {
     use HasFactory;
+
     protected static function boot()
     {
         parent::boot();
@@ -40,21 +41,16 @@ class BidangProker extends Model
         return 'string';
     }
 
-    protected $table = 'bidang_proker';
-    protected $fillable = ['id_kkn', 'nama', 'tipe', 'syarat_jkem'];
+    protected $table = 'comments';
+    protected $fillable = ['id_bidang_proker', 'id_dpl', 'komentar'];
 
-    public function kkn()
+    public function bidangProker()
     {
-        return $this->belongsTo(Kkn::class, 'id_kkn');
+        return $this->belongsTo(BidangProker::class, 'id_bidang_proker');
     }
 
-    public function proker()
+    public function dpl()
     {
-        return $this->hasMany(Proker::class, 'id_bidang');
-    }
-
-    public function comments()
-    {
-        return $this->hasMany(Comment::class, 'id_bidang_proker');
+        return $this->belongsTo(Dpl::class, 'id_dpl');
     }
 }
