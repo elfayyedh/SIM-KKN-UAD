@@ -329,4 +329,14 @@
     <script src="{{ asset('assets/js/init/mahasiswa/unit/getAnggota.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/unit/matriks.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/unit/read-rekap-kegiatan.init.js') }}"></script>
+    <script>
+        // DPL specific - show comment forms
+        $(document).ready(function() {
+            // Wait for the content to load, then ensure comment forms are visible for DPL
+            setTimeout(function() {
+                $('.comment-form').show();
+                $('.comments-section h6').text('Komentar DPL:');
+            }, 1000);
+        });
+    </script>
 @endsection

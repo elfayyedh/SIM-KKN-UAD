@@ -13,6 +13,7 @@ use App\Http\Controllers\Public\MahasiswaController;
 use App\Http\Controllers\RoleSelectionController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CommentController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthenticatedUser;
@@ -177,6 +178,15 @@ Route::middleware([Authenticate::class])->get('/mahasiswa/detail/{id}', [Mahasis
 Route::middleware([Authenticate::class])->get('/mahasiswa/proker/{id}/{id_kkn}/{id_unit}', [MahasiswaController::class, 'getProkerMahasiswa'])->name('mahasiswa.getProkerMahasiswa');
 
 //! End Mahasiswa
+
+//! Comment
+Route::middleware([Authenticate::class])->prefix('/comment')->group(function () {
+    Route::post('/store', [CommentController::class, 'store'])->name('comment.store');
+    Route::get('/get/{id_bidang_proker}', [CommentController::class, 'getComments'])->name('comment.get');
+    Route::put('/update/{id}', [CommentController::class, 'update'])->name('comment.update');
+    Route::delete('/delete/{id}', [CommentController::class, 'destroy'])->name('comment.delete');
+});
+//! End Comment
 
 Route::middleware([Authenticate::class])->post('/upload-image', [DownloaderController::class, 'upload'])->name('upload.image');
 //! Public
