@@ -268,8 +268,8 @@
                             <li><a href="{{ route('user.admin') }}" data-key="t-akun">Admin</a></li>
                         </ul>
                         {{-- <ul class="sub-menu" aria-expanded="false">
-                            <li><a href="{{ route('user.create') }}" data-key="t-akun">Tambah Pengguna baru</a></li>
-                        </ul> --}}
+                            <li><a href="{{ route('user.create') }}" data-key="t-akun">Tambah Pengguna baru</a></li>
+                        </ul> --}}
                     </li>
 
                     <li>
@@ -316,19 +316,76 @@
                             <span data-key="t-pages">Logbook Sholat</span>
                         </a>
                     </li>
-                    @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'DPL')
-                        <li>
-                            <a href="javascript: void(0);" class="has-arrow">
-                                <i data-feather="layers"></i>
-                                <span data-key="t-pages">Manajemen Unit</span>
-                            </a>
-                            <ul class="sub-menu" aria-expanded="false">
-                                <li><a href="{{ route('unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
-                                <!-- <li><a href="{{ route('kalender') }}" data-key="t-starter-page">Kalender kegiatan </a> -->
-                                </li>
-                            </ul>
-                        </li>
-                    @endif
+                @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'DPL')
+                    <li>
+                        <a href="javascript: void(0);" class="has-arrow">
+                            <i data-feather="layers"></i>
+                            <span data-key="t-pages">Manajemen Unit</span>
+                        </a>
+                        <ul class="sub-menu" aria-expanded="false">
+                            <li><a href="{{ route('unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
+                            <!-- <li><a href="{{ route('kalender') }}" data-key="t-starter-page">Kalender kegiatan </a> -->
+                            </li>
+                        </ul>
+                    </li>
+
+                {{-- 👇👇 ----- TAMBAHAN UNTUK TIM MONEV ----- 👇👇 --}}
+                @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Tim Monev')
+                    {{-- Ini menu-menu khusus Tim Monev --}}
+                    <li>
+                        {{-- GANTI route('...') dengan route Monev-mu yang asli --}}
+                        <a href="#"> 
+                            <i data-feather="check-square"></i>
+                            <span data-key="t-pages">Evaluasi DPL</span>
+                        </a>
+                    </li>
+                    <li>
+                        {{-- GANTI route('...') dengan route Monev-mu yang asli --}}
+                        <a href="#"> 
+                            <i data-feather="file-text"></i>
+                            <span data-key="t-pages">Laporan Monev</span>
+                        </a>
+                    </li>
+                {{-- 👆👆 ----- SELESAI BAGIAN TIM MONEV ----- 👆👆 --}}
+
+                @endif
+
+                {{-- ================================================= --}}
+                {{-- === BAGIAN GANTI PERAN (KODE BARU DARI SNIPPET) === --}}
+                {{-- ================================================= --}}
+
+                @php
+                    // 1. Ambil SEMUA role yang dimiliki user ini (dari tabel user_role)
+                    // (Asumsi di Model User ada relasi 'userRoles',
+                    // dan di Model UserRole ada relasi 'role' untuk dapat 'nama_role')
+                    $allRoles = Auth::user()->userRoles()->with('role')->get();
+                    
+                    // 2. Ambil ID user_role yang lagi AKTIF dari session
+                    $currentRoleId = session('selected_role');
+                @endphp
+
+                {{-- 3. Cuma tampilkan menu "Ganti Peran" kalo dia punya > 1 role --}}
+                @if ($allRoles->count() > 1)
+                    
+                    {{-- Ini adalah judul pemisah (kayak "Menu" di sidebar) --}}
+                    <li class="menu-title" data-key="t-ganti-peran">Ganti Peran</li>
+
+                    {{-- 4. Loop semua role-nya --}}
+                    @foreach ($allRoles as $availableRole)
+                    
+                        {{-- 5. Tampilkan link HANYA untuk role yang TIDAK AKTIF --}}
+                        @if ($availableRole->id != $currentRoleId)
+                            <li>
+                                {{-- Link ini manggil route 'set.role' yang udah kita bikin --}}
+                                <a href="{{ route('set.role', $availableRole->id) }}">
+                                    <i data-feather="refresh-cw"></i> {{-- Ganti icon-nya kalau perlu --}}
+                                    <span>Masuk sebagai {{ $availableRole->role->nama_role }}</span>
+                                </a>
+                            </li>
+                        @endif
+
+                    @endforeach
+                @endif
                 <li class="menu-title" data-key="t-menu">Informasi</li>
                 <li>
                     <a href="javascript: void(0);" class="has-arrow">

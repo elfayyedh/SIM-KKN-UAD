@@ -16,30 +16,60 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
+    private function getActiveRoleName()
+    {
+        // 2. Ambil user_role yang aktif dari session
+        $userRole = Auth::user()->userRoles()->find(session('selected_role'));
+
+        if ($userRole && $userRole->role) {
+            return $userRole->role->nama_role;
+        }
+
+        return null;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "Mahasiswa") {
-            $id_unit = Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id_unit;
-            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id_kkn;
-            return view('mahasiswa.dasbboard', compact('id_unit', 'id_kkn'));
-        } else if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "Admin") {
-            $user = User::where('id', Auth::user()->id)->first();
+        $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+        if (!$activeUserRole || !$activeUserRole->role) {
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('login.index')->with('error', 'Peran Anda tidak valid atau tidak dikenali.');
+        }
+        $roleName = $activeUserRole->role->nama_role;
+        if ($roleName == "Mahasiswa") {
+            $id_unit = $activeUserRole->mahasiswa->id_unit;
+            $id_kkn = $activeUserRole->mahasiswa->id_kkn;
+            return view('mahasiswa.dasbboard', compact('id_unit', 'id_kkn')); 
+        
+        } else if ($roleName == "Admin") {
+            
+            $user = Auth::user(); 
             $kkn = KKN::all();
-            return view('administrator.dasbboard', compact('user', 'kkn'));
-        } elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "DPL") {
-            $email = Auth::user()->userRoles->find(session('selected_role'))->dpl->email; 
-            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->dpl->id_kkn; 
-            return view('dpl.dashboard', compact('email', 'id_kkn')); 
+            return view('administrator.dasbboard', compact('user', 'kkn')); 
+        
+        } elseif ($roleName == "DPL") {
+            $dosen = Auth::user()->dosen; 
+            $dplAssignment = $dosen ? $dosen->dplAssignments()->first() : null;
+            $email = Auth::user()->email;
+            $id_kkn = $dplAssignment ? $dplAssignment->id_kkn : null; 
+            return view('dpl.dashboard', compact('email', 'id_kkn'));        
+        } elseif ($roleName == "Tim Monev") {
+            $dosen = Auth::user()->dosen;
+            $monevAssignment = $dosen ? $dosen->timMonevAssignments()->first() : null;
+            $email = Auth::user()->email;
+            $id_kkn = $monevAssignment ? $monevAssignment->id_kkn : null; 
+            return view('tim monev.dashboard', compact('email', 'id_kkn'));   
         } else {
             Auth::logout();
             request()->session()->invalidate();
             request()->session()->regenerateToken();
             return redirect()->route('login.index')->with('error', 'Role tidak valid atau tidak dikenali.');
         }
-            
     }
 
     public function getCardValue(Request $request)
