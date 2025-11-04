@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
-class UserRole extends Model
+class Monev extends Model
 {
     use HasFactory;
 
@@ -21,7 +21,7 @@ class UserRole extends Model
         });
     }
 
-    /**
+     /**
      * Get the value indicating whether the IDs are incrementing.
      *
      * @return bool
@@ -41,36 +41,16 @@ class UserRole extends Model
         return 'string';
     }
 
-    protected $table = 'user_role';
-    protected $fillable = ['id_user', 'id_role', 'id_kkn'];
+    protected $table = 'monev';
+    protected $fillable = ['id_user_role', 'id_kkn', 'nip'];
 
-    public function user()
+    public function userRole()
     {
-        return $this->belongsTo(User::class, 'id_user');
-    }
-
-    public function role()
-    {
-        return $this->belongsTo(Role::class, 'id_role');
-    }
-
-    public function mahasiswa()
-    {
-        return $this->hasOne(Mahasiswa::class, 'id_user_role');
-    }
-
-    public function dpl()
-    {
-        return $this->hasOne(Dpl::class, 'id_user_role');
-    }
-
-    public function monev()
-    {
-        return $this->hasOne(Monev::class, 'id_user_role');
+        return $this->belongsTo(UserRole::class, 'id_user_role');
     }
 
     public function kkn()
     {
-        return $this->belongsTo(KKN::class, 'id_kkn');
+        return $this->belongsTo(Kkn::class, 'id_kkn');
     }
 }

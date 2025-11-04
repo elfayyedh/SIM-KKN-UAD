@@ -30,9 +30,13 @@ class DashboardController extends Controller
             $kkn = KKN::all();
             return view('administrator.dasbboard', compact('user', 'kkn'));
         } elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "DPL") {
-            $email = Auth::user()->userRoles->find(session('selected_role'))->dpl->email; 
-            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->dpl->id_kkn; 
-            return view('dpl.dashboard', compact('email', 'id_kkn')); 
+            $email = Auth::user()->userRoles->find(session('selected_role'))->dpl->email;
+            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->dpl->id_kkn;
+            return view('dpl.dashboard', compact('email', 'id_kkn'));
+        } elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "Monev") {
+            $email = Auth::user()->userRoles->find(session('selected_role'))->monev->userRole->user->email;
+            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->monev->id_kkn;
+            return view('monev.dashboard', compact('email', 'id_kkn'));
         } else {
             Auth::logout();
             request()->session()->invalidate();

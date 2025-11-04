@@ -29,6 +29,9 @@ class RoleSeeder extends Seeder
         Role::firstOrCreate([
             'nama_role' => 'Tim Monev',
         ]);
+        $role_monev = Role::firstOrCreate([
+            'nama_role' => 'Monev',
+        ]);
         $role_dpl = Role::firstOrCreate([
             'nama_role' => 'DPL',
         ]);
@@ -42,6 +45,13 @@ class RoleSeeder extends Seeder
             'nama' => 'Nagita',
             'jenis_kelamin' => 'P',
             'no_telp' => '08376326723',
+        ]);
+        $user_monev = User::firstOrCreate([
+            'email' => 'Monev@gmail.test',
+            'password' => bcrypt('monev'),
+            'nama' => 'Monev',
+            'jenis_kelamin' => 'L',
+            'no_telp' => '0832632324',
         ]);
         $user_dpl = User::firstOrCreate([
             'email' => 'Jackson@gmail.test',
@@ -64,6 +74,11 @@ class RoleSeeder extends Seeder
             'id_role' => $role->id,
             'id_kkn' => $kkn->id,
         ]);
+        $user_role_monev = UserRole::firstOrCreate([
+            'id_user' => $user_monev->id,
+            'id_role' => $role_monev->id,
+            'id_kkn' => $kkn->id,
+        ]);
         $user_role_dpl = UserRole::firstOrCreate([
             'id_user' => $user_dpl->id,
             'id_role' => $role_dpl->id,
@@ -74,6 +89,11 @@ class RoleSeeder extends Seeder
             'nama_prodi' => 'Informatika',
         ]);
 
+        $monev = \App\Models\Monev::firstOrCreate([
+            'nip' => '757568777',
+            'id_user_role' => $user_role_monev->id,
+            'id_kkn' => $kkn->id,
+        ]);
         $dpl = Dpl::firstOrCreate([
             'nip' => '757568776',
             'id_user_role' => $user_role_dpl->id,
