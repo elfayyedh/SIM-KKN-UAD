@@ -6,6 +6,7 @@ use App\Models\QueueProgress;
 use App\Models\User;
 use App\Models\Mahasiswa;
 use App\Models\Dpl;
+use App\Models\Dosen; // 👈 1. PASTIKAN INI DI-IMPORT
 use App\Models\Unit;
 use App\Models\Prodi;
 use App\Models\Lokasi;
@@ -50,19 +51,14 @@ class EntriDataKKN implements ShouldQueue
     public function handle()
     {
         $totalSteps = 0;
-
-        // Hitung total langkah
         try {
             foreach ($this->jsonData as $dplData) {
-                $totalSteps++; // Langkah untuk DPL
+                $totalSteps++; 
                 foreach ($dplData['unit'] as $unitData) {
-                    $totalSteps++; // Langkah untuk unit
-                    $totalSteps += count($unitData['anggota']); // Langkah untuk anggota
+                    $totalSteps++; 
+                    $totalSteps += count($unitData['anggota']); 
                 }
             }
-
-
-
             $currentStep = 0;
             QueueProgress::where('id', $this->progress)->update([
                 'total' => $totalSteps,
@@ -72,33 +68,31 @@ class EntriDataKKN implements ShouldQueue
 
             try {
                 foreach ($this->jsonData as $dplData) {
-                    // Buat password dpl
-                    $namaLengkapDpl = $dplData['DPL'];       // Contoh: "Jefree Fahana S.T., M.Kom."
-                    $emailDpl = $dplData['email'];         // Contoh: "jefree.fahana@tif.uad.ac.id"
-                    $nipDpl = $dplData['password'];      // NIP disimpan di key 'password' oleh worker
-
-                    $passwordDefault = 'password';
-                    // Simpan data DPL
+                    $namaLengkapDpl = $dplData['DPL']; 
+                    $emailDpl = $dplData['email']; 
+                    $nipDpl = $dplData['password']; 
+                    $passwordDefault = 'password'; 
                     $user = User::firstOrCreate([
                         'email' => $emailDpl,
                     ], [
                         'nama' => $namaLengkapDpl,
                         'password' => bcrypt($passwordDefault),
                     ]);
-
-                    // ! !!!! Perlu no_telp dan jenis_kelamin !!!
-
-                    // Menambahkan role DPL ke user
-                    $roleId = Role::where('nama_role', 'DPL')->value('id');
-                    $role = UserRole::firstOrCreate(['id_user' => $user->id, 'id_role' => $roleId, 'id_kkn' => $this->id_kkn]);
-
-                    // Membuat atau mendapatkan data DPL
-                    $dpl = Dpl::firstOrCreate([
-                        'id_user_role' => $role->id,
-                        'id_kkn' => $this->id_kkn,
-                        'nip' => $nipDpl,
+                    $dosen = Dosen::firstOrCreate([
+                        'nip' => $nipDpl, 
+                    ], [
+                        'id_user' => $user->id, 
                     ]);
-
+                    $roleId = Role::where('nama_role', 'DPL')->value('id');
+                    $role = UserRole::firstOrCreate([
+                        'id_user' => $user->id, 
+                        'id_role' => $roleId, 
+                        'id_kkn' => $this->id_kkn
+                    ]);
+                    $dpl = Dpl::firstOrCreate([
+                        'id_dosen' => $dosen->id,
+                        'id_kkn' => $this->id_kkn,
+                    ]);
                     $currentStep++;
                     $proses = number_format(($currentStep / $totalSteps) * 100, 2);
                     QueueProgress::where('id', $this->progress)->update([
@@ -109,41 +103,34 @@ class EntriDataKKN implements ShouldQueue
                     ]);
 
                     foreach ($dplData['unit'] as $unitData) {
-                        // Simpan data Kabupaten
                         $kabupaten = Kabupaten::firstOrCreate([
                             'nama' => $unitData['kabupaten'],
                         ]);
-                        // Simpan data Kecamatan
                         $kecamatan = Kecamatan::firstOrCreate([
                             'nama' => $unitData['kecamatan'],
                             'id_kabupaten' => $kabupaten->id,
                         ]);
-                        // Simpan data lokasi
                         $lokasi = Lokasi::firstOrCreate([
                             'nama' => $unitData['lokasi'],
                             'id_kecamatan' => $kecamatan->id,
                         ]);
-                        // Simpan data unit
                         $unit = Unit::firstOrCreate([
                             'nama' => $unitData['nama'],
                             'tanggal_penerjunan' => $unitData['tanggal_penerjunan'],
                             'id_kkn' => $this->id_kkn,
                             'id_lokasi' => $lokasi->id,
-                            'id_dpl' => $dpl->id,
+                            'id_dpl' => $dpl->id, 
                         ]);
 
                         $currentStep++;
-                        $proses = number_format(($currentStep / $totalSteps) * 100, 2);
                         QueueProgress::where('id', $this->progress)->update([
                             'step' => $currentStep,
                             'progress' => $proses,
                             'status' => 'in_progress',
                             'message' => 'Processing unit data'
                         ]);
-
                         foreach ($unitData['anggota'] as $anggotaData) {
                             try {
-                                // Simpan data prodi
                                 $prodi = Prodi::firstOrCreate([
                                     'nama_prodi' => $anggotaData['prodi'],
                                 ]);
@@ -157,11 +144,9 @@ class EntriDataKKN implements ShouldQueue
                                     'jenis_kelamin' => $anggotaData['jenisKelamin'],
                                 ]);
 
-                                // Menambahkan role Mahasiswa ke user
                                 $roleId = Role::where('nama_role', 'Mahasiswa')->value('id');
                                 $role = UserRole::firstOrCreate(['id_user' => $user->id, 'id_role' => $roleId, 'id_kkn' => $this->id_kkn]);
 
-                                // Simpan data mahasiswa
                                 $mahasiswa = Mahasiswa::firstOrCreate([
                                     'id_user_role' => $role->id,
                                     'id_kkn' => $this->id_kkn,
@@ -179,7 +164,6 @@ class EntriDataKKN implements ShouldQueue
                                     'message' => 'Processing member data'
                                 ]);
                             } catch (\Exception $e) {
-                                // Update progress dengan informasi kesalahan
                                 QueueProgress::where('id', $this->progress)->update([
                                     'status' => 'failed',
                                     'message' => $e->getMessage(),
@@ -192,18 +176,14 @@ class EntriDataKKN implements ShouldQueue
                         }
                     }
                 }
-
-                // Jika berhasil, update status menjadi completed
                 QueueProgress::where('id', $this->progress)->update([
                     'status' => 'completed',
                     'message' => 'Processing completed'
                 ]);
-
-                // Hapus data setelah 5 detik
                 $progressId = $this->progress;
                 $this->deleteAfterSeconds($progressId, 5);
             } catch (\Exception $e) {
-                // Update progress dengan informasi kesalahan
+                $proses = number_format(($currentStep / $totalSteps) * 100, 2);
                 QueueProgress::where('id', $this->progress)->update([
                     'status' => 'failed',
                     'message' => $e->getMessage(),
@@ -220,8 +200,6 @@ class EntriDataKKN implements ShouldQueue
             ]);
         }
     }
-
-    // Tambahkan method deleteAfterSeconds
     private function deleteAfterSeconds($id, $seconds)
     {
         sleep($seconds);

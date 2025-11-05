@@ -178,8 +178,6 @@
                         </div>
                     </div>
                 </div> --}}
-
-
                 <div class="dropdown d-inline-block">
                     <button type="button" class="btn header-item bg-light-subtle border-start border-end"
                         id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true"
@@ -192,21 +190,36 @@
                                     {{ Auth::user()->nama }}
                                 </span>
 
+                                @php
+                                    $activeRole = Auth::user()->userRoles->find(session('selected_role'));
+                                    $activeRoleName = $activeRole ? $activeRole->role->nama_role : 'Guest';
+                                @endphp
                                 <span
-                                    class="d-none d-xl-inline-block ms-1 text-muted fw-light font-size-10">{{ Auth::user()->roles()->first()->nama_role }}</span>
+                                    class="d-none d-xl-inline-block ms-1 text-muted fw-light font-size-10">
+                                    {{ $activeRoleName }}
+                                </span>
                             </div>
                             <i class="mdi mdi-chevron-down d-none d-xl-inline-block"></i>
                         </div>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end">
-                        <!-- item-->
                         <a class="dropdown-item" href="{{ route('user.show') }}"><i
                                 class="mdi mdi mdi-face-man font-size-16 align-middle me-1"></i>
                             Profile</a>
-                        @if (Auth::user()->userRoles->count() > 1)
-                            <a class="dropdown-item" href="{{ route('choose.role') }}"><i
-                                    class="mdi mdi-repeat-variant font-size-16 align-middle me-1"></i>
-                                Ganti role </a>
+                        @php
+                            $allRoles = Auth::user()->userRoles()->with('role')->get();
+                            $currentRoleId = session('selected_role');
+                        @endphp
+                        @if ($allRoles->count() > 1)
+                            <div class="dropdown-divider"></div>                            
+                            @foreach ($allRoles as $availableRole)
+                                @if ($availableRole->id != $currentRoleId)
+                                    <a class="dropdown-item" href="{{ route('set.role', $availableRole->id) }}">
+                                        <i class="mdi mdi-account-switch-outline"></i>
+                                        <span>Masuk sebagai {{ $availableRole->role->nama_role }}</span>
+                                    </a>
+                                @endif
+                            @endforeach
                         @endif
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}"><i
@@ -214,7 +227,6 @@
                             Logout</a>
                     </div>
                 </div>
-
             </div>
         </div>
 </header>
@@ -329,61 +341,31 @@
                         </ul>
                     </li>
 
-                {{-- 👇👇 ----- TAMBAHAN UNTUK TIM MONEV ----- 👇👇 --}}
                 @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Tim Monev')
-                    {{-- Ini menu-menu khusus Tim Monev --}}
                     <li>
-                        {{-- GANTI route('...') dengan route Monev-mu yang asli --}}
                         <a href="#"> 
                             <i data-feather="check-square"></i>
-                            <span data-key="t-pages">Evaluasi DPL</span>
+                            <span data-key="t-pages">Evaluasi Unit</span>
                         </a>
                     </li>
-                    <li>
-                        {{-- GANTI route('...') dengan route Monev-mu yang asli --}}
-                        <a href="#"> 
-                            <i data-feather="file-text"></i>
-                            <span data-key="t-pages">Laporan Monev</span>
-                        </a>
-                    </li>
-                {{-- 👆👆 ----- SELESAI BAGIAN TIM MONEV ----- 👆👆 --}}
-
                 @endif
 
-                {{-- ================================================= --}}
-                {{-- === BAGIAN GANTI PERAN (KODE BARU DARI SNIPPET) === --}}
-                {{-- ================================================= --}}
-
                 @php
-                    // 1. Ambil SEMUA role yang dimiliki user ini (dari tabel user_role)
-                    // (Asumsi di Model User ada relasi 'userRoles',
-                    // dan di Model UserRole ada relasi 'role' untuk dapat 'nama_role')
                     $allRoles = Auth::user()->userRoles()->with('role')->get();
-                    
-                    // 2. Ambil ID user_role yang lagi AKTIF dari session
                     $currentRoleId = session('selected_role');
                 @endphp
 
-                {{-- 3. Cuma tampilkan menu "Ganti Peran" kalo dia punya > 1 role --}}
                 @if ($allRoles->count() > 1)
-                    
-                    {{-- Ini adalah judul pemisah (kayak "Menu" di sidebar) --}}
                     <li class="menu-title" data-key="t-ganti-peran">Ganti Peran</li>
-
-                    {{-- 4. Loop semua role-nya --}}
                     @foreach ($allRoles as $availableRole)
-                    
-                        {{-- 5. Tampilkan link HANYA untuk role yang TIDAK AKTIF --}}
                         @if ($availableRole->id != $currentRoleId)
                             <li>
-                                {{-- Link ini manggil route 'set.role' yang udah kita bikin --}}
                                 <a href="{{ route('set.role', $availableRole->id) }}">
-                                    <i data-feather="refresh-cw"></i> {{-- Ganti icon-nya kalau perlu --}}
-                                    <span>Masuk sebagai {{ $availableRole->role->nama_role }}</span>
+                                    <i class="mdi mdi-account-switch-outline"></i>
+                                    <span>{{ $availableRole->role->nama_role }}</span>
                                 </a>
                             </li>
                         @endif
-
                     @endforeach
                 @endif
                 <li class="menu-title" data-key="t-menu">Informasi</li>

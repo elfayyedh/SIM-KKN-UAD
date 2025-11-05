@@ -93,12 +93,6 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
 });
 // ! End Admin
 
-// DPL
-// Route::middleware([Authenticate::class])
-//     ->prefix('dpl')->name('dpl.')->group(function () {
-//     Route::get('/manajemen-unit', [DplUnitController::class, 'index'])->name('units.index');
-// });
-
 //! Unit
 Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/edit/{id}', [UnitController::class, 'edit'])->name('unit.edit');

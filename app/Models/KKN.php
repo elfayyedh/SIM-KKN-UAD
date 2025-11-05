@@ -48,7 +48,7 @@ class KKN extends Model
         return $this->hasMany(Mahasiswa::class, 'id_kkn');
     }
 
-    public function unit()
+    public function units()
     {
         return $this->hasMany(Unit::class, 'id_kkn');
     }

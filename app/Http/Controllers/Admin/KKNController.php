@@ -88,13 +88,13 @@ class KKNController extends Controller
         $kkn = KKN::with([
             'mahasiswa.prodi',
             'mahasiswa.userRole.user',
-            'dpl.userRole.user',
-            'dpl.units',
-            'timMonev.userRole.user',
-            'unit.lokasi.kecamatan.kabupaten'
+            'dpl.dosen.user',    
+            'dpl.units',           
+            'timMonev.dosen.user',  
+            'units.lokasi.kecamatan.kabupaten', 
+            'units.mahasiswa'                
         ])->find($id);
-
-        foreach ($kkn->unit as $unit) {
+        foreach ($kkn->units as $unit) { 
             $unit->total_jkem = $unit->mahasiswa->sum('total_jkem');
         }
 

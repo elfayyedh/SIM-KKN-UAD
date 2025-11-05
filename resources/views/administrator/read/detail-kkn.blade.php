@@ -118,7 +118,7 @@
                         <div class="tab-pane" id="unit" role="tabpanel">
                             <div class="card">
                                 <div class="card-body" style="overflow-x: auto;">
-                                    <x-unit-table :unit="$kkn->unit" />
+                                    <x-unit-table :units="$kkn->units" />
                                 </div>
                                 <!-- end card body -->
                             </div>
