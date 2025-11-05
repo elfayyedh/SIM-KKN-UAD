@@ -144,9 +144,10 @@ $(document).ready(async function () {
             if (bidangData.tipe === "unit") {
                 prokerHtml += `<h5>Minimal JKEM : ${bidangData.syarat_jkem}</h5>`;
             }
-            const userRole = $('meta[name="user-role"]').attr('content') || 'mahasiswa';
+            const userRole =
+                $('meta[name="user-role"]').attr("content") || "mahasiswa";
 
-            if (userRole === 'DPL' || userRole === 'dpl') {
+            if (userRole === "DPL" || userRole === "dpl") {
                 prokerHtml += `
                 <div class="mt-3">
                     <h6>Komentar DPL:</h6>
@@ -182,7 +183,6 @@ $(document).ready(async function () {
         data.forEach((bidangData) => {
             loadComments(bidangData.id);
         });
-
     } catch (error) {
         console.error("Error fetching data:", error);
         table_container.html("Failed to load data.");
@@ -193,34 +193,34 @@ $(document).ready(async function () {
 async function submitComment(bidangId) {
     const commentText = $(`#comment-text-${bidangId}`).val().trim();
     if (!commentText) {
-        alert('Komentar tidak boleh kosong');
+        alert("Komentar tidak boleh kosong");
         return;
     }
 
     try {
-        const response = await fetch('/comment/store', {
-            method: 'POST',
+        const response = await fetch("/comment/store", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
             },
             body: JSON.stringify({
                 id_bidang_proker: bidangId,
-                komentar: commentText
-            })
+                komentar: commentText,
+            }),
         });
 
         const result = await response.json();
 
-        if (result.status === 'success') {
-            $(`#comment-text-${bidangId}`).val('');
+        if (result.status === "success") {
+            $(`#comment-text-${bidangId}`).val("");
             loadComments(bidangId);
         } else {
-            alert(result.message || 'Gagal menambahkan komentar');
+            alert(result.message || "Gagal menambahkan komentar");
         }
     } catch (error) {
-        console.error('Error submitting comment:', error);
-        alert('Terjadi kesalahan saat mengirim komentar');
+        console.error("Error submitting comment:", error);
+        alert("Terjadi kesalahan saat mengirim komentar");
     }
 }
 
@@ -230,28 +230,40 @@ async function loadComments(bidangId) {
         const response = await fetch(`/comment/get/${bidangId}`);
         const result = await response.json();
 
-        if (result.status === 'success') {
+        if (result.status === "success") {
             const commentList = $(`#comment-list-${bidangId}`);
-            let commentsHtml = '';
+            let commentsHtml = "";
 
-            const userRole = $('meta[name="user-role"]').attr('content') || 'mahasiswa';
+            const userRole =
+                $('meta[name="user-role"]').attr("content") || "mahasiswa";
 
             if (result.data.length === 0) {
-                if (userRole === 'DPL' || userRole === 'dpl') {
-                    commentsHtml = '<p class="text-muted">Belum ada komentar.</p>';
+                if (userRole === "DPL" || userRole === "dpl") {
+                    commentsHtml =
+                        '<p class="text-muted">Belum ada komentar.</p>';
                 } else {
-                    commentsHtml = '<p class="text-muted">Belum ada komentar.</p>';
+                    commentsHtml =
+                        '<p class="text-muted">Belum ada komentar.</p>';
                 }
             } else {
-                result.data.forEach(comment => {
-                    const createdAt = moment(comment.created_at).format('D MMMM YYYY, HH:mm');
-                    let actionButtons = '';
+                result.data.forEach((comment) => {
+                    const createdAt = moment(comment.created_at).format(
+                        "D MMMM YYYY, HH:mm"
+                    );
+                    let actionButtons = "";
 
-                    if (userRole === 'DPL' || userRole === 'dpl') {
+                    if (userRole === "DPL" || userRole === "dpl") {
                         actionButtons = `
                             <div>
-                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editComment('${comment.id}', '${comment.komentar.replace(/'/g, "\\'")}')">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteComment('${comment.id}', '${bidangId}')">Hapus</button>
+                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editComment('${
+                                    comment.id
+                                }', '${comment.komentar.replace(
+                            /'/g,
+                            "\\'"
+                        )}')">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteComment('${
+                                    comment.id
+                                }', '${bidangId}')">Hapus</button>
                             </div>
                         `;
                     }
@@ -260,7 +272,7 @@ async function loadComments(bidangId) {
                         <div class="comment-item border-bottom pb-2 mb-2">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <strong>${comment.dpl.user_role.user.nama}</strong>
+                                    <strong>${comment.dpl.dosen.user.nama}</strong>
                                     <small class="text-muted ms-2">${createdAt}</small>
                                 </div>
                                 ${actionButtons}
@@ -274,27 +286,27 @@ async function loadComments(bidangId) {
             commentList.html(commentsHtml);
         }
     } catch (error) {
-        console.error('Error loading comments:', error);
+        console.error("Error loading comments:", error);
     }
 }
 
 // Function to edit comment
 function editComment(commentId, currentComment) {
     Swal.fire({
-        title: 'Edit Komentar',
-        input: 'textarea',
+        title: "Edit Komentar",
+        input: "textarea",
         inputValue: currentComment,
         inputAttributes: {
-            'aria-label': 'Type your message here'
+            "aria-label": "Type your message here",
         },
         showCancelButton: true,
-        confirmButtonText: 'Simpan',
-        cancelButtonText: 'Batal',
+        confirmButtonText: "Simpan",
+        cancelButtonText: "Batal",
         inputValidator: (value) => {
-            if (!value || value.trim() === '') {
-                return 'Komentar tidak boleh kosong!';
+            if (!value || value.trim() === "") {
+                return "Komentar tidak boleh kosong!";
             }
-        }
+        },
     }).then((result) => {
         if (result.isConfirmed && result.value !== currentComment) {
             updateComment(commentId, result.value.trim());
@@ -306,78 +318,78 @@ function editComment(commentId, currentComment) {
 async function updateComment(commentId, newComment) {
     try {
         const response = await fetch(`/comment/update/${commentId}`, {
-            method: 'PUT',
+            method: "PUT",
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
             },
             body: JSON.stringify({
-                komentar: newComment
-            })
+                komentar: newComment,
+            }),
         });
 
         const result = await response.json();
 
-        if (result.status === 'success') {
+        if (result.status === "success") {
             // Reload comments for the bidang
             const bidangId = result.data.id_bidang_proker;
             loadComments(bidangId);
         } else {
-            alert(result.message || 'Gagal mengupdate komentar');
+            alert(result.message || "Gagal mengupdate komentar");
         }
     } catch (error) {
-        console.error('Error updating comment:', error);
-        alert('Terjadi kesalahan saat mengupdate komentar');
+        console.error("Error updating comment:", error);
+        alert("Terjadi kesalahan saat mengupdate komentar");
     }
 }
-
-
 
 // Function to delete comment
 async function deleteComment(commentId, bidangId) {
     Swal.fire({
-        title: 'Hapus Komentar',
-        text: 'Apakah Anda yakin ingin menghapus komentar ini?',
-        icon: 'warning',
+        title: "Hapus Komentar",
+        text: "Apakah Anda yakin ingin menghapus komentar ini?",
+        icon: "warning",
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Ya, Hapus',
-        cancelButtonText: 'Batal'
+        confirmButtonColor: "#d33",
+        cancelButtonColor: "#3085d6",
+        confirmButtonText: "Ya, Hapus",
+        cancelButtonText: "Batal",
     }).then(async (result) => {
         if (result.isConfirmed) {
             try {
                 const response = await fetch(`/comment/delete/${commentId}`, {
-                    method: 'DELETE',
+                    method: "DELETE",
                     headers: {
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    }
+                        "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                            "content"
+                        ),
+                    },
                 });
 
                 const data = await response.json();
 
-                if (data.status === 'success') {
+                if (data.status === "success") {
                     Swal.fire({
-                        title: 'Berhasil!',
-                        text: 'Komentar berhasil dihapus.',
-                        icon: 'success',
+                        title: "Berhasil!",
+                        text: "Komentar berhasil dihapus.",
+                        icon: "success",
                         timer: 2000,
-                        showConfirmButton: false
+                        showConfirmButton: false,
                     });
                     loadComments(bidangId);
                 } else {
                     Swal.fire({
-                        title: 'Gagal!',
-                        text: data.message || 'Gagal menghapus komentar',
-                        icon: 'error'
+                        title: "Gagal!",
+                        text: data.message || "Gagal menghapus komentar",
+                        icon: "error",
                     });
                 }
             } catch (error) {
-                console.error('Error deleting comment:', error);
+                console.error("Error deleting comment:", error);
                 Swal.fire({
-                    title: 'Error!',
-                    text: 'Terjadi kesalahan saat menghapus komentar',
-                    icon: 'error'
+                    title: "Error!",
+                    text: "Terjadi kesalahan saat menghapus komentar",
+                    icon: "error",
                 });
             }
         }

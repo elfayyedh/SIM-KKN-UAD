@@ -4,44 +4,75 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use App\Models\BidangProker;
+use App\Models\Dpl;    
+use App\Models\Dosen;  
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class CommentController extends Controller
 {
+    private function getActiveDplAssignmentId()
+    {
+        $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+        if (!$activeUserRole || $activeUserRole->role->nama_role != 'DPL') {
+             throw new \Exception('Aksi ini hanya untuk DPL.');
+        }
+        $kkn_id = $activeUserRole->id_kkn;
+
+        $dosen = Auth::user()->dosen; 
+        if (!$dosen) {
+            throw new \Exception('Profil Dosen tidak ditemukan.');
+        }
+
+        $dplAssignment = Dpl::where('id_dosen', $dosen->id)
+                            ->where('id_kkn', $kkn_id)
+                            ->first();
+        
+        if (!$dplAssignment) {
+            throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+        }
+        return $dplAssignment->id;
+    }
+
+
     /**
      * Store a newly created comment.
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'id_bidang_proker' => 'required|uuid|exists:bidang_proker,id',
+            'id_bidang_proker' => 'required|exists:bidang_proker,id', 
             'komentar' => 'required|string|max:1000',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Get DPL ID from authenticated user
-        $id_dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl->id;
+        try {
+            $id_dpl = $this->getActiveDplAssignmentId();
 
-        $comment = Comment::create([
-            'id_bidang_proker' => $request->id_bidang_proker,
-            'id_dpl' => $id_dpl,
-            'komentar' => $request->komentar,
-        ]);
+            $comment = Comment::create([
+                'id_bidang_proker' => $request->id_bidang_proker,
+                'id_dpl' => $id_dpl,
+                'komentar' => $request->komentar,
+            ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Komentar berhasil ditambahkan',
-            'data' => $comment->load('dpl.userRole.user')
-        ]);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Komentar berhasil ditambahkan',
+                'data' => $comment->load('dpl.dosen.user') 
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal simpan: ' . $e->getMessage()
+            ], 403);
+        }
     }
 
     /**
@@ -50,7 +81,7 @@ class CommentController extends Controller
     public function getComments($id_bidang_proker)
     {
         $comments = Comment::where('id_bidang_proker', $id_bidang_proker)
-            ->with('dpl.userRole.user')
+            ->with('dpl.dosen.user') 
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -71,32 +102,37 @@ class CommentController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
+                'status' => 'error', 'message' => 'Validasi gagal', 'errors' => $validator->errors()
             ], 422);
         }
 
-        $comment = Comment::findOrFail($id);
+        try {
+            $comment = Comment::findOrFail($id);
 
-        // Check if the authenticated DPL owns this comment
-        $id_dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl->id;
-        if ($comment->id_dpl !== $id_dpl) {
+            $id_dpl = $this->getActiveDplAssignmentId();
+            
+            if ($comment->id_dpl !== $id_dpl) {
+                return response()->json([
+                    'status' => 'error', 'message' => 'Anda tidak memiliki akses untuk mengedit komentar ini'
+                ], 403);
+            }
+
+            $comment->update([
+                'komentar' => $request->komentar,
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Komentar berhasil diupdate',
+                'data' => $comment->load('dpl.dosen.user')
+            ]);
+        
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk mengedit komentar ini'
+                'message' => 'Gagal update: ' . $e->getMessage()
             ], 403);
         }
-
-        $comment->update([
-            'komentar' => $request->komentar,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Komentar berhasil diupdate',
-            'data' => $comment->load('dpl.userRole.user')
-        ]);
     }
 
     /**
@@ -104,22 +140,28 @@ class CommentController extends Controller
      */
     public function destroy($id)
     {
-        $comment = Comment::findOrFail($id);
+        try {
+            $comment = Comment::findOrFail($id);
+            $id_dpl = $this->getActiveDplAssignmentId();
 
-        // Check if the authenticated DPL owns this comment
-        $id_dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl->id;
-        if ($comment->id_dpl !== $id_dpl) {
+            if ($comment->id_dpl !== $id_dpl) {
+                return response()->json([
+                    'status' => 'error', 'message' => 'Anda tidak memiliki akses untuk menghapus komentar ini'
+                ], 403);
+            }
+
+            $comment->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Komentar berhasil dihapus'
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Anda tidak memiliki akses untuk menghapus komentar ini'
+                'message' => 'Gagal hapus: ' . $e->getMessage()
             ], 403);
         }
-
-        $comment->delete();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Komentar berhasil dihapus'
-        ]);
     }
 }

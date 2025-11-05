@@ -34,25 +34,32 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-        $loginInput = $request->input('email');
+        $loginInput = $request->input('email'); 
         $password = $request->input('password');
 
         $credentials = [];
 
         if (is_numeric($loginInput)) {
-            $mahasiswa = Mahasiswa::where('nim', $loginInput)
-                                    ->with('userRole.user')
-                                    ->first();
+            $mahasiswa = Mahasiswa::where('nim', $loginInput)->with('userRole.user')->first();
+            
             if ($mahasiswa && $mahasiswa->userRole && $mahasiswa->userRole->user) {
                 $emailAsli = $mahasiswa->userRole->user->email;
-                
                 $credentials = ['email' => $emailAsli, 'password' => $password];
             }
         } else {
             $credentials = ['email' => $loginInput, 'password' => $password];
         }
         if (!empty($credentials) && Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $roles = $user->userRoles; 
+            if ($roles->isEmpty()) {
+                Auth::logout();
+                return redirect()->back()->with(['error' => 'Akun Anda valid, tapi tidak memiliki peran. Hubungi Admin.']);
+            }
+            $defaultRole = $roles->first();
+            session(['selected_role' => $defaultRole->id]);
             return redirect()->route('dashboard');
+
         } else {
             return redirect()->back()->with(['error' => 'Username atau Password yang Anda masukkan salah']);
         }

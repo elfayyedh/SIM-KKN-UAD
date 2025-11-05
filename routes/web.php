@@ -29,9 +29,11 @@ Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middl
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
 Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->name('choose.role');
-Route::post('/set-role', [RoleSelectionController::class, 'setRole'])->name('set.role');
 Route::middleware([Authenticate::class])->get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/set-role/{role_id}', [RoleSelectionController::class, 'setRole'])
+       ->middleware([Authenticate::class]) 
+       ->name('set.role');
 
 // ! Admin
 //? Manajemen KKN
@@ -90,12 +92,6 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
 // ! End Admin
-
-// DPL
-// Route::middleware([Authenticate::class])
-//     ->prefix('dpl')->name('dpl.')->group(function () {
-//     Route::get('/manajemen-unit', [DplUnitController::class, 'index'])->name('units.index');
-// });
 
 //! Unit
 Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
