@@ -172,4 +172,3 @@
     <script src="{{ asset('assets/js/init/administrator/detail-kkn.init.js') }}"></script>
 
 @endsection
-@endsection
