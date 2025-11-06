@@ -63,9 +63,4 @@ class Dpl extends Model
     {
         return $this->hasMany(Proker::class, 'id_dpl');
     }
-
-    public function evaluasiOlehMonev()
-    {
-        return $this->hasMany(PenugasanEvaluasi::class, 'id_dpl');
-    }
 }

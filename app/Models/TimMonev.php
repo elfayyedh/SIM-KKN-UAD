@@ -53,9 +53,4 @@ class TimMonev extends Model
     {
         return $this->belongsTo(Kkn::class, 'id_kkn');
     }
-
-    public function dplYangDievaluasi()
-    {
-        return $this->hasMany(PenugasanEvaluasi::class, 'id_tim_monev');
-    }
 }
