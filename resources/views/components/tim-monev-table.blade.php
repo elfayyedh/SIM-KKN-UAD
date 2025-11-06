@@ -27,8 +27,17 @@
                         </td>
                         <td>{{ $item->dosen->user->no_telp ?? 'N/A' }}</td>
                         <td>
-                            <a href="{{ route('user.edit', $item->dosen->user->id) }}"><i
-                                    class="bx bx-edit me-1">Edit</i></a>
+                            <a href="{{ route('user.edit', $item->dosen->user->id) }}"
+                            class="btn btn-sm btn-info">Edit</a>
+                            
+                            <form action="{{ route('kkn.removeMonev', $item->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                @method('DELETE')
+                                <button type-="submit" class="btn btn-sm btn-danger"
+                                        onclick="return confirm('Yakin hapus {{ $item->dosen->user->nama }} dari Tim Monev?')">
+                                    Hapus
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 @endforeach

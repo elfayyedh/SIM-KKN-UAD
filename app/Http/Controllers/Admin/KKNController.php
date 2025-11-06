@@ -8,7 +8,10 @@ use App\Models\BidangProker;
 use App\Models\KKN;
 use App\Models\QueueProgress;
 use Illuminate\Http\Request;
-
+use App\Models\Dosen;
+use App\Models\TimMonev;
+use App\Models\UserRole;
+use App\Models\Role;
 
 class KKNController extends Controller
 {
@@ -88,17 +91,18 @@ class KKNController extends Controller
         $kkn = KKN::with([
             'mahasiswa.prodi',
             'mahasiswa.userRole.user',
-            'dpl.dosen.user',    
-            'dpl.units',           
-            'timMonev.dosen.user',  
-            'units.lokasi.kecamatan.kabupaten', 
-            'units.mahasiswa'                
-        ])->find($id);
+            'dpl.dosen.user',
+            'dpl.units',
+            'timMonev.dosen.user',
+            'units.lokasi.kecamatan.kabupaten',
+            'units.mahasiswa' 
+        ])->findOrFail($id);
         foreach ($kkn->units as $unit) { 
             $unit->total_jkem = $unit->mahasiswa->sum('total_jkem');
         }
-
-        return view('administrator.read.detail-kkn', compact('kkn'));
+        $assignedDosenIds = $kkn->timMonev->pluck('dosen.id');
+        $available_dosens = Dosen::whereNotIn('id', $assignedDosenIds)->with('user')->get();
+        return view('administrator.read.detail-kkn', compact('kkn', 'available_dosens'));
     }
 
     /**
@@ -140,6 +144,73 @@ class KKNController extends Controller
             return redirect()->back()->with(['success_kkn' => "Data KKN berhasil diperbarui"]);
         } catch (\Exception $e) {
             return redirect()->back()->with(['error_kkn' => "Data KKN gagal diperbarui"]);
+        }
+    }
+    /**
+     * Menambahkan Dosen sebagai Tim Monev di KKN ini
+     */
+    public function addMonev(Request $request, $id_kkn)
+    {
+        $request->validate([
+            'dosen_id' => 'required|exists:dosen,id',
+        ]);
+
+        try {
+            $dosen = Dosen::findOrFail($request->dosen_id);
+            $roleMonev = Role::where('nama_role', 'Tim Monev')->first();
+
+            TimMonev::firstOrCreate(
+                [
+                    'id_dosen' => $dosen->id,
+                    'id_kkn' => $id_kkn,
+                ]
+            );
+
+            UserRole::firstOrCreate(
+                [
+                    'id_user' => $dosen->user_id, 
+                    'id_role' => $roleMonev->id,
+                    'id_kkn' => $id_kkn
+                ]
+            );
+
+            return redirect()->back()->with('success', 'Tim Monev berhasil ditambahkan.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menambahkan Tim Monev: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Menghapus penugasan Tim Monev
+     */
+    public function removeMonev($id_penugasan_monev)
+    {
+        try {
+            $monevAssignment = TimMonev::findOrFail($id_penugasan_monev);
+
+            $kkn_id = $monevAssignment->id_kkn;
+            $dosen_id = $monevAssignment->id_dosen; 
+            $user_id = $monevAssignment->dosen->user_id; 
+            $roleMonevId = Role::where('nama_role', 'Tim Monev')->value('id');
+            $monevAssignment->delete(); 
+            $sisaTugasMonev = TimMonev::where('id_dosen', $dosen_id)->exists();
+
+            if ($sisaTugasMonev) {
+                UserRole::where('id_user', $user_id)
+                    ->where('id_role', $roleMonevId)
+                    ->where('id_kkn', $kkn_id)
+                    ->delete();
+            } else {
+                UserRole::where('id_user', $user_id)
+                        ->where('id_role', $roleMonevId)
+                        ->delete(); 
+            }
+
+            return redirect()->back()->with('success', 'Tim Monev berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus Tim Monev: ' . $e->getMessage());
         }
     }
 }

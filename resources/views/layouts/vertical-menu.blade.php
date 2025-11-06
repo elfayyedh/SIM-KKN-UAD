@@ -343,9 +343,15 @@
 
                 @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Tim Monev')
                     <li>
-                        <a href="#"> 
+                        <a href="{{ route('evaluasi.index') }}"> 
                             <i data-feather="check-square"></i>
                             <span data-key="t-pages">Evaluasi Unit</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#"> 
+                            <i data-feather="file-text"></i>
+                            <span data-key="t-pages">Laporan Monev</span>
                         </a>
                     </li>
                 @endif

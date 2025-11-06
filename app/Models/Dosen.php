@@ -30,4 +30,11 @@ class Dosen extends Model
     {
         return $this->hasMany(TimMonev::class, 'id_dosen');
     }
+
+    public function isBeingEvaluatedBy(TimMonev $monev)
+    {
+        return $this->dplAssignments->contains(function ($dplAssignment) use ($monev) {
+            return $monev->dplYangDievaluasi()->where('dpl_id', $dplAssignment->id)->exists();
+        });
+    }
 }

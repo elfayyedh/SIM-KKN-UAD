@@ -20,6 +20,7 @@ use App\Http\Middleware\AuthenticatedUser;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\Dpl\UnitController as DplUnitController;
+use App\Http\Controllers\TimMonevController;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware([Authenticate::class])->name('dashboard');
 Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('chart-data');
@@ -44,6 +45,8 @@ Route::prefix('/kkn')->middleware([Authenticate::class, AdminMiddleware::class])
     Route::get('/detail/{id}', [KKNController::class, 'show'])->name('kkn.show'); // Done
     Route::get('/edit/{id}', [KKNController::class, 'edit'])->name('kkn.edit'); // Done
     Route::put('/update/{id}', [KKNController::class, 'update'])->name('kkn.update'); // Done
+    Route::post('/{id_kkn}/add-monev', [KKNController::class, 'addMonev'])->name('kkn.addMonev');
+    Route::delete('/remove-monev/{id_penugasan_monev}', [KKNController::class, 'removeMonev'])->name('kkn.removeMonev');
 });
 
 // Manajemen informasi
@@ -181,6 +184,18 @@ Route::middleware([Authenticate::class])->prefix('/comment')->group(function () 
     Route::delete('/delete/{id}', [CommentController::class, 'destroy'])->name('comment.delete');
 });
 //! End Comment
+
+//! Evaluasi
+
+Route::middleware([Authenticate::class,])->prefix('evaluasi')->name('evaluasi.')->group(function () {   
+    Route::get('/', [TimMonevController::class, 'index'])->name('index');   
+    Route::post('/pilih/{id_dpl}', [TimMonevController::class, 'pilih'])->name('pilih');
+    Route::delete('/hapus/{id_penugasan}', [TimMonevController::class, 'hapus'])->name('hapus');
+    Route::get('/form/{id_penugasan}', [TimMonevController::class, 'showForm'])->name('form');
+
+});
+
+//! End Evaluasi
 
 Route::middleware([Authenticate::class])->post('/upload-image', [DownloaderController::class, 'upload'])->name('upload.image');
 //! Public

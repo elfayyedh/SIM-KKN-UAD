@@ -67,7 +67,7 @@ class User extends Authenticatable
 
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_role', 'id_user', 'id_role')->withPivot('id as id_user_role');;
+        return $this->belongsToMany(Role::class, 'user_role', 'id_user', 'id_role')->withPivot('id as id_user_role', 'id_kkn');;
     }
 
     public function userRoles()
@@ -96,5 +96,45 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function hasRole(string $nama_role, string $id_kkn = null): bool
+    {
+        // 1. Ambil query dasar ke tabel user_roles
+        $query = $this->userRoles()
+                      ->join('roles', 'user_role.id_role', '=', 'roles.id')
+                      ->where('roles.nama_role', $nama_role);
+
+        // 2. Jika ID KKN disediakan, cek secara spesifik (kontekstual)
+        if ($id_kkn) {
+            $query->where('user_role.id_kkn', $id_kkn);
+        }
+        
+        // 3. Cek apakah ada.
+        // Jika tidak ada ID KKN (global), dia akan cek:
+        //    a) Role spesifik KKN (jika ada)
+        //    b) Role global (jika id_kkn di tabel adalah NULL, e.g., Admin)
+        if (!$id_kkn) {
+             $query->orWhere(function ($q) use ($nama_role) {
+                $q->whereNull('user_role.id_kkn')
+                  ->join('roles', 'user_role.id_role', '=', 'roles.id')
+                  ->where('roles.nama_role', $nama_role)
+                  ->where('user_role.id_user', $this->id); // Pastikan untuk user ini
+             });
+        }
+
+        return $query->exists();
+    }
+
+    public function kknWhereUserHasRole(string $nama_role)
+    {
+        $roleId = Role::where('nama_role', $nama_role)->value('id');
+
+        $kkn_ids = $this->userRoles()
+                        ->where('id_role', $roleId)
+                        ->whereNotNull('id_kkn')
+                        ->pluck('id_kkn');
+
+        return KKN::whereIn('id', $kkn_ids)->get();
     }
 }

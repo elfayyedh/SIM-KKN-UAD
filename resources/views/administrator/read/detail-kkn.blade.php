@@ -128,22 +128,46 @@
 
                         <div class="tab-pane" id="tim-monev" role="tabpanel">
                             <div class="card">
-                                <div class="card-body" style="overflow-x: auto;">
-                                    <x-tim-monev-table :timMonev="$kkn->timMonev" />
+                                <div class="card-body">
+                                    <h4 class="card-title mb-3">Tambahkan Tim Monev</h4>
+                                    <p class="card-title-desc">
+                                        Pilih Dosen dari daftar di bawah untuk ditugaskan sebagai Tim Monev pada KKN ini.
+                                    </p>
+                                    <form action="{{ route('kkn.addMonev', $kkn->id) }}" method="POST">
+                                        @csrf
+                                        <div class="row">
+                                            <div class="col-md-10">
+                                                <div class="mb-3">
+                                                    <label for="dosen_id" class="form-label">Pilih Dosen</label>
+                                                    <select class="form-select" name="dosen_id" id="dosen_id" required>
+                                                        <option value="">-- Pilih Dosen --</option>
+                                                        @foreach($available_dosens as $dosen)
+                                                            <option value="{{ $dosen->id }}">
+                                                                {{ $dosen->user->nama }} (NIP: {{ $dosen->nip }})
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <div class="mb-3">
+                                                    <button type="submit" class="btn btn-primary">Tambahkan</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                    <hr>
+                                    <h4 class="card-title mb-3">Tim Monev Terdaftar</h4>
+                                    <div style="overflow-x: auto;">
+                                        <x-tim-monev-table :timMonev="$kkn->timMonev" />
+                                    </div>
                                 </div>
-                                <!-- end card body -->
                             </div>
-                            <!-- end card -->
                         </div>
-                        <!-- end tab pane -->
-
-
                     </div>
-                    <!-- end tab content -->
                 </div>
             </div>
-
-        </div> <!-- container-fluid -->
+        </div> 
     </div>
 
 
