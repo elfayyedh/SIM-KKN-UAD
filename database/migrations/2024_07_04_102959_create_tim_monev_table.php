@@ -13,13 +13,12 @@ return new class extends Migration
     {
         Schema::create('tim_monev', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('id_user_role');
             $table->uuid('id_kkn');
-            $table->string('nip', 20);
+            $table->uuid('id_dosen');
             $table->timestamps();
 
-            $table->foreign('id_user_role')->references('id')->on('user_role');
             $table->foreign('id_kkn')->references('id')->on('kkn');
+            $table->foreign('id_dosen')->references('id')->on('dosen');
         });
     }
 

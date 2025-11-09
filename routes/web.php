@@ -13,6 +13,7 @@ use App\Http\Controllers\Public\MahasiswaController;
 use App\Http\Controllers\RoleSelectionController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CommentController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthenticatedUser;
@@ -28,9 +29,11 @@ Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middl
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
 Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->name('choose.role');
-Route::post('/set-role', [RoleSelectionController::class, 'setRole'])->name('set.role');
 Route::middleware([Authenticate::class])->get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/set-role/{role_id}', [RoleSelectionController::class, 'setRole'])
+       ->middleware([Authenticate::class]) 
+       ->name('set.role');
 
 // ! Admin
 //? Manajemen KKN
@@ -88,13 +91,17 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
-// ! End Admin
+// Manajemen Tim Monev
+Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\TimMonevController::class, 'index'])->name('tim-monev.index');
+    Route::get('/create', [App\Http\Controllers\TimMonevController::class, 'create'])->name('tim-monev.create');
+    Route::post('/store', [App\Http\Controllers\TimMonevController::class, 'store'])->name('tim-monev.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\TimMonevController::class, 'edit'])->name('tim-monev.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\TimMonevController::class, 'update'])->name('tim-monev.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
+});
 
-// DPL
-// Route::middleware([Authenticate::class])
-//     ->prefix('dpl')->name('dpl.')->group(function () {
-//     Route::get('/manajemen-unit', [DplUnitController::class, 'index'])->name('units.index');
-// });
+// ! End Admin
 
 //! Unit
 Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
@@ -175,6 +182,15 @@ Route::middleware([Authenticate::class])->get('/mahasiswa/detail/{id}', [Mahasis
 Route::middleware([Authenticate::class])->get('/mahasiswa/proker/{id}/{id_kkn}/{id_unit}', [MahasiswaController::class, 'getProkerMahasiswa'])->name('mahasiswa.getProkerMahasiswa');
 
 //! End Mahasiswa
+
+//! Comment
+Route::middleware([Authenticate::class])->prefix('/comment')->group(function () {
+    Route::post('/store', [CommentController::class, 'store'])->name('comment.store');
+    Route::get('/get/{id_bidang_proker}', [CommentController::class, 'getComments'])->name('comment.get');
+    Route::put('/update/{id}', [CommentController::class, 'update'])->name('comment.update');
+    Route::delete('/delete/{id}', [CommentController::class, 'destroy'])->name('comment.delete');
+});
+//! End Comment
 
 Route::middleware([Authenticate::class])->post('/upload-image', [DownloaderController::class, 'upload'])->name('upload.image');
 //! Public

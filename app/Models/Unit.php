@@ -64,7 +64,7 @@ class Unit extends Model
         return $this->hasMany(Mahasiswa::class, 'id_unit');
     }
 
-    public function proker()
+    public function prokers()
     {
         return $this->hasMany(Proker::class, 'id_unit');
     }

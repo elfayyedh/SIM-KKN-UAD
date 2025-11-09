@@ -42,11 +42,11 @@ class TimMonev extends Model
     }
 
     protected $table = 'tim_monev';
-    protected $fillable = ['id_user', 'id_kkn'];
+    protected $fillable = ['id_dosen', 'id_kkn'];
 
-    public function userRole()
+    public function dosen()
     {
-        return $this->belongsTo(UserRole::class, 'id_user_role');
+        return $this->belongsTo(Dosen::class, 'id_dosen');
     }
 
     public function kkn()

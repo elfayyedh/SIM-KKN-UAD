@@ -8,6 +8,8 @@ use App\Models\Mahasiswa;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Dpl;
+use App\Models\Dosen;
+use App\Models\TimMonev;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -103,11 +105,19 @@ class UserController extends Controller
      */
     public function show()
     {
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
+        $activeUserRole = Auth::user()->userRoles()->with(['role', 'mahasiswa'])->find(session('selected_role'));
+        
+        if (!$activeUserRole) {
+             return view('not-found'); 
+        }
+        
+        $role = $activeUserRole->role->nama_role;
+        $user = Auth::user(); 
+
         if ($role == "Mahasiswa") {
-            $id = Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id;
+            $id = $activeUserRole->mahasiswa->id;
             try {
-                $user = Mahasiswa::with([
+                $mahasiswa_data = Mahasiswa::with([
                     'prodi',
                     'userRole.user',
                     'kkn',
@@ -116,12 +126,12 @@ class UserController extends Controller
                     'logbookSholat'
                 ])->findOrFail($id);
 
-                $prokerData = BidangProker::with(['proker' => function ($query) use ($user) {
+                $prokerData = BidangProker::with(['proker' => function ($query) use ($mahasiswa_data) {
                     if ($query->getModel()->type == 'individu') {
-                        $query->where('id_mahasiswa', $user->id);
+                        $query->where('id_mahasiswa', $mahasiswa_data->id);
                     }
                 }])
-                    ->where('id_kkn', $user->kkn->id)
+                    ->where('id_kkn', $mahasiswa_data->kkn->id)
                     ->get();
 
                 $prokerData->each(function ($item) {
@@ -131,8 +141,8 @@ class UserController extends Controller
                     $item->total_jkem_bidang = $totalJKEM;
                 });
 
-
-                return view('mahasiswa.profil-user', compact('user', 'prokerData'));
+                return view('mahasiswa.profil-user', ['user' => $mahasiswa_data, 'prokerData' => $prokerData]);
+            
             } catch (\Exception $e) {
                 return view('not-found');
             }
@@ -140,16 +150,52 @@ class UserController extends Controller
             echo "Under maintenance";
         } else if ($role == "DPL") {
             try {
-                $id_dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl->id;
-                $dpl = Dpl::with([
-                    'userRole.user', 
-                    'kkn', 
-                    'units.lokasi.kecamatan.kabupaten'
-                ])->findOrFail($id_dpl);                
-                return view('dpl.profil-user', compact('dpl'));
+                $user = Auth::user();
+                $dosen = $user->dosen; 
+                if (!$dosen) {
+                    throw new \Exception('Data profil Dosen (NIP, dll) tidak ditemukan.');
+                }
+                $activeUserRole = $user->userRoles()->find(session('selected_role'));
+                $kkn_id = $activeUserRole->id_kkn;
+                $dplAssignment = $dosen->dplAssignments()
+                                    ->where('id_kkn', $kkn_id)
+                                    ->with([
+                                        'kkn', 
+                                        'units.lokasi.kecamatan.kabupaten', 
+                                        'units.prokers.kegiatan'
+                                    ]) 
+                                    ->first();
+                
+                if (!$dplAssignment) {
+                    throw new \Exception('Data penugasan DPL untuk KKN ini tidak ditemukan.');
+                }
+                $units = $dplAssignment->units;
+                $units->each(function ($unit) {
+                    $total_jkem_unit = $unit->prokers->sum(function ($proker) {
+                        return $proker->kegiatan->sum('total_jkem');
+                    });
+                    $unit->total_jkem_all_prokers = $total_jkem_unit;
+                });
+                return view('dpl.profil-user', compact('user', 'dosen', 'dplAssignment', 'units'));
             } catch (\Exception $e) {
-                return view('not-found');
+                return redirect()->route('dashboard')->with('error', 'Gagal memuat profil:' . $e->getMessage());
             }
+        } else if ($role == "Tim Monev") {
+            try {
+                $user = Auth::user();
+                $dosen = $user->dosen; 
+                
+                if (!$dosen) {
+                    throw new \Exception('Data profil Dosen tidak ditemukan.');
+                }
+
+                return view('tim monev.profil-user', compact('user', 'dosen'));
+            
+            } catch (\Exception $e) {
+                return redirect()->route('dashboard')->with('error', $e->getMessage());
+            }
+        } else {
+            return view('not-found');
         }
     }
 
@@ -169,6 +215,12 @@ class UserController extends Controller
             $user = User::where('id', $id)->first();
             return view('user-edit', compact('user'));
         } else if ($role == "DPL") {
+            if (Auth::user()->id != $id) {
+                return view('not-found');
+            }
+            $user = User::where('id', $id)->first();
+            return view('user-edit', compact('user'));
+        } else if ($role == "Tim Monev") {
             if (Auth::user()->id != $id) {
                 return view('not-found');
             }
@@ -222,7 +274,7 @@ class UserController extends Controller
             $user = User::where('id', $id)->first();
             $user->update($request->all());
             return redirect()->back()->with('success_user', 'Data user berhasil diubah');
-        } else if ($role == "Mahasiswa" || $role == "DPL") {
+        } else if ($role == "Mahasiswa" || $role == "DPL" || $role == "Tim Monev") {
             if (Auth::user()->id != $id) {
                 return view('not-found');
             }

@@ -102,7 +102,8 @@
                                     <div class="d-flex align-items-start">
                                         <div class="gap-0">
                                             <h5 class="font-size-22 mb-1">Unit {{ $unit->nama }}</h5>
-                                            <p class="text-muted fd-flexont-size-13">{{ $unit->dpl->userRole->user->nama }}
+                                            <p class="text-muted fd-flexont-size-13">
+                                                {{ $unit->dpl->dosen->user->nama ?? 'Nama DPL Tidak Ditemukan' }}
                                             </p>
                                             <p class="text-muted mb-1"> <i class="mdi mdi-map-marker"></i>
                                                 {{ $unit->lokasi->nama }}, {{ $unit->lokasi->kecamatan->kabupaten->nama }}
@@ -329,4 +330,14 @@
     <script src="{{ asset('assets/js/init/mahasiswa/unit/getAnggota.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/unit/matriks.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/unit/read-rekap-kegiatan.init.js') }}"></script>
+    <script>
+        // DPL specific - show comment forms
+        $(document).ready(function() {
+            // Wait for the content to load, then ensure comment forms are visible for DPL
+            setTimeout(function() {
+                $('.comment-form').show();
+                $('.comments-section h6').text('Komentar DPL:');
+            }, 1000);
+        });
+    </script>
 @endsection

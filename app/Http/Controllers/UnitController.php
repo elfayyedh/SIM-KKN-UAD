@@ -8,6 +8,8 @@ use App\Models\KKN;
 use App\Models\Mahasiswa;
 use App\Models\Proker;
 use App\Models\Unit;
+use App\Models\Dosen;
+use App\Models\Dpl;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,17 +22,34 @@ class UnitController extends Controller
 
     public function showUnits()
     {
-        $userRole = Auth::user()->userRoles()->with('dpl')->find(session('selected_role'));
+        try {
+            $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+            $kkn_id = $activeUserRole->id_kkn; 
+            $dosen = Auth::user()->dosen;
+            if (!$dosen) {
+                throw new \Exception('Profil Dosen tidak ditemukan.');
+            }
+            $dplAssignment = Dpl::where('id_dosen', $dosen->id)
+                                ->where('id_kkn', $kkn_id)
+                                ->first();
+            if (!$dplAssignment) {
+                throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+            }
+            $units = $dplAssignment->units() 
+                                   ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan']) 
+                                   ->withCount('mahasiswa')
+                                   ->get(); 
 
-        if (!$userRole || !$userRole->dpl) {
-            abort(403, 'Data DPL tidak ditemukan.');
+            $units->each(function ($unit) {
+                $total_jkem_unit = $unit->prokers->sum(function ($proker) {
+                    return $proker->kegiatan->sum('total_jkem');
+                });
+                $unit->total_jkem_all_prokers = $total_jkem_unit;
+            });
+            return view('dpl.manajemen unit.unit', compact('dplAssignment', 'units'));
+        } catch (\Exception $e) {
+            return redirect()->route('dashboard')->with('error', 'Gagal memuat unit: ' . $e->getMessage());
         }
-        $dpl = $userRole->dpl;
-        $units = $dpl->units() 
-                     ->with(['lokasi.kecamatan.kabupaten']) 
-                     ->withCount('mahasiswa')
-                     ->get(); 
-        return view('dpl.manajemen unit.unit', compact('dpl', 'units'));
     }
 
     private function idUserRole()
@@ -63,7 +82,7 @@ class UnitController extends Controller
         try {
             $unit = Unit::with([
                 'kkn', 
-                'dpl', 
+                'dpl.dosen.user', 
                 'lokasi.kecamatan.kabupaten', 
                 'mahasiswa.prodi' 
             ])->findOrFail($id);
@@ -102,14 +121,12 @@ class UnitController extends Controller
     public function getProkerUnit(string $id, string $id_kkn)
     {
         try {
-
-
             $prokerData = BidangProker::with([
                 'proker' => function ($query) use ($id) {
                     $query->where('id_unit', $id);
                 },
                 'proker.kegiatan',
-                'proker.kegiatan.mahasiswa.userRole.user',
+                'proker.kegiatan.mahasiswa.userRole.user', 
                 'proker.kegiatan.tanggalRencanaProker',
                 'proker.kegiatan.logbookKegiatan.logbookHarian',
                 'proker.organizer',
@@ -119,15 +136,13 @@ class UnitController extends Controller
                 ->get();
 
             foreach ($prokerData as $bidangProker) {
-
                 foreach ($bidangProker->proker as $proker) {
-                    // Hitung total_jkem untuk setiap Proker
                     $proker->total_jkem = $proker->kegiatan->sum('total_jkem');
                 }
             }
             return response()->json($prokerData);
         } catch (\Exception $e) {
-            return response()->json('error', 500);
+            return response()->json(['error' => $e->getMessage()], 500); 
         }
     }
 
@@ -362,15 +377,31 @@ class UnitController extends Controller
     }
     public function getUnitTable()
     {
-        $userRole = $this->idUserRole(); // Asumsi helper-mu
-        if (!$userRole || !$userRole->dpl) {
-            return '<p class="text-danger">Error: Data DPL tidak ditemukan.</p>';
+        try {
+            $activeUserRole = $this->idUserRole();
+            $kkn_id = $activeUserRole->id_kkn; 
+
+            $dosen = Auth::user()->dosen; 
+            if (!$dosen) {
+                throw new \Exception('Profil Dosen tidak ditemukan.');
+            }
+
+            $dplAssignment = Dpl::where('id_dosen', $dosen->id)
+                                ->where('id_kkn', $kkn_id)
+                                ->first();
+
+            if (!$dplAssignment) {
+                throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+            }
+
+            $units = $dplAssignment->units() 
+                                   ->with(['lokasi.kecamatan.kabupaten']) 
+                                   ->withCount('mahasiswa')
+                                   ->get(); 
+            return view('components.unit-table', compact('units'));
+
+        } catch (\Exception $e) {
+            return '<p class="text-danger">Error memuat tabel: ' . $e->getMessage() . '</p>';
         }
-        $dpl = $userRole->dpl;
-        $units = $dpl->units() 
-                     ->with(['lokasi.kecamatan.kabupaten']) 
-                     ->withCount('mahasiswa') 
-                     ->get();
-        return view('components.unit-table', compact('units'));
     }
 }
