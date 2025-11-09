@@ -56,14 +56,18 @@ class DashboardController extends Controller
             $dosen = Auth::user()->dosen; 
             $dplAssignment = $dosen ? $dosen->dplAssignments()->first() : null;
             $email = Auth::user()->email;
-            $id_kkn = $dplAssignment ? $dplAssignment->id_kkn : null; 
-            return view('dpl.dashboard', compact('email', 'id_kkn'));        
+            $id_kkn = $dplAssignment ? $dplAssignment->id_kkn : null;
+            // Hanya ambil KKN yang DPL ini ditugaskan
+            $kkn = $dosen ? KKN::whereIn('id', $dosen->dplAssignments()->pluck('id_kkn'))->get() : collect();
+            return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn'));        
         } elseif ($roleName == "Tim Monev") {
             $dosen = Auth::user()->dosen;
             $monevAssignment = $dosen ? $dosen->timMonevAssignments()->first() : null;
             $email = Auth::user()->email;
-            $id_kkn = $monevAssignment ? $monevAssignment->id_kkn : null; 
-            return view('tim monev.dashboard', compact('email', 'id_kkn'));   
+            $id_kkn = $monevAssignment ? $monevAssignment->id_kkn : null;
+            // Hanya ambil KKN yang Tim Monev ini ditugaskan
+            $kkn = $dosen ? KKN::whereIn('id', $dosen->timMonevAssignments()->pluck('id_kkn'))->get() : collect();
+            return view('tim monev.dashboard', compact('email', 'id_kkn', 'kkn'));   
         } else {
             Auth::logout();
             request()->session()->invalidate();
@@ -110,28 +114,29 @@ class DashboardController extends Controller
         
         // Handle DPL
         if ($role == "DPL") {
-            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $dosen = Auth::user()->dosen;
             $periode = $request->input('periode');
             
-            // Jika periode adalah "semua", ambil semua unit DPL ini
-            if ($periode == 'semua') {
-                $units = Unit::where('id_dpl', $dpl->id)->get();
-                $unit_ids = $units->pluck('id');
-                
-                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)->count();
-                $total_unit = $units->count();
-            } else {
-                // Filter berdasarkan periode tertentu
-                $units = Unit::where('id_dpl', $dpl->id)
-                    ->where('id_kkn', $periode)
-                    ->get();
-                $unit_ids = $units->pluck('id');
-                
-                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
-                    ->where('id_kkn', $periode)
-                    ->count();
-                $total_unit = $units->count();
+            // Ambil dpl assignment berdasarkan periode yang dipilih
+            $dpl = $dosen ? $dosen->dplAssignments()->where('id_kkn', $periode)->first() : null;
+            
+            if (!$dpl) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'DPL assignment not found for this period'
+                ], 404);
             }
+            
+            // Filter berdasarkan periode tertentu
+            $units = Unit::where('id_dpl', $dpl->id)
+                ->where('id_kkn', $periode)
+                ->get();
+            $unit_ids = $units->pluck('id');
+            
+            $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
+                ->where('id_kkn', $periode)
+                ->count();
+            $total_unit = $units->count();
 
             return response()->json([
                 'status' => 'success',
@@ -253,36 +258,33 @@ class DashboardController extends Controller
         
         // Handle DPL
         if ($role == "DPL") {
-            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $dosen = Auth::user()->dosen;
             $periode = $request->input('periode');
             
-            // Get units untuk DPL ini
-            $query = Unit::where('id_dpl', $dpl->id);
+            // Ambil dpl assignment berdasarkan periode yang dipilih
+            $dpl = $dosen ? $dosen->dplAssignments()->where('id_kkn', $periode)->first() : null;
             
-            // Filter berdasarkan periode jika bukan "semua"
-            if ($periode !== 'semua') {
-                $query->where('id_kkn', $periode);
+            if (!$dpl) {
+                return response()->json([]);
             }
             
-            $units = $query->get();
+            // Get units untuk DPL ini berdasarkan periode
+            $units = Unit::where('id_dpl', $dpl->id)
+                ->where('id_kkn', $periode)
+                ->get();
             $unit_ids = $units->pluck('id');
             
-            $dataQuery = DB::table('mahasiswa')
+            $data = DB::table('mahasiswa')
                 ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
                 ->whereIn('mahasiswa.id_unit', $unit_ids)
+                ->where('mahasiswa.id_kkn', $periode)
                 ->select(
                     'prodi.nama_prodi',
                     DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
                     DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
                 )
-                ->groupBy('prodi.id', 'prodi.nama_prodi');
-            
-            // Filter berdasarkan periode jika bukan "semua"
-            if ($periode !== 'semua') {
-                $dataQuery->where('mahasiswa.id_kkn', $periode);
-            }
-            
-            $data = $dataQuery->get();
+                ->groupBy('prodi.id', 'prodi.nama_prodi')
+                ->get();
                 
             return response()->json($data);
         }
@@ -319,10 +321,17 @@ class DashboardController extends Controller
         
         // Handle DPL
         if ($role == "DPL") {
-            $dpl = Auth::user()->userRoles->find(session('selected_role'))->dpl;
+            $dosen = Auth::user()->dosen;
             $periode = $request->periode;
             
-            $query = DB::table('unit')
+            // Ambil dpl assignment berdasarkan periode yang dipilih
+            $dpl = $dosen ? $dosen->dplAssignments()->where('id_kkn', $periode)->first() : null;
+            
+            if (!$dpl) {
+                return response()->json([]);
+            }
+            
+            $data = DB::table('unit')
                 ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
                 ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
                 ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
@@ -332,14 +341,9 @@ class DashboardController extends Controller
                     'kabupaten.nama AS kabupaten'
                 )
                 ->where('unit.id_dpl', $dpl->id)
-                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama');
-            
-            // Filter berdasarkan periode jika bukan "semua"
-            if ($periode !== 'semua') {
-                $query->where('unit.id_kkn', $periode);
-            }
-            
-            $data = $query->get();
+                ->where('unit.id_kkn', $periode)
+                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
+                ->get();
                 
             return response()->json($data);
         }

@@ -32,7 +32,6 @@
                     <div class="form-group w-100">
                         <label for="periode" class="form-label">Pilih periode KKN</label>
                         <select name="periode" id="periode" class="form-select">
-                            <option value="semua">Semua Periode</option>
                             @foreach ($kkn as $item)
                                 <option value="{{ $item->id }}" {{ $item->id == $id_kkn ? 'selected' : '' }}>
                                     {{ $item->nama }}

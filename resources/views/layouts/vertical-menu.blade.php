@@ -286,6 +286,17 @@
 
                     <li>
                         <a href="javascript: void(0);" class="has-arrow">
+                            <i data-feather="users"></i>
+                            <span data-key="t-dpl">Manajemen DPL</span>
+                        </a>
+                        <ul class="sub-menu" aria-expanded="false">
+                            <li><a href="{{ route('dpl.index') }}" data-key="t-daftar-dpl">Daftar DPL</a></li>
+                            <li><a href="{{ route('dpl.create') }}" data-key="t-tambah-dpl">Tambah DPL</a></li>
+                        </ul>
+                    </li>
+
+                    <li>
+                        <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="user-check"></i>
                             <span data-key="t-tim-monev">Manajemen Tim Monev</span>
                         </a>

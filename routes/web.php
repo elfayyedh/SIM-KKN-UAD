@@ -91,6 +91,16 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
+// Manajemen DPL
+Route::prefix('/dpl')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\DplController::class, 'index'])->name('dpl.index');
+    Route::get('/create', [App\Http\Controllers\DplController::class, 'create'])->name('dpl.create');
+    Route::post('/store', [App\Http\Controllers\DplController::class, 'store'])->name('dpl.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\DplController::class, 'edit'])->name('dpl.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\DplController::class, 'update'])->name('dpl.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\DplController::class, 'destroy'])->name('dpl.destroy');
+});
+
 // Manajemen Tim Monev
 Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\TimMonevController::class, 'index'])->name('tim-monev.index');
