@@ -278,6 +278,7 @@
                         </a>
                         <ul class="sub-menu" aria-expanded="false">
                             <li><a href="{{ route('user.admin') }}" data-key="t-akun">Admin</a></li>
+                            <li><a href="{{ route('tim-monev.index') }}" data-key="t-tim-monev">Tim Monev</a></li>
                         </ul>
                         {{-- <ul class="sub-menu" aria-expanded="false">
                             <li><a href="{{ route('user.create') }}" data-key="t-akun">Tambah Pengguna baru</a></li>

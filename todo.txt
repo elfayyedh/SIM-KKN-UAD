@@ -1,4 +1,7 @@
-- [x] Ubah LoginRequest untuk menerima 'identifier' sebagai required field
-- [x] Ubah AuthController untuk mendukung login dengan email atau NIM
-- [x] Ubah view login untuk input "Email atau NIM"
-- [x] Test login functionality (Server running, manual testing required)
+- [x] Buat TimMonevController untuk handle CRUD tim monev
+- [x] Buat view read tim monev (daftar tim monev)
+- [x] Buat view create tim monev
+- [x] Buat view edit tim monev
+- [x] Tambahkan routes untuk tim monev di web.php
+- [x] Tambahkan link/menu ke manajemen tim monev di dashboard admin
+- [ ] Test fungsionalitas CRUD tim monev
