@@ -278,11 +278,21 @@
                         </a>
                         <ul class="sub-menu" aria-expanded="false">
                             <li><a href="{{ route('user.admin') }}" data-key="t-akun">Admin</a></li>
-                            <li><a href="{{ route('tim-monev.index') }}" data-key="t-tim-monev">Tim Monev</a></li>
                         </ul>
                         {{-- <ul class="sub-menu" aria-expanded="false">
                             <li><a href="{{ route('user.create') }}" data-key="t-akun">Tambah Pengguna baru</a></li>
                         </ul> --}}
+                    </li>
+
+                    <li>
+                        <a href="javascript: void(0);" class="has-arrow">
+                            <i data-feather="user-check"></i>
+                            <span data-key="t-tim-monev">Manajemen Tim Monev</span>
+                        </a>
+                        <ul class="sub-menu" aria-expanded="false">
+                            <li><a href="{{ route('tim-monev.index') }}" data-key="t-daftar-tim-monev">Daftar Tim Monev</a></li>
+                            <li><a href="{{ route('tim-monev.create') }}" data-key="t-tambah-tim-monev">Tambah Tim Monev</a></li>
+                        </ul>
                     </li>
 
                     <li>
