@@ -30,7 +30,7 @@
                     </div>
                 </div>
             </div>
-            <!-- end page title -->
+            <!-- end page titlee -->
 
             <div class="row mb-3">
                 <div class="col-12 col-md-6">

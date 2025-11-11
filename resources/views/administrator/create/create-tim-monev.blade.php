@@ -25,7 +25,7 @@
                     </div>
                 </div>
             </div>
-            <!-- end page title -->
+            <!-- end page titlee -->
 
             <div class="row">
                 <div class="col-12">

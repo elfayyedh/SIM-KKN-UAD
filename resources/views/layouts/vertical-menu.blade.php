@@ -1,7 +1,7 @@
 <header id="page-topbar">
     <div class="navbar-header">
         <div class="d-flex">
-            <!-- LOGO -->
+            <!-- LOGOO -->
             <div class="navbar-brand-box">
                 <a href="{{ route('dashboard') }}" title="Dashboard" class="logo logo-dark">
                     <span class="logo-sm">

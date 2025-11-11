@@ -138,7 +138,7 @@ class TimMonevController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified resource.
      */
     public function destroy(string $id)
     {
@@ -151,5 +151,6 @@ class TimMonevController extends Controller
         $timMonev->delete();
 
         return redirect()->route('tim-monev.index')->with('success', 'Tim Monev berhasil dihapus.');
+        
     }
 }

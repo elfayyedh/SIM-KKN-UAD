@@ -91,7 +91,7 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
-// Manajemen Tim Monev
+// Manajemen Tim MonevV
 Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\TimMonevController::class, 'index'])->name('tim-monev.index');
     Route::get('/create', [App\Http\Controllers\TimMonevController::class, 'create'])->name('tim-monev.create');
