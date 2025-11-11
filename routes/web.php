@@ -101,6 +101,16 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
+// Manajemen Tim Monev
+Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\TimMonevController::class, 'index'])->name('tim-monev.index');
+    Route::get('/create', [App\Http\Controllers\TimMonevController::class, 'create'])->name('tim-monev.create');
+    Route::post('/store', [App\Http\Controllers\TimMonevController::class, 'store'])->name('tim-monev.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\TimMonevController::class, 'edit'])->name('tim-monev.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\TimMonevController::class, 'update'])->name('tim-monev.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
+});
+
 // ! End Admin
 
 // ! DPL
