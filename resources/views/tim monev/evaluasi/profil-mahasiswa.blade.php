@@ -101,7 +101,10 @@
                                 <div class="col-sm-auto order-1 order-sm-2">
                                     <div class="d-flex align-items-start justify-content-end gap-2">
                                         <div>
-                                            <a class="btn btn-secondary"href="#">Penilaian</a>
+                                            <a class="btn btn-secondary"
+                                                href="{{ route('monev.evaluasi.penilaian', $user->id) }}">
+                                                Penilaian
+                                            </a>
                                         </div>
                                     </div>
                                 </div>
