@@ -158,7 +158,6 @@ class MonevController extends Controller
             $dosen = Auth::user()->dosen;
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
             
-            // Cek keamanan berdasarkan $monevAssignment yang AKTIF
             if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $id_dpl)->exists()) {
                 throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi DPL ini.');
             }
@@ -209,12 +208,8 @@ class MonevController extends Controller
                 throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi mahasiswa di unit ini.');
             }
 
-            // 1. Hitung Total JKEM (Sudah Aman)
             $totalJkem = $mahasiswa->kegiatan->pluck('logbookKegiatan')->flatten()->sum('total_jkem');
             
-            // ==========================================================
-            // 🔥 PERBAIKAN LOGIKA SHOLAT DENGAN abs()
-            // ==========================================================
             $persenSholat = 0;
             $totalWajibSholat = 0;
             $totalBerjamaah = 0;
@@ -242,10 +237,6 @@ class MonevController extends Controller
                 }
             }
             
-            // ==========================================================
-            // 🔥 KITA HAPUS dd() AGAR HALAMAN TAMPIL
-            // ==========================================================
-            
             $evaluasi = \App\Models\EvaluasiMahasiswa::where('id_tim_monev', $monevAssignment->id)
                                                     ->where('id_mahasiswa', $id_mahasiswa)
                                                     ->first();
@@ -258,7 +249,7 @@ class MonevController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            dd($e); // Biarkan dd() di sini untuk jaga-jaga
+            return redirect()->route('dashboard')->with('error', $e->getMessage()); 
         }
     }
 
