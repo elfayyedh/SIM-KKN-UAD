@@ -14,7 +14,28 @@ class RoleSelectionController extends Controller
      * @param string $role_id Ini adalah ID dari tabel 'user_role' (BUKAN 'roles')
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function setRole($role_id) // <-- 2. GANTI DARI: (Request $request)
+
+    public function chooseRole()
+    {
+        $user = Auth::user();
+        
+        if (session('user_is_dosen', false)) {
+            return redirect()->route('dashboard');
+        }
+
+        $roles = $user->userRoles()->with('role')->get();
+
+        if ($roles->count() == 1) {
+            session(['selected_role' => $roles->first()->id]);
+            return redirect()->route('dashboard');
+        }
+
+        return view('auth.choose-role', [
+            'roles' => $roles
+        ]);
+    }
+
+    public function setRole($role_id) 
     {
         $hasRole = Auth::user()->userRoles()->where('id', $role_id)->exists();
         if (!$hasRole) {

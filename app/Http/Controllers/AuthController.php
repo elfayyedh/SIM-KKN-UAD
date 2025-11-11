@@ -17,26 +17,10 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    // public function login(LoginRequest $request)
-    // {
-    //     // Ambil kredensial dari request
-    //     $credentials = $request->only('email', 'password');
-
-    //     // Coba autentikasi
-    //     if (Auth::attempt($credentials)) {
-    //         // Autentikasi berhasil, redirect ke dashboard
-    //         return redirect()->route('dashboard');
-    //     } else {
-    //         // Autentikasi gagal, redirect kembali dengan pesan error
-    //         return redirect()->back()->with(['error' => 'Email atau Password yang Anda masukkan salah']);
-    //     }
-    // }
-
     public function login(LoginRequest $request)
     {
         $loginInput = $request->input('email'); 
         $password = $request->input('password');
-
         $credentials = [];
 
         if (is_numeric($loginInput)) {
@@ -49,19 +33,64 @@ class AuthController extends Controller
         } else {
             $credentials = ['email' => $loginInput, 'password' => $password];
         }
-        if (!empty($credentials) && Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $roles = $user->userRoles; 
-            if ($roles->isEmpty()) {
-                Auth::logout();
-                return redirect()->back()->with(['error' => 'Akun Anda valid, tapi tidak memiliki peran. Hubungi Admin.']);
+
+        if (empty($credentials) || !Auth::attempt($credentials)) {
+            return redirect()->back()->with(['error' => 'Username atau Password yang Anda masukkan salah']);
+        }
+
+        $request->session()->regenerate();
+        $user = Auth::user(); 
+        $dosen = $user->dosen; 
+
+        if ($dosen) {
+            session()->forget('selected_role');
+
+            $isDpl = $dosen->isDpl();
+            $isMonev = $dosen->isMonev();
+
+            session([
+                'user_is_dosen' => true,
+                'user_has_role_dpl' => $isDpl,
+                'user_has_role_monev' => $isMonev,
+            ]);
+
+            $activeRole = null;
+            if ($isDpl) {
+                $activeRole = 'dpl';
+            } elseif ($isMonev) {
+                $activeRole = 'monev';
             }
-            $defaultRole = $roles->first();
-            session(['selected_role' => $defaultRole->id]);
+
+            session(['active_role' => $activeRole]);
+
+            if (is_null($activeRole)) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->back()->with('error', 'Anda terdaftar sebagai Dosen, namun belum memiliki penugasan DPL atau Tim Monev.');
+            }
+
             return redirect()->route('dashboard');
 
         } else {
-            return redirect()->back()->with(['error' => 'Username atau Password yang Anda masukkan salah']);
+            session()->forget([
+                'user_is_dosen', 
+                'user_has_role_dpl', 
+                'user_has_role_monev', 
+                'active_role'
+            ]);
+
+            $roles = $user->userRoles; 
+            if ($roles->isEmpty()) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return redirect()->back()->with(['error' => 'Akun Anda valid, tapi tidak memiliki peran. Hubungi Admin.']);
+            }
+            
+            $defaultRole = $roles->first();
+            session(['selected_role' => $defaultRole->id]);
+            return redirect()->route('dashboard');
         }
     }
 
