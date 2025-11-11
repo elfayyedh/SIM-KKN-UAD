@@ -113,14 +113,15 @@ Route::middleware([Authenticate::class, 'role.dosen:dpl'])->prefix('dpl')->name(
 Route::middleware([Authenticate::class, 'role.dosen:monev'])->prefix('monev')->name('monev.')->group(function () {
     
     Route::get('/dashboard', [MonevController::class, 'index'])->name('dashboard');
-    
     Route::get('/evaluasi', [MonevController::class, 'index'])->name('evaluasi.index');
     Route::post('/evaluasi/set-kkn', [MonevController::class, 'setActiveKkn'])->name('evaluasi.set-kkn');
-
     Route::post('/evaluasi/assign-dpl', [MonevController::class, 'assignDpl'])->name('evaluasi.assign');
     Route::post('/evaluasi/remove-dpl', [MonevController::class, 'removeDpl'])->name('evaluasi.remove');
-    
     Route::get('/evaluasi/dpl/{id_dpl}/units', [MonevController::class, 'showDplUnits'])->name('evaluasi.dpl-units');
+    Route::get('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian', [MonevController::class, 'showPenilaianPage'])
+         ->name('evaluasi.penilaian');
+    Route::post('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian/store', [MonevController::class, 'storePenilaian'])
+         ->name('evaluasi.penilaian.store');
 });
 
 //! Unit

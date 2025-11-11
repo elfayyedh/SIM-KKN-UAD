@@ -1,13 +1,14 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Dpl;
 use App\Models\TimMonev;
 use App\Models\Dosen;
 use Illuminate\Validation\Rule;
+use App\Models\Mahasiswa;
 
 class MonevController extends Controller
 {
@@ -17,20 +18,16 @@ class MonevController extends Controller
      */
     private function getActiveMonevAssignment($dosen)
     {
-        // 1. Ambil semua penugasan Monev
         $allMonevAssignments = $dosen->timMonevAssignments()->with('kkn')->get();
 
         if ($allMonevAssignments->isEmpty()) {
             throw new \Exception('Dosen ini tidak memiliki penugasan Tim Monev.');
         }
 
-        // 2. Cek session
         $activeAssignmentId = session('active_monev_assignment_id');
 
-        // 3. Cari yang aktif
         $activeMonevAssignment = $allMonevAssignments->find($activeAssignmentId);
 
-        // 4. Jika session tidak ada, atau tidak valid
         if (!$activeMonevAssignment) {
             $activeMonevAssignment = $allMonevAssignments->first();
             session(['active_monev_assignment_id' => $activeMonevAssignment->id]);
@@ -87,10 +84,6 @@ class MonevController extends Controller
         }
     }
 
-    /**
-     * [BARU] Fungsi untuk mengganti KKN aktif di session.
-     * (Fungsi ini sudah benar)
-     */
     public function setActiveKkn(Request $request)
     {
         $dosen = Auth::user()->dosen;
@@ -109,22 +102,14 @@ class MonevController extends Controller
     }
 
 
-    /**
-     * [AJAX] Menambahkan DPL ke daftar evaluasi.
-     */
     public function assignDpl(Request $request)
     {
         $request->validate(['id_dpl' => 'required|uuid|exists:dpl,id']);
 
         try {
             $dosen = Auth::user()->dosen;
-            
-            // ==========================================================
-            // 🔥 PERBAIKAN DI SINI (Gunakan helper, BUKAN firstOrFail)
-            // ==========================================================
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
 
-            // --- CONSTRAINT 1: Maksimal 3 DPL ---
             if ($monevAssignment->dplYangDievaluasi()->count() >= 3) {
                 return response()->json([
                     'status' => 'error',
@@ -147,19 +132,12 @@ class MonevController extends Controller
         }
     }
 
-    /**
-     * [AJAX] Menghapus DPL dari daftar evaluasi.
-     */
     public function removeDpl(Request $request)
     {
         $request->validate(['id_dpl' => 'required|uuid|exists:dpl,id']);
 
         try {
             $dosen = Auth::user()->dosen;
-            
-            // ==========================================================
-            // 🔥 PERBAIKAN DI SINI (Gunakan helper, BUKAN firstOrFail)
-            // ==========================================================
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
 
             $monevAssignment->dplYangDievaluasi()->detach($request->id_dpl);
@@ -174,17 +152,10 @@ class MonevController extends Controller
         }
     }
 
-    /**
-     * Menampilkan halaman daftar unit dari DPL yang dipilih.
-     */
     public function showDplUnits($id_dpl)
     {
         try {
             $dosen = Auth::user()->dosen;
-            
-            // ==========================================================
-            // 🔥 PERBAIKAN DI SINI (Gunakan helper, BUKAN firstOrFail)
-            // ==========================================================
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
             
             // Cek keamanan berdasarkan $monevAssignment yang AKTIF
@@ -196,10 +167,9 @@ class MonevController extends Controller
                 'dosen.user', 
                 'units.lokasi', 
                 'units.mahasiswa',
-                'units.prokers.kegiatan' // Load ini untuk hitungan JKEM
+                'units.prokers.kegiatan' 
             ])->findOrFail($id_dpl);
 
-            // Tambahkan logika hitungan JKEM (dari UnitController)
             $dpl->units->each(function ($unit) use ($dpl) {
                 $unit->kkn_nama = $dpl->kkn ? $dpl->kkn->nama : 'KKN Tanpa Nama';
                 
@@ -216,6 +186,125 @@ class MonevController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->route('monev.evaluasi.index')->with('error', $e->getMessage());
+        }
+    }
+
+    public function showPenilaianPage($id_mahasiswa)
+    {
+        try {
+            $dosen = Auth::user()->dosen;
+            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
+            
+            $mahasiswa = Mahasiswa::with([
+                                'userRole.user', 
+                                'unit.dpl', 
+                                'unit.kkn', 
+                                'logbookSholat', 
+                                'kegiatan.logbookKegiatan' 
+                            ])
+                            ->findOrFail($id_mahasiswa);
+            
+            $dplUnit = $mahasiswa->unit->dpl;
+            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $dplUnit->id)->exists()) {
+                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi mahasiswa di unit ini.');
+            }
+
+            // 1. Hitung Total JKEM (Sudah Aman)
+            $totalJkem = $mahasiswa->kegiatan->pluck('logbookKegiatan')->flatten()->sum('total_jkem');
+            
+            // ==========================================================
+            // 🔥 PERBAIKAN LOGIKA SHOLAT DENGAN abs()
+            // ==========================================================
+            $persenSholat = 0;
+            $totalWajibSholat = 0;
+            $totalBerjamaah = 0;
+            $totalHalangan = 0;
+            $penyebut = 0;
+            $totalHari = 0;
+
+            if ($mahasiswa->unit && $mahasiswa->unit->tanggal_penerjunan && $mahasiswa->unit->tanggal_penarikan) {
+                
+                $tglMulai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penerjunan);
+                $tglSelesai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penarikan);
+                
+                // 🔥 PERBAIKAN DI SINI:
+                // Kita pakai abs() untuk memastikan hasilnya selalu positif
+                $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
+                $totalWajibSholat = $totalHari * 5;
+                
+                $totalBerjamaah = $mahasiswa->logbookSholat->where('status', 'sholat berjamaah')->count();
+                $totalHalangan = $mahasiswa->logbookSholat->where('status', 'sedang halangan')->count();
+
+                $penyebut = $totalWajibSholat - $totalHalangan;
+
+                if ($penyebut > 0) {
+                    $persenSholat = round(($totalBerjamaah / $penyebut) * 100, 1);
+                }
+            }
+            
+            // ==========================================================
+            // 🔥 KITA HAPUS dd() AGAR HALAMAN TAMPIL
+            // ==========================================================
+            
+            $evaluasi = \App\Models\EvaluasiMahasiswa::where('id_tim_monev', $monevAssignment->id)
+                                                    ->where('id_mahasiswa', $id_mahasiswa)
+                                                    ->first();
+
+            return view('tim monev.evaluasi.penilaian-mahasiswa', [
+                'mahasiswa' => $mahasiswa,
+                'evaluasi' => $evaluasi,
+                'totalJkem' => $totalJkem,
+                'persenSholat' => $persenSholat, 
+            ]);
+
+        } catch (\Exception $e) {
+            dd($e); // Biarkan dd() di sini untuk jaga-jaga
+        }
+    }
+
+    public function storePenilaian(Request $request, $id_mahasiswa)
+    {
+        $request->validate([
+            'eval_jkem' => 'required|numeric|in:1,2,3',
+            'eval_form1' => 'required|numeric|in:1,2,3',
+            'eval_form2' => 'required|numeric|in:1,2,3',
+            'eval_form3' => 'required|numeric|in:1,2,3',
+            'eval_form4' => 'required|numeric|in:1,2,3',
+            'eval_sholat' => 'required|numeric|in:1,2,3',
+            'catatan_monev' => 'nullable|string|max:5000',
+        ]);
+
+        try {
+            $dosen = Auth::user()->dosen;
+            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
+            $mahasiswa = Mahasiswa::findOrFail($id_mahasiswa);
+
+            $dplUnit = $mahasiswa->unit->dpl;
+            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $dplUnit->id)->exists()) {
+                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi mahasiswa di unit ini.');
+            }
+
+            \App\Models\EvaluasiMahasiswa::updateOrCreate(
+                [
+                    'id_tim_monev' => $monevAssignment->id,
+                    'id_mahasiswa' => $id_mahasiswa,
+                ],
+                [
+                    'eval_jkem' => $request->eval_jkem,
+                    'eval_form1' => $request->eval_form1,
+                    'eval_form2' => $request->eval_form2,
+                    'eval_form3' => $request->eval_form3,
+                    'eval_form4' => $request->eval_form4,
+                    'eval_sholat' => $request->eval_sholat,
+                    'catatan_monev' => $request->catatan_monev,
+                ]
+            );
+
+            return redirect()->route('mahasiswa.show', $id_mahasiswa)
+                             ->with('success', 'Penilaian berhasil disimpan.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

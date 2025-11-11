@@ -63,4 +63,9 @@ class TimMonev extends Model
             'id_dpl'          
         );
     }
+
+    public function evaluasiMahasiswa()
+    {
+        return $this->hasMany(EvaluasiMahasiswa::class, 'id_tim_monev');
+    }
 }
