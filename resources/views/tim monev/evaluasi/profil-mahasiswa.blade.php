@@ -61,9 +61,9 @@
 
                         <div class="page-title-right">
                             <ol class="breadcrumb m-0">
-                                <li class="breadcrumb-item"><a href="javascript: void(0);">Manajemen Unit</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('unit.index') }}">Unit Bimbingan</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('unit.show', $user->unit->id) }}">Unit {{ $user->unit->nama }}</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.index') }}">Evaluasi Unit</a></li>
+                                <li class="breadcrumb-item active"><a href="{{ route('monev.evaluasi.dpl-units', $user->unit->dpl->id) }}">Daftar Unit</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('unit.show', $user->unit->id) }}">Profil Unit</a></li>
                                 <li class="breadcrumb-item"><a href="{{ route('mahasiswa.show', $user->id) }}">Profil Mahasiswa</a></li>
                             </ol>
                         </div>
@@ -95,6 +95,13 @@
                                             <p class="text-muted fd-flexont-size-13 mb-0">Unit : {{ $user->unit->nama }}</p>
                                             <p class="text-muted fd-flexont-size-13 mb-0">Total JKEM :
                                                 {{ $user->total_jkem }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-sm-auto order-1 order-sm-2">
+                                    <div class="d-flex align-items-start justify-content-end gap-2">
+                                        <div>
+                                            <a class="btn btn-secondary"href="#">Penilaian</a>
                                         </div>
                                     </div>
                                 </div>

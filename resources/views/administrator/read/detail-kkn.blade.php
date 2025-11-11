@@ -128,12 +128,39 @@
 
                         <div class="tab-pane" id="tim-monev" role="tabpanel">
                             <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Tambah Tim Monev Baru</h5>
+                                    <form action="{{ route('admin.tim-monev.store') }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="id_kkn" value="{{ $kkn->id }}">
+                                        <div class="row">
+                                            <div class="col-md-9">
+                                                <label for="id_dosen" class="form-label">Pilih Dosen</label>
+                                                <select name="id_dosen" id="id_dosen" class="form-select" required>
+                                                    <option value="">-- Pilih Dosen --</option>
+                                                    @foreach ($dosens as $dosen)
+                                                        <option value="{{ $dosen->id }}">
+                                                            {{ $dosen->user->nama ?? 'Nama tidak ada' }} (NIP: {{ $dosen->nip }})
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 align-self-end">
+                                                <button type="submit" class="btn btn-primary w-100 mt-3 mt-md-0">
+                                                    Tambah
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <div class="card">
                                 <div class="card-body" style="overflow-x: auto;">
+                                    <h5 class="card-title mb-3">Daftar Tim Monev Saat Ini</h5>
                                     <x-tim-monev-table :timMonev="$kkn->timMonev" />
                                 </div>
-                                <!-- end card body -->
                             </div>
-                            <!-- end card -->
                         </div>
                         <!-- end tab pane -->
 

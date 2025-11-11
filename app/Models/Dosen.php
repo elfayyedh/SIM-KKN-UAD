@@ -31,4 +31,13 @@ class Dosen extends Model
         return $this->hasMany(TimMonev::class, 'id_dosen');
     }
 
+    public function isDpl()
+    {
+        return $this->dplAssignments()->exists();
+    }
+
+    public function isMonev()
+    {
+        return $this->timMonevAssignments()->exists();
+    }
 }
