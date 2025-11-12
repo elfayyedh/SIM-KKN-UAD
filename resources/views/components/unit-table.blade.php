@@ -2,7 +2,7 @@
     <table class="datatable-buttons table table-striped table-bordered dt-responsive nowrap w-100">
         <thead>
             <tr>
-                <th>Nama</th>
+                <th>Nama kontol</th>
                 <th>Lokasi</th>
                 <th>Kecamatan</th>
                 <th>Kabupaten</th>

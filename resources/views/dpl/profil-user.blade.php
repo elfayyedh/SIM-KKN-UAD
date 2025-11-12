@@ -1,4 +1,18 @@
 @extends('layouts.index')
+@php
+    $activeRoleName = ''; // Default
+    if (Auth::check()) {
+        if (session('user_is_dosen', false)) {
+            $activeRoleName = session('active_role'); // 'dpl' atau 'monev'
+        } else {
+            $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($activeUserRole && $activeUserRole->role) {
+                $activeRoleName = $activeUserRole->role->nama_role;
+            }
+        }
+    }
+@endphp
+
 @section('pageStyle')
     <link href="{{ asset('assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css" />
@@ -19,7 +33,7 @@
                     </div>
                 </div>
             </div>
-        </div>        
+        </div>         
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -51,7 +65,7 @@
                             <div class="col-sm-auto order-1 order-sm-2">
                                 <div class="d-flex align-items-start justify-content-end gap-2">
                                     <div>
-                                        @if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'DPL')
+                                        @if ($activeRoleName == 'dpl')
                                             <a class="btn btn-secondary"
                                                 href="{{ route('user.edit', $user->id) }}">Edit</a>
                                         @endif
@@ -68,16 +82,26 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <h4 class="card-title">Unit Bimbingan Saya (KKN: {{ $dplAssignment->kkn->nama }})</h4>
-                        <x-unit-table :units="$units" />
+                        @if ($dplAssignments->count() > 1)
+                            <h4 class="card-title">Unit Bimbingan Saya</h4>
+                            @foreach ($dplAssignments as $dplAssignment)
+                                <h5 class="mt-3">KKN: {{ $dplAssignment->kkn->nama }}</h5>
+                                <x-unit-table :units="$dplAssignment->units" />
+                            @endforeach
+                        @else
+                            @php $dplAssignment = $dplAssignments->first(); @endphp
+                            <h4 class="card-title">Unit Bimbingan Saya (KKN: {{ $dplAssignment->kkn->nama }})</h4>
+                            <x-unit-table :units="$units" />
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div> 
-<input type="hidden" id="id_dpl" value="{{ $dplAssignment->id }}">
-<input type="hidden" id="id_kkn" value="{{ $dplAssignment->id_kkn }}">
+@php $firstAssignment = $dplAssignments->first(); @endphp
+<input type="hidden" id="id_dpl" value="{{ $firstAssignment->id }}">
+<input type="hidden" id="id_kkn" value="{{ $firstAssignment->id_kkn }}">
 @endsection
 @section('pageScript')
     <script src="{{ asset('assets/libs/datatables.net/js/jquery.dataTables.min.js') }}"></script>

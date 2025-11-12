@@ -33,6 +33,31 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        if (session('user_is_dosen', false)) {
+            
+            $activeRole = session('active_role'); 
+
+            if ($activeRole == 'dpl') {
+                $dosen = Auth::user()->dosen; 
+                $dplAssignment = $dosen ? $dosen->dplAssignments()->first() : null;
+                $email = Auth::user()->email;
+                $id_kkn = $dplAssignment ? $dplAssignment->id_kkn : null; 
+                return view('dpl.dashboard', compact('email', 'id_kkn')); 
+
+            } elseif ($activeRole == 'monev') {
+                $dosen = Auth::user()->dosen;
+                $monevAssignment = $dosen ? $dosen->timMonevAssignments()->first() : null;
+                $email = Auth::user()->email;
+                $id_kkn = $monevAssignment ? $monevAssignment->id_kkn : null; 
+                return view('tim monev.dashboard', compact('email', 'id_kkn')); 
+
+            } else {
+                Auth::logout();
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+                return redirect()->route('login.index')->with('error', 'Peran Dosen Anda tidak aktif.');
+            }
+        }
         $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
         if (!$activeUserRole || !$activeUserRole->role) {
             Auth::logout();
@@ -41,38 +66,22 @@ class DashboardController extends Controller
             return redirect()->route('login.index')->with('error', 'Peran Anda tidak valid atau tidak dikenali.');
         }
         $roleName = $activeUserRole->role->nama_role;
+        
         if ($roleName == "Mahasiswa") {
             $id_unit = $activeUserRole->mahasiswa->id_unit;
             $id_kkn = $activeUserRole->mahasiswa->id_kkn;
             return view('mahasiswa.dasbboard', compact('id_unit', 'id_kkn')); 
         
         } else if ($roleName == "Admin") {
-            
             $user = Auth::user(); 
             $kkn = KKN::all();
             return view('administrator.dasbboard', compact('user', 'kkn')); 
         
-        } elseif ($roleName == "DPL") {
-            $dosen = Auth::user()->dosen; 
-            $dplAssignment = $dosen ? $dosen->dplAssignments()->first() : null;
-            $email = Auth::user()->email;
-            $id_kkn = $dplAssignment ? $dplAssignment->id_kkn : null;
-            // Hanya ambil KKN yang DPL ini ditugaskan
-            $kkn = $dosen ? KKN::whereIn('id', $dosen->dplAssignments()->pluck('id_kkn'))->get() : collect();
-            return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn'));        
-        } elseif ($roleName == "Tim Monev") {
-            $dosen = Auth::user()->dosen;
-            $monevAssignment = $dosen ? $dosen->timMonevAssignments()->first() : null;
-            $email = Auth::user()->email;
-            $id_kkn = $monevAssignment ? $monevAssignment->id_kkn : null;
-            // Hanya ambil KKN yang Tim Monev ini ditugaskan
-            $kkn = $dosen ? KKN::whereIn('id', $dosen->timMonevAssignments()->pluck('id_kkn'))->get() : collect();
-            return view('tim monev.dashboard', compact('email', 'id_kkn', 'kkn'));   
         } else {
             Auth::logout();
             request()->session()->invalidate();
             request()->session()->regenerateToken();
-            return redirect()->route('login.index')->with('error', 'Role tidak valid atau tidak dikenali.');
+            return redirect()->route('login.index')->with('error', 'Role Anda (non-dosen) tidak dikenali.');
         }
     }
 

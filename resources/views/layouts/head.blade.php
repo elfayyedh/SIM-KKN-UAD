@@ -1,6 +1,24 @@
 <meta charset="utf-8" />
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<meta name="user-role" content="{{ Auth::check() ? Auth::user()->userRoles->find(session('selected_role'))->role->nama_role : 'guest' }}">
+@php
+    $roleName = 'Guest';
+    if (Auth::check()) {
+        if (session('user_is_dosen', false)) {
+            $activeDosenRole = session('active_role'); // 'dpl' atau 'monev'
+            if ($activeDosenRole == 'dpl') {
+                $roleName = 'DPL';
+            } elseif ($activeDosenRole == 'monev') {
+                $roleName = 'Tim Monev';
+            }
+        } else {
+            $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($activeUserRole && $activeUserRole->role) {
+                $roleName = $activeUserRole->role->nama_role;
+            }
+        }
+    }
+@endphp
+<meta name="user-role" content="{{ $roleName }}">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta content="Sistem Informasi Manajemen Kuliah Kerja Nyata Universitas Ahmad Dahlan" name="description" />
 <meta content="Themesbrand" name="author" />

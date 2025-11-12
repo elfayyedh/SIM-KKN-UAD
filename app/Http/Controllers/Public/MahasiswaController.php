@@ -42,46 +42,52 @@ class MahasiswaController extends Controller
      */
     public function show(string $id)
     {
-        $userRole = Auth::user()->userRoles->find(session('selected_role'));
-        $roleName = $userRole->role->nama_role;
-        $data = Mahasiswa::select('id_unit')->find($id);
-        if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $data->id_unit) {
-            return view('not-found');
-        }
         try {
-            $user = Mahasiswa::with([
-                'prodi',
-                'userRole.user',
-                'kkn',
-                'unit',
-                'logbookKegiatan',
-                'logbookSholat'
-            ])->findOrFail($id);
-
-            $prokerData = BidangProker::with(['proker' => function ($query) use ($user) {
-                if ($query->getModel()->type == 'individu') {
-                    $query->where('id_mahasiswa', $user->id);
-                }
-            }])
-                ->where('id_kkn', $user->kkn->id)
-                ->get();
-
-            $prokerData->each(function ($item) {
-                $totalJKEM = $item->proker->sum(function ($proker) {
-                    return $proker->total_jkem;
-                });
-                $item->total_jkem_bidang = $totalJKEM;
-            });
-
-            if ($roleName == "Mahasiswa") {
-                return view('mahasiswa.profil-user', compact('user', 'prokerData'));
-            } else if ($roleName == "DPL") {
-                return view('dpl.manajemen unit.profil-mahasiswa', compact('user', 'prokerData'));
+            $roleName = '';
+            $userRole = null; 
+            if (session('user_is_dosen', false)) {
+                $roleName = session('active_role');
             } else {
+                $userRole = Auth::user()->userRoles->find(session('selected_role'));
+                if ($userRole && $userRole->role) {
+                    $roleName = $userRole->role->nama_role;
+                }
+            }
+            $data = Mahasiswa::select('id_unit')->find($id);
+            if (!$data) {
                 return view('not-found');
             }
 
+            if ($roleName == 'Mahasiswa') {
+                $selfUnitId = $userRole->mahasiswa->id_unit;
+                if ($selfUnitId != $data->id_unit) {
+                    return view('not-found'); 
+                }
+            } else if ($roleName == 'dpl' || $roleName == 'monev' || $roleName == 'Admin') {
+                // Dosen/Admin/Monev boleh lewat.
+            } else {
+                return view('not-found');
+            }
+            $user = Mahasiswa::with([
+                'prodi',
+                'userRole.user',
+                'unit.lokasi.kecamatan.kabupaten',
+                'unit.dpl.dosen.user'
+            ])->findOrFail($id);
+            
+            if ($roleName == 'dpl' || $roleName == 'Admin') {
+                return view('dpl.manajemen unit.profil-mahasiswa', compact('user'));
+            } else if ($roleName == 'Mahasiswa') {
+                return view('mahasiswa.profil-mahasiswa', compact('user'));
+            } elseif ($roleName == 'monev'){
+                return view('tim monev.evaluasi.profil-mahasiswa', compact('user'));
+            }
+            return view('not-found');
+            
         } catch (\Exception $e) {
+            if (config('app.debug')) {
+                throw $e;
+            }
             return view('not-found');
         }
     }
