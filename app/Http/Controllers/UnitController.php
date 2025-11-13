@@ -192,6 +192,31 @@ class UnitController extends Controller
     public function kalender()
     {
         try {
+            $userRole = $this->idUserRole();
+            $roleName = $userRole->role->nama_role;
+            if ($roleName == 'Mahasiswa') {
+                $unit = $userRole->mahasiswa->id_unit;
+                return view('mahasiswa.kalender', compact('unit'));
+            } elseif ($roleName == 'DPL') {
+                // For DPL, we need to get units under their supervision
+                $kkn_id = $userRole->id_kkn;
+                $dosen = Auth::user()->dosen;
+                if (!$dosen) {
+                    throw new \Exception('Profil Dosen tidak ditemukan.');
+                }
+                $dplAssignment = Dpl::where('id_dosen', $dosen->id)
+                                    ->where('id_kkn', $kkn_id)
+                                    ->first();
+                if (!$dplAssignment) {
+                    throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+                }
+                $units = $dplAssignment->units()->pluck('id')->toArray();
+                // Pass the first unit or handle multiple units as needed
+                $unit = $units[0] ?? null;
+                return view('dpl.kalender', compact('unit'));
+            } else {
+                return view('not-found');
+            }
             ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
 
             if ($roleName != 'Mahasiswa' || !$userRole || !$userRole->mahasiswa) {
