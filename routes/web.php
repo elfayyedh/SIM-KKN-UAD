@@ -19,21 +19,27 @@ use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthenticatedUser;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Http\Controllers\Dpl\UnitController as DplUnitController;
+use App\Http\Controllers\DosenRoleSwitchController;
+use App\Http\Controllers\Admin\TimMonevController;
+use App\Http\Controllers\MonevController;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware([Authenticate::class])->name('dashboard');
 Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('chart-data');
 Route::get('/get-donut-chart', [DashboardController::class, 'getDonutChart'])->middleware([Authenticate::class, AdminMiddleware::class])->name('donut-chart');
-Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('prodi-data');
-Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('unit-data');
+Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class])->name('prodi-data');
+Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class])->name('unit-data');
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
-Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->name('choose.role');
+Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->middleware([Authenticate::class])->name('choose.role');
 Route::middleware([Authenticate::class])->get('/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::get('/set-role/{role_id}', [RoleSelectionController::class, 'setRole'])
        ->middleware([Authenticate::class]) 
        ->name('set.role');
+
+Route::post('/dosen/switch-role', [DosenRoleSwitchController::class, 'switchRole'])
+        ->middleware([Authenticate::class])
+        ->name('dosen.role.switch');
 
 // ! Admin
 //? Manajemen KKN
@@ -45,6 +51,10 @@ Route::prefix('/kkn')->middleware([Authenticate::class, AdminMiddleware::class])
     Route::get('/edit/{id}', [KKNController::class, 'edit'])->name('kkn.edit'); // Done
     Route::put('/update/{id}', [KKNController::class, 'update'])->name('kkn.update'); // Done
 });
+
+Route::post('/tim-monev/store', [TimMonevController::class, 'store'])
+       ->name('admin.tim-monev.store')
+       ->middleware([Authenticate::class, AdminMiddleware::class]);
 
 // Manajemen informasi
 Route::prefix('/informasi')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
@@ -74,7 +84,7 @@ Route::prefix('/bidang')->middleware([Authenticate::class, AdminMiddleware::clas
     Route::delete('/destroy/{id}', [BidangProkerController::class, 'destroy'])->name('bidang.destroy');
 });
 
-Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class, AdminMiddleware::class])->name('card.value');
+Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class])->name('card.value');
 
 
 
@@ -91,6 +101,16 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
+// Manajemen DPL
+Route::prefix('/dpl')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\DplController::class, 'index'])->name('dpl.index');
+    Route::get('/create', [App\Http\Controllers\DplController::class, 'create'])->name('dpl.create');
+    Route::post('/store', [App\Http\Controllers\DplController::class, 'store'])->name('dpl.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\DplController::class, 'edit'])->name('dpl.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\DplController::class, 'update'])->name('dpl.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\DplController::class, 'destroy'])->name('dpl.destroy');
+});
+
 // Manajemen Tim Monev
 Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\TimMonevController::class, 'index'])->name('tim-monev.index');
@@ -102,6 +122,27 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
 });
 
 // ! End Admin
+
+// ! DPL
+Route::middleware([Authenticate::class, 'role.dosen:dpl'])->prefix('dpl')->name('dpl.')->group(function () {
+    Route::get('/dashboard', [UnitController::class, 'showUnits'])->name('dashboard');
+    Route::get('/unit', [UnitController::class, 'showUnits'])->name('unit.index');
+});
+
+// ! TIM MONEV
+Route::middleware([Authenticate::class, 'role.dosen:monev'])->prefix('monev')->name('monev.')->group(function () {
+    
+    Route::get('/dashboard', [MonevController::class, 'index'])->name('dashboard');
+    Route::get('/evaluasi', [MonevController::class, 'index'])->name('evaluasi.index');
+    Route::post('/evaluasi/set-kkn', [MonevController::class, 'setActiveKkn'])->name('evaluasi.set-kkn');
+    Route::post('/evaluasi/assign-dpl', [MonevController::class, 'assignDpl'])->name('evaluasi.assign');
+    Route::post('/evaluasi/remove-dpl', [MonevController::class, 'removeDpl'])->name('evaluasi.remove');
+    Route::get('/evaluasi/dpl/{id_dpl}/units', [MonevController::class, 'showDplUnits'])->name('evaluasi.dpl-units');
+    Route::get('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian', [MonevController::class, 'showPenilaianPage'])
+         ->name('evaluasi.penilaian');
+    Route::post('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian/store', [MonevController::class, 'storePenilaian'])
+         ->name('evaluasi.penilaian.store');
+});
 
 //! Unit
 Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {

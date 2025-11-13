@@ -16,21 +16,31 @@ class Authenticate
      */
     public function handle(Request $request, Closure $next, ...$guards)
     {
-        // Cek apakah pengguna belum login
         if (Auth::guard($guards)->guest()) {
-            return redirect()->route('login.index'); // Halaman login
+            return redirect()->route('login.index'); 
         }
 
         if (Auth::check()) {
+            if (session('user_is_dosen', false)) {
+                return $next($request); 
+            }
+            
             $user = Auth::user();
-            // Jika pengguna memiliki lebih dari 1 role dan session 'selected_role' belum diatur
-            if ($user->userRoles->count() > 1 && !session('selected_role')) {
-                return redirect()->route('choose.role');
+            $userRoles = $user->userRoles; 
+
+            if ($userRoles->count() > 1 && !session('selected_role')) {
+                return redirect()->route('choose.role'); 
             }
 
-            // Jika session 'selected_role' belum diatur, set ke role pertama pengguna
-            if (!session('selected_role')) {
-                session(['selected_role' => $user->userRoles->first()->id]);
+            if ($userRoles->count() > 0 && !session('selected_role')) {
+                session(['selected_role' => $userRoles->first()->id]);
+            }
+
+            if ($userRoles->count() == 0) {
+                 Auth::logout();
+                 $request->session()->invalidate();
+                 $request->session()->regenerateToken();
+                 return redirect()->route('login.index')->with('error', 'Akun Anda tidak memiliki peran.');
             }
         }
 

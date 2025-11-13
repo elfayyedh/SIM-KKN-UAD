@@ -1,4 +1,18 @@
 @extends('layouts.index')
+@php
+    $activeRoleName = ''; // Default
+    if (Auth::check()) {
+        if (session('user_is_dosen', false)) {
+            $activeRoleName = session('active_role'); // 'dpl' atau 'monev'
+        } else {
+            $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($activeUserRole && $activeUserRole->role) {
+                $activeRoleName = $activeUserRole->role->nama_role;
+            }
+        }
+    }
+@endphp
+
 @section('pageStyle')
     <link href="{{ asset('assets/libs/datatables.net-bs4/css/dataTables.bootstrap4.min.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css" />
@@ -19,7 +33,7 @@
                     </div>
                 </div>
             </div>
-        </div>        
+        </div>         
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -51,7 +65,7 @@
                             <div class="col-sm-auto order-1 order-sm-2">
                                 <div class="d-flex align-items-start justify-content-end gap-2">
                                     <div>
-                                        @if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Tim Monev')
+                                        @if ($activeRoleName == 'monev')
                                             <a class="btn btn-secondary"
                                                 href="{{ route('user.edit', $user->id) }}">Edit</a>
                                         @endif

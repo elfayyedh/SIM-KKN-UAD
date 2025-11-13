@@ -1,3 +1,16 @@
+@php
+    $activeRoleName = ''; // Default
+    if (Auth::check()) {
+        if (session('user_is_dosen', false)) {
+            $activeRoleName = session('active_role'); // Ini akan berisi 'dpl' atau 'monev'
+        } else {
+            $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($activeUserRole && $activeUserRole->role) {
+                $activeRoleName = $activeUserRole->role->nama_role;
+            }
+        }
+    }
+@endphp
 <header id="page-topbar">
     <div class="navbar-header">
         <div class="d-flex">
@@ -191,8 +204,12 @@
                                 </span>
 
                                 @php
-                                    $activeRole = Auth::user()->userRoles->find(session('selected_role'));
-                                    $activeRoleName = $activeRole ? $activeRole->role->nama_role : 'Guest';
+                                    if (session('user_is_dosen')) {
+                                        $activeRoleName = (session('active_role') == 'dpl') ? 'DPL' : 'Tim Monev';
+                                    } else {
+                                        $activeRole = Auth::user()->userRoles->find(session('selected_role'));
+                                        $activeRoleName = $activeRole ? $activeRole->role->nama_role : 'Guest';
+                                    }
                                 @endphp
                                 <span
                                     class="d-none d-xl-inline-block ms-1 text-muted fw-light font-size-10">
@@ -203,23 +220,50 @@
                         </div>
                     </button>
                     <div class="dropdown-menu dropdown-menu-end">
-                        <a class="dropdown-item" href="{{ route('user.show') }}"><i
-                                class="mdi mdi mdi-face-man font-size-16 align-middle me-1"></i>
-                            Profile</a>
-                        @php
-                            $allRoles = Auth::user()->userRoles()->with('role')->get();
-                            $currentRoleId = session('selected_role');
-                        @endphp
-                        @if ($allRoles->count() > 1)
-                            <div class="dropdown-divider"></div>                            
-                            @foreach ($allRoles as $availableRole)
-                                @if ($availableRole->id != $currentRoleId)
-                                    <a class="dropdown-item" href="{{ route('set.role', $availableRole->id) }}">
-                                        <i class="mdi mdi-account-switch-outline"></i>
-                                        <span>Masuk sebagai {{ $availableRole->role->nama_role }}</span>
-                                    </a>
+                        <a class="dropdown-item" href="{{ route('user.show') }}">
+                            <i class="mdi mdi-account-circle-outline font-size-16 align-middle me-1"></i>
+                            <span>Profil</span>
+                        </a>
+                        @if(session('user_is_dosen'))
+                            @if(session('user_has_role_dpl') && session('user_has_role_monev'))
+                                <div class="dropdown-divider"></div>
+                                @if(session('active_role') == 'dpl')
+                                    <form action="{{ route('dosen.role.switch') }}" method="POST" class="dropdown-item">
+                                        @csrf
+                                        <input type="hidden" name="role" value="monev">
+                                        <button type="submit" class="btn btn-link p-0 m-0">
+                                            <i class="mdi mdi-account-switch-outline"></i>
+                                            <span>Masuk sebagai Tim Monev</span>
+                                        </button>
+                                    </form>
+                                @else
+                                    <form action="{{ route('dosen.role.switch') }}" method="POST" class="dropdown-item">
+                                        @csrf
+                                        <input type="hidden" name="role" value="dpl">
+                                        <button type="submit" class="btn btn-link p-0 m-0">
+                                            <i class="mdi mdi-account-switch-outline"></i>
+                                            <span>Masuk sebagai DPL</span>
+                                        </button>
+                                    </form>
                                 @endif
-                            @endforeach
+                            @endif
+
+                        @else
+                            @php
+                                $allRoles = Auth::user()->userRoles()->with('role')->get();
+                                $currentRoleId = session('selected_role');
+                            @endphp
+                            @if ($allRoles->count() > 1)
+                                <div class="dropdown-divider"></div>
+                                @foreach ($allRoles as $availableRole)
+                                    @if ($availableRole->id != $currentRoleId)
+                                        <a class="dropdown-item" href="{{ route('set.role', $availableRole->id) }}">
+                                            <i class="mdi mdi-account-switch-outline"></i>
+                                            <span>Masuk sebagai {{ $availableRole->role->nama_role }}</span>
+                                        </a>
+                                    @endif
+                                @endforeach
+                            @endif
                         @endif
                         <div class="dropdown-divider"></div>
                         <a class="dropdown-item" href="{{ route('logout') }}"><i
@@ -234,23 +278,17 @@
 <!-- ========== Left Sidebar Start ========== -->
 <!-- ========== Left Sidebar Start ========== -->
 <div class="vertical-menu">
-
     <div data-simplebar class="h-100">
-
-        <!--- Sidemenu -->
         <div id="sidebar-menu">
-            <!-- Left Menu Start -->
             <ul class="metismenu list-unstyled" id="side-menu">
                 <li class="menu-title" data-key="t-menu">Menu</li>
-
                 <li>
                     <a href="{{ route('dashboard') }}">
                         <i data-feather="home"></i>
                         <span data-key="t-dashboard">Dashboard</span>
                     </a>
                 </li>
-
-                @if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Admin')
+                @if ($activeRoleName == 'Admin')
                     <li>
                         <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="grid"></i>
@@ -262,7 +300,6 @@
                                     <span data-key="t-kkn">Tambah data KKN</span>
                                 </a>
                             </li>
-
                             <li>
                                 <a href="{{ route('kkn.index') }}">
                                     <span data-key="t-chat">Daftar data KKN</span>
@@ -270,7 +307,6 @@
                             </li>
                         </ul>
                     </li>
-
                     <li>
                         <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="users"></i>
@@ -279,9 +315,16 @@
                         <ul class="sub-menu" aria-expanded="false">
                             <li><a href="{{ route('user.admin') }}" data-key="t-akun">Admin</a></li>
                         </ul>
-                        {{-- <ul class="sub-menu" aria-expanded="false">
-                            <li><a href="{{ route('user.create') }}" data-key="t-akun">Tambah Pengguna baru</a></li>
-                        </ul> --}}
+                    </li>
+                    <li>
+                        <a href="javascript: void(0);" class="has-arrow">
+                            <i data-feather="users"></i>
+                            <span data-key="t-dpl">Manajemen DPL</span>
+                        </a>
+                        <ul class="sub-menu" aria-expanded="false">
+                            <li><a href="{{ route('dpl.index') }}" data-key="t-daftar-dpl">Daftar DPL</a></li>
+                            <li><a href="{{ route('dpl.create') }}" data-key="t-tambah-dpl">Tambah DPL</a></li>
+                        </ul>
                     </li>
 
                     <li>
@@ -306,7 +349,7 @@
                             <li><a href="{{ route('informasi.faq') }}" data-key="t-maintenance">FAQ</a></li>
                         </ul>
                     </li>
-                @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Mahasiswa')
+                @elseif ($activeRoleName == 'Mahasiswa')
                     <li>
                         <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="layers"></i>
@@ -339,7 +382,7 @@
                             <span data-key="t-pages">Logbook Sholat</span>
                         </a>
                     </li>
-                @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'DPL')
+                @elseif ($activeRoleName == 'DPL')
                     <li>
                         <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="layers"></i>
@@ -348,35 +391,36 @@
                         <ul class="sub-menu" aria-expanded="false">
                             <li><a href="{{ route('unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
                             <li><a href="{{ route('kalender') }}" data-key="t-starter-page">Kalender kegiatan </a></li>
+                            <li><a href="{{ route('dpl.unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
                         </ul>
                     </li>
-
-                @elseif (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == 'Tim Monev')
+                @elseif ($activeRoleName == 'Tim Monev')
                     <li>
-                        <a href="#"> 
+                        <a href="{{ route('monev.evaluasi.index') }}"> 
                             <i data-feather="check-square"></i>
                             <span data-key="t-pages">Evaluasi Unit</span>
                         </a>
                     </li>
                 @endif
+                @if (!session('user_is_dosen', false))
+                    @php
+                        $allRoles = Auth::user()->userRoles()->with('role')->get();
+                        $currentRoleId = session('selected_role');
+                    @endphp
 
-                @php
-                    $allRoles = Auth::user()->userRoles()->with('role')->get();
-                    $currentRoleId = session('selected_role');
-                @endphp
-
-                @if ($allRoles->count() > 1)
-                    <li class="menu-title" data-key="t-ganti-peran">Ganti Peran</li>
-                    @foreach ($allRoles as $availableRole)
-                        @if ($availableRole->id != $currentRoleId)
-                            <li>
-                                <a href="{{ route('set.role', $availableRole->id) }}">
-                                    <i class="mdi mdi-account-switch-outline"></i>
-                                    <span>{{ $availableRole->role->nama_role }}</span>
-                                </a>
-                            </li>
-                        @endif
-                    @endforeach
+                    @if ($allRoles->count() > 1)
+                        <li class="menu-title" data-key="t-ganti-peran">Ganti Peran</li>
+                        @foreach ($allRoles as $availableRole)
+                            @if ($availableRole->id != $currentRoleId)
+                                <li>
+                                    <a href="{{ route('set.role', $availableRole->id) }}">
+                                        <i class="mdi mdi-account-switch-outline"></i>
+                                        <span>{{ $availableRole->role->nama_role }}</span>
+                                    </a>
+                                </li>
+                            @endif
+                        @endforeach
+                    @endif
                 @endif
                 <li class="menu-title" data-key="t-menu">Informasi</li>
                 <li>
@@ -393,7 +437,6 @@
             </li>
             </ul>
         </div>
-        <!-- Sidebar -->
     </div>
 </div>
 <!-- Left Sidebar End -->

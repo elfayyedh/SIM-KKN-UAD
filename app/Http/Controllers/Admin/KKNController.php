@@ -8,6 +8,7 @@ use App\Models\BidangProker;
 use App\Models\KKN;
 use App\Models\QueueProgress;
 use Illuminate\Http\Request;
+use App\Models\Dosen;
 
 
 class KKNController extends Controller
@@ -98,7 +99,9 @@ class KKNController extends Controller
             $unit->total_jkem = $unit->mahasiswa->sum('total_jkem');
         }
 
-        return view('administrator.read.detail-kkn', compact('kkn'));
+        $dosens = Dosen::with('user')->get();
+
+        return view('administrator.read.detail-kkn', compact('kkn', 'dosens'));
     }
 
     /**

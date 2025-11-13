@@ -16,40 +16,72 @@ use Illuminate\Support\Facades\Auth;
 
 class UnitController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-
     public function showUnits()
     {
         try {
-            $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
-            $kkn_id = $activeUserRole->id_kkn; 
+            if (session('active_role') != 'dpl') {
+                return redirect()->route('dashboard')->with('error', 'Hanya DPL yang bisa mengakses halaman ini.');
+            }
+
             $dosen = Auth::user()->dosen;
             if (!$dosen) {
                 throw new \Exception('Profil Dosen tidak ditemukan.');
             }
-            $dplAssignment = Dpl::where('id_dosen', $dosen->id)
-                                ->where('id_kkn', $kkn_id)
-                                ->first();
-            if (!$dplAssignment) {
-                throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+
+            $dplAssignments = Dpl::where('id_dosen', $dosen->id)
+                                    ->with('kkn') 
+                                    ->get();
+
+            if ($dplAssignments->isEmpty()) {
+                throw new \Exception('Penugasan DPL tidak ditemukan.');
             }
-            $units = $dplAssignment->units() 
-                                   ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan']) 
-                                   ->withCount('mahasiswa')
-                                   ->get(); 
+
+            $units = collect(); 
+            foreach ($dplAssignments as $assignment) {
+                $unitsFromThisAssignment = $assignment->units()
+                    ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan'])
+                    ->withCount('mahasiswa')
+                    ->get();
+                
+                $unitsFromThisAssignment->each(function($unit) use ($assignment) {
+                    $unit->kkn_nama = $assignment->kkn ? $assignment->kkn->nama : 'KKN Tanpa Nama';
+                });
+
+                $units = $units->merge($unitsFromThisAssignment);
+            }
 
             $units->each(function ($unit) {
                 $total_jkem_unit = $unit->prokers->sum(function ($proker) {
-                    return $proker->kegiatan->sum('total_jkem');
+                    return $proker->kegiatan ? $proker->kegiatan->sum('total_jkem') : 0;
                 });
                 $unit->total_jkem_all_prokers = $total_jkem_unit;
             });
-            return view('dpl.manajemen unit.unit', compact('dplAssignment', 'units'));
+
+            return view('dpl.manajemen unit.unit', compact('units'));
+
         } catch (\Exception $e) {
             return redirect()->route('dashboard')->with('error', 'Gagal memuat unit: ' . $e->getMessage());
         }
+    }   
+
+    private function getActiveRoleInfo()
+    {
+        $roleName = 'Guest';
+        $userRole = null;
+
+        if (!Auth::check()) {
+            return compact('roleName', 'userRole');
+        }
+
+        if (session('user_is_dosen', false)) {
+            $roleName = session('active_role'); 
+        } else {
+            $userRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($userRole && $userRole->role) {
+                $roleName = $userRole->role->nama_role;
+            }
+        }
+        return compact('roleName', 'userRole');
     }
 
     private function idUserRole()
@@ -57,13 +89,10 @@ class UnitController extends Controller
         return Auth::user()->userRoles->find(session('selected_role'));
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id = null)
     {
-        $userRole = $this->idUserRole();
-        $roleName = $userRole->role->nama_role;
+        ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
         if ($roleName == 'Mahasiswa') {
             $mahasiswaUnitId = $userRole->mahasiswa->id_unit;
             
@@ -72,9 +101,13 @@ class UnitController extends Controller
             } else if ($id != $mahasiswaUnitId) {
                 return view('not-found');
             }
-        } else if ($roleName == 'DPL') {
+        } else if ($roleName == 'dpl') { 
             if ($id == null) {
                 return view('not-found');
+            }
+        } else if ($roleName == 'monev') {
+            if ($id == null) {
+                return view('not-found'); 
             }
         } else {
             return view('not-found');
@@ -91,8 +124,10 @@ class UnitController extends Controller
         }
         if ($roleName == 'Mahasiswa') {
             return view('mahasiswa.manajemen unit.profil-unit', compact('unit'));
-        } else if ($roleName == 'DPL') {
+        } else if ($roleName == 'dpl') {
             return view('dpl.manajemen unit.profil-unit', compact('unit'));
+        } else if ($roleName == 'monev') {
+            return view('tim monev.evaluasi.profil-unit', compact('unit'));
         }
         return view('not-found');
     }
@@ -154,7 +189,6 @@ class UnitController extends Controller
         return response()->json($proker);
     }
 
-
     public function kalender()
     {
         try {
@@ -183,6 +217,14 @@ class UnitController extends Controller
             } else {
                 return view('not-found');
             }
+            ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
+            if ($roleName != 'Mahasiswa' || !$userRole || !$userRole->mahasiswa) {
+                 throw new \Exception('Hanya Mahasiswa yang bisa mengakses kalender ini.');
+            }
+            
+            $unit = $userRole->mahasiswa->id_unit;
+            return view('mahasiswa.kalender', compact('unit'));
         } catch (\Exception $e) {
             return view('not-found');
         }
@@ -196,7 +238,6 @@ class UnitController extends Controller
             ->get();
 
         $data = [];
-
         foreach ($proker as $p) {
             foreach ($p->kegiatan as $k) {
                 // Menangani tanggal rencana proker
@@ -226,19 +267,15 @@ class UnitController extends Controller
         return response()->json(['status' => 'success', 'data' => $data]);
     }
 
-
-    // Untuk mendapatkan info kegiatan
     public function getKegiatanInfo(string $id)
     {
         try {
             $kegiatan = Kegiatan::with(['proker.bidang', 'tanggalRencanaProker'])->where('id', $id)->first();
-
             $data = [
                 'nama_kegiatan' => $kegiatan->nama,
                 'nama_proker' => $kegiatan->proker->nama,
                 'bidang_proker' => $kegiatan->proker->bidang->nama,
             ];
-
             return response()->json(['status' => 'success', 'data' => $data]);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
@@ -303,13 +340,14 @@ class UnitController extends Controller
     public function edit($id)
     {
         try {
-            $role = $this->idUserRole()->role->nama_role;
-            if ($role == "DPL" || $role == "Mahasiswa") {
-                if ($role == "Mahasiswa" && $this->idUserRole()->mahasiswa->id_unit != $id) {
+            ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+            
+            if ($roleName == "dpl" || $roleName == "Mahasiswa") {
+                if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $id) {
                     return view('not-found');
                 }
                 $unit = Unit::with(['kkn', 'dpl', 'lokasi', 'mahasiswa'])->findOrFail($id);
-                if ($role == "Mahasiswa") {
+                if ($roleName == "Mahasiswa") {
                     return view('mahasiswa.manajemen unit.edit-unit', compact('unit'));
                 } else {
                     return view('dpl.manajemen unit.edit-unit', compact('unit'));
@@ -325,24 +363,23 @@ class UnitController extends Controller
 
     public function updateJabatanAnggota(Request $request)
     {
-        $role = $this->idUserRole()->role->nama_role;
-        if ($role == "DPL" || $role == "Mahasiswa") {
-            if ($role == "Mahasiswa" && $this->idUserRole()->mahasiswa->id_unit != $request->id_unit) {
+        ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
+        if ($roleName == "dpl" || $roleName == "Mahasiswa") {
+            if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $request->id_unit) {
                 return redirect()->back()->with('error', 'Anda tidak mempunyai akses untuk unit ini');
             }
             $request->validate([
                 'id_mahasiswa' => 'required|array',
                 'jabatan' => 'required|array',
-                'id_mahasiswa.*' => 'exists:mahasiswa,id', // Validasi setiap id_mahasiswa ada di tabel mahasiswa
-                'jabatan.*' => 'nullable|string|max:255', // Validasi setiap jabatan adalah string yang maksimal 255 karakter
+                'id_mahasiswa.*' => 'exists:mahasiswa,id', 
+                'jabatan.*' => 'nullable|string|max:255', 
             ]);
 
             try {
-
                 $idMahasiswa = $request->input('id_mahasiswa');
                 $jabatan = $request->input('jabatan');
 
-                // Loop melalui data input dan update jabatan mahasiswa
                 foreach ($idMahasiswa as $index => $id) {
                     $mahasiswa = Mahasiswa::find($id);
                     if ($mahasiswa) {
@@ -350,8 +387,6 @@ class UnitController extends Controller
                         $mahasiswa->save();
                     }
                 }
-
-                // Redirect atau kembalikan response sesuai kebutuhan
                 return redirect()->back()->with('success', 'Data jabatan mahasiswa berhasil disimpan.');
             } catch (\Exception $e) {
                 return redirect()->back()->with('error', 'Data jabatan mahasiswa gagal disimpan.');
@@ -363,8 +398,9 @@ class UnitController extends Controller
 
     public function updateProfilUnit(Request $request)
     {
-        $role = $this->idUserRole()->role->nama_role;
-        if ($role != "DPL") {
+        ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
+        if ($roleName != "dpl") {
             return redirect()->back()->with('error', 'Anda tidak mempunyai akses untuk unit ini');
         }
         try {
@@ -398,29 +434,35 @@ class UnitController extends Controller
             return response()->json(['message' => 'Data not found.'], 404);
         }
     }
+
     public function getUnitTable()
     {
         try {
-            $activeUserRole = $this->idUserRole();
-            $kkn_id = $activeUserRole->id_kkn; 
+            ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
+            if ($roleName != 'dpl') {
+                throw new \Exception('Hanya DPL yang bisa memuat tabel ini.');
+            }
 
             $dosen = Auth::user()->dosen; 
             if (!$dosen) {
                 throw new \Exception('Profil Dosen tidak ditemukan.');
             }
 
-            $dplAssignment = Dpl::where('id_dosen', $dosen->id)
-                                ->where('id_kkn', $kkn_id)
-                                ->first();
-
-            if (!$dplAssignment) {
-                throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+            $dplAssignments = $dosen->dplAssignments()->get();
+            if ($dplAssignments->isEmpty()) {
+                throw new \Exception('Penugasan DPL tidak ditemukan.');
             }
 
-            $units = $dplAssignment->units() 
-                                   ->with(['lokasi.kecamatan.kabupaten']) 
-                                   ->withCount('mahasiswa')
-                                   ->get(); 
+            $units = collect();
+            foreach($dplAssignments as $assignment) {
+                $unitsFromThis = $assignment->units() 
+                    ->with(['lokasi.kecamatan.kabupaten']) 
+                    ->withCount('mahasiswa')
+                    ->get();
+                $units = $units->merge($unitsFromThis);
+            }
+            
             return view('components.unit-table', compact('units'));
 
         } catch (\Exception $e) {
