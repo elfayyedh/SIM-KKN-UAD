@@ -9,6 +9,7 @@ use App\Models\TimMonev;
 use App\Models\Dosen;
 use Illuminate\Validation\Rule;
 use App\Models\Mahasiswa;
+use App\Models\Unit;
 
 class MonevController extends Controller
 {
@@ -222,8 +223,6 @@ class MonevController extends Controller
                 $tglMulai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penerjunan);
                 $tglSelesai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penarikan);
                 
-                // 🔥 PERBAIKAN DI SINI:
-                // Kita pakai abs() untuk memastikan hasilnya selalu positif
                 $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
                 $totalWajibSholat = $totalHari * 5;
                 
@@ -296,6 +295,33 @@ class MonevController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function showMahasiswaPage($id_unit)
+    {
+        try {
+            $dosen = Auth::user()->dosen;
+            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
+
+            $unit = Unit::with([
+                            'mahasiswa.userRole.user', 
+                            'dpl'
+                        ])
+                        ->findOrFail($id_unit);
+
+            $dplUnit = $unit->dpl;
+            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $dplUnit->id)->exists()) {
+                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi unit ini.');
+            }
+
+            return view('tim monev.evaluasi.daftar-mahasiswa', [
+                'unit' => $unit
+            ]);
+
+        } catch (\Exception $e) {
+            // return redirect()->back()->with('error', $e->getMessage());
+            dd($e);
         }
     }
 }

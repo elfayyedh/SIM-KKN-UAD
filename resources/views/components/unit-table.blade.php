@@ -1,8 +1,22 @@
+@php
+    $activeRoleName = ''; 
+    if (Auth::check()) {
+        if (session('user_is_dosen', false)) {
+            $activeRoleName = session('active_role');
+        } else {
+            $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($activeUserRole && $activeUserRole->role) {
+                $activeRoleName = $activeUserRole->role->nama_role;
+            }
+        }
+    }
+@endphp
+
 <div>
     <table class="datatable-buttons table table-striped table-bordered dt-responsive nowrap w-100">
         <thead>
             <tr>
-                <th>Nama kontol</th>
+                <th>Nama</th>
                 <th>Lokasi</th>
                 <th>Kecamatan</th>
                 <th>Kabupaten</th>
@@ -19,9 +33,16 @@
                     <td>{{ $item->lokasi->kecamatan->kabupaten->nama }}</td>
                     <td>{{ $item->total_jkem_all_prokers }}</td>
                     <td>
-                        <a href="{{ route('unit.show', $item->id) }}" class="btn btn-primary btn-sm">
-                            <i class="bx bx-show-alt me-1"></i> Detail Unit
-                        </a>
+                        @if ($activeRoleName == 'monev')
+                            <a href="{{ route('monev.evaluasi.daftar-mahasiswa', $item->id) }}" class="btn btn-info btn-sm">
+                                <i class="bx bx-user-detail me-1"></i> Lihat Anggota
+                            </a>
+                        @else
+                            <a href="{{ route('unit.show', $item->id) }}" class="btn btn-primary btn-sm">
+                                <i class="bx bx-show-alt me-1"></i> Detail Unit
+                            </a>
+                        @endif
+
                     </td>
                 </tr>
             @endforeach

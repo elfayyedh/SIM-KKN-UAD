@@ -48,6 +48,31 @@
         .table-proker tbody tr td {
             border: solid 1px #aaaaaa;
         }
+        
+        .highlight {
+            background-color: yellow;
+        }
+        .dark-mode .highlight {
+            background-color: #D0DB5E;
+        }
+        .table-content-border th,
+        .table-content-border td {
+            border: 1px solid black;
+        }
+        .align-middle {
+            vertical-align: middle;
+        }
+        .bidang_row {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        .dark-mode .bidang_row {
+            background-color: #343a40;
+            font-weight: bold;
+        }
+        .text-center {
+            text-align: center;
+        }
     </style>
 @endsection
 @section('content')
@@ -62,9 +87,14 @@
                         <div class="page-title-right">
                             <ol class="breadcrumb m-0">
                                 <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.index') }}">Evaluasi Unit</a></li>
-                                <li class="breadcrumb-item active"><a href="{{ route('monev.evaluasi.dpl-units', $user->unit->dpl->id) }}">Daftar Unit</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('unit.show', $user->unit->id) }}">Profil Unit</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('mahasiswa.show', $user->id) }}">Profil Mahasiswa</a></li>
+                                <li class="breadcrumb-item">
+                                    <a href="{{ route('monev.evaluasi.dpl-units', $user->unit->dpl->id) }}">Daftar Unit</a>
+                                </li>
+                                <li class="breadcrumb-item">
+                                    <a href="{{ route('monev.evaluasi.daftar-mahasiswa', $user->unit->id) }}">Daftar Mahasiswa</a>
+                                </li>
+                                <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.penilaian', $user->id) }}">Penilaian</a></li>
+                                <li class="breadcrumb-item active">Profil Mahasiswa</li>
                             </ol>
                         </div>
 
@@ -98,16 +128,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-sm-auto order-1 order-sm-2">
-                                    <div class="d-flex align-items-start justify-content-end gap-2">
-                                        <div>
-                                            <a class="btn btn-secondary"
-                                                href="{{ route('monev.evaluasi.penilaian', $user->id) }}">
-                                                Penilaian
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                             <ul class="nav nav-tabs-custom card-header-tabs border-top mt-4" id="pills-tab" role="tablist">
                                 <li class="nav-item">
@@ -116,19 +136,24 @@
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link px-3" data-bs-toggle="tab" href="#logbook_harian"
-                                        role="tab">Logbook
-                                        harian</a>
+                                        role="tab">Logbook harian</a>
                                 </li>
                                 <li class="nav-item">
                                     <a class="nav-link px-3" data-bs-toggle="tab" href="#logbook_sholat"
-                                        role="tab">Logbook
-                                        sholat</a>
+                                        role="tab">Logbook sholat</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link px-3" data-bs-toggle="tab" href="#matriks" role="tab">Matriks
+                                        kegiatan</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link px-3" data-bs-toggle="tab" href="#rekap" role="tab">Rekap
+                                        kegiatan</a>
                                 </li>
                             </ul>
                         </div>
                         <!-- end card body -->
-                    </div> <!-- end card detail unit -->
-
+                    </div> 
                     {{-- Tab content --}}
                     <div class="tab-content">
                         <div class="tab-pane active" id="program_kerja" role="tabpanel">
@@ -285,6 +310,50 @@
                             </div>
                         </div>
                         <!-- end tab pane -->
+                         {{-- 4. TAB PANE MATRIKS --}}
+                        <div class="tab-pane" id="matriks" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.export-matriks', ['id_unit' => $user->unit->id, 'id_kkn' => $user->unit->id_kkn]) }}"><i
+                                            class="bx bxs-file-export"></i>Export Excel</a>
+                                </div>
+                                <div class="card-body" style="overflow-x: auto;">
+                                    <table class="table-content-border" style="width: 100%;">
+                                        <thead class="bidang_row">
+                                            <tr class="align-middle text-center">
+                                                <th rowspan="2" class="fw-bold fs-3">PROGRAM</th>
+                                                <th>Hari</th>
+                                                <!-- Tanggal kolom akan diisi oleh jQuery -->
+                                            </tr>
+                                            <tr class="align-middle text-center">
+                                                <th class="text-nowrap">Tanggal/Bulan</th>
+                                                <!-- Tanggal kolom akan diisi oleh jQuery -->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="program-body">
+                                            <!-- Konten tbody akan diisi oleh jQuery -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end tab pane -->
+
+                        {{-- 5. TAB PANE REKAP --}}
+                        <div class="tab-pane" id="rekap" role="tabpanel">
+                            <div class="card">
+                                <div class="card-body table-responsive" id="rekap_kegiatan">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2">Memuat rekap kegiatan...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end tab pane -->
                     </div> {{-- End Tab content --}}
                 </div>
             </div>
@@ -295,7 +364,9 @@
     <input type="hidden" id="id_unit" value="{{ $user->id_unit }}">
     <input type="hidden" id="id_kkn" value="{{ $user->id_kkn }}">
     <input type="hidden" id="tanggal_penerjunan" value="{{ $user->unit->tanggal_penerjunan }}">
-    <input type="hidden" id="tanggal_penarikan"
+    <input type="hidden" id="tanggal_penarikan" value="{{ $user->unit->tanggal_penarikan != null ? $user->unit->tanggal_penarikan : $user->kkn->tanggal_selesai }}">
+    <input type="hidden" id="tanggal_penerjunan-unit" value="{{ $user->unit->tanggal_penerjunan }}">
+    <input type="hidden" id="tanggal_penarikan-unit" 
         value="{{ $user->unit->tanggal_penarikan != null ? $user->unit->tanggal_penarikan : $user->kkn->tanggal_selesai }}">
 @endSection
 @section('pageScript')
@@ -304,4 +375,17 @@
     <script src="{{ asset('assets/js/init/mahasiswa/profil-mahasiswa/getProkerMahasiswa.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/profil-mahasiswa/read-logbook-sholat.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/profil-mahasiswa/read-logbook-harian.init.js') }}"></script>
+    <script src="{{ asset('assets/js/init/mahasiswa/unit/matriks.init.js') }}"></script>
+    <script src="{{ asset('assets/js/init/mahasiswa/unit/read-rekap-kegiatan.init.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            var hash = window.location.hash;
+            if (hash) {
+                var tabLink = document.querySelector('.nav-link[href="' + hash + '"]');
+                if (tabLink) {
+                    new bootstrap.Tab(tabLink).show();
+                }
+            }
+        });
+    </script>
 @endsection

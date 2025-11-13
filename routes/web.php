@@ -142,6 +142,7 @@ Route::middleware([Authenticate::class, 'role.dosen:monev'])->prefix('monev')->n
          ->name('evaluasi.penilaian');
     Route::post('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian/store', [MonevController::class, 'storePenilaian'])
          ->name('evaluasi.penilaian.store');
+    Route::get('/evaluasi/unit/{id_unit}/mahasiswa', [MonevController::class, 'showMahasiswaPage'])->name('evaluasi.daftar-mahasiswa');
 });
 
 //! Unit

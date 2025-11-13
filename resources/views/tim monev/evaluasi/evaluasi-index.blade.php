@@ -11,7 +11,7 @@
                     <h4 class="mb-sm-0 font-size-18">Evaluasi Unit KKN</h4>
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item active"><a href="{{ route('monev.evaluasi.index') }}">Evaluasi Unit</a></li>
+                            <li class="breadcrumb-item active">Evaluasi Unit</li>
                         </ol>
                     </div>
                 </div>

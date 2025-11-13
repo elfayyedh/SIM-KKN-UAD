@@ -13,9 +13,12 @@
                     <div class="page-title-right">
                         <ol class="breadcrumb m-0">
                             <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.index') }}">Evaluasi Unit</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.dpl-units', $mahasiswa->unit->dpl->id) }}">Daftar Unit</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('unit.show', $mahasiswa->unit->id) }}">Profil Unit</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('mahasiswa.show', $mahasiswa->id) }}">Profil Mahasiswa</a></li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ route('monev.evaluasi.dpl-units', $mahasiswa->unit->dpl->id) }}">Daftar Unit</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="{{ route('monev.evaluasi.daftar-mahasiswa', $mahasiswa->unit->id) }}">Daftar Mahasiswa</a>
+                            </li>
                             <li class="breadcrumb-item active">Penilaian</li>
                         </ol>
                     </div>
@@ -34,15 +37,12 @@
                             (Unit: {{ $mahasiswa->unit->nama }}) berdasarkan rubrik yang ada.
                         </p>
 
-                        {{-- Tampilkan pesan error/sukses --}}
                         @if(session('error'))
                             <div class="alert alert-danger">{{ session('error') }}</div>
                         @endif
                         @if(session('success'))
                             <div class="alert alert-success">{{ session('success') }}</div>
                         @endif
-
-                        {{-- Tampilkan error validasi --}}
                         @if ($errors->any())
                             <div class="alert alert-danger">
                                 <strong>Ada kesalahan input:</strong>
@@ -64,13 +64,13 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {{-- 1. JKEM Kegiatan KKN (DIPERBARUI) --}}
+                                    {{-- 1. JKEM (Tidak ada link) --}}
                                     <tr>
                                         <td>
                                             <label for="eval_jkem" class="form-label mb-0">
                                                 JKEM Kegiatan KKN (Total: {{ $totalJkem }})
                                             </label>
-                                            <small class="d-block text-muted">1: &lt;30% (JKEM &lt; 2460), 2: 30%-50% (2460-4100), 3: &gt;50% (&gt;4100)</small>
+                                            <small class="d-block text-muted">1: &lt;30%, 2: 30%-50%, 3: &gt;50%</small>
                                         </td>
                                         <td>
                                             <select class="form-select" name="eval_jkem" id="eval_jkem" required>
@@ -82,11 +82,18 @@
                                         </td>
                                     </tr>
 
-                                    {{-- 2. Pengisian Form 1 --}}
+                                    {{-- 2. Form 1 (Link ke #program_kerja) --}}
                                     <tr>
                                         <td>
-                                            <label for="eval_form1" class="form-label mb-0">Pengisian Form 1</label>
-                                            <small class="d-block text-muted">1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai</small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <label for="eval_form1" class="form-label mb-0">Pengisian Form 1</label>
+                                                    <small class="d-block text-muted">1: Tdk Sesuai, 2: Cukup, 3: Sesuai</small>
+                                                </div>
+                                                <a href="{{ route('mahasiswa.show', $mahasiswa->id) }}#program_kerja" class="btn btn-link btn-sm flex-shrink-0">
+                                                    Lihat Form 1
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <select class="form-select" name="eval_form1" id="eval_form1" required>
@@ -98,11 +105,18 @@
                                         </td>
                                     </tr>
 
-                                    {{-- 3. Pengisian Form 2 --}}
+                                    {{-- 3. Form 2 (Link ke #logbook_harian) --}}
                                     <tr>
                                         <td>
-                                            <label for="eval_form2" class="form-label mb-0">Pengisian Form 2</label>
-                                            <small class="d-block text-muted">1: Tidak Rutin, 2: Cukup Rutin, 3: Rutin</small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <label for="eval_form2" class="form-label mb-0">Pengisian Form 2</label>
+                                                    <small class="d-block text-muted">1: Tdk Rutin, 2: Cukup, 3: Rutin</small>
+                                                </div>
+                                                <a href="{{ route('mahasiswa.show', $mahasiswa->id) }}#logbook_harian" class="btn btn-link btn-sm flex-shrink-0">
+                                                    Lihat Form 2
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <select class="form-select" name="eval_form2" id="eval_form2" required>
@@ -114,11 +128,18 @@
                                         </td>
                                     </tr>
                                     
-                                    {{-- 4. Pengisian Form 3 --}}
+                                    {{-- 4. Form 3 (Link ke #matriks) --}}
                                     <tr>
                                         <td>
-                                            <label for="eval_form3" class="form-label mb-0">Pengisian Form 3</label>
-                                            <small class="d-block text-muted">1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai</small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <label for="eval_form3" class="form-label mb-0">Pengisian Form 3</label>
+                                                    <small class="d-block text-muted">1: Tdk Sesuai, 2: Cukup, 3: Sesuai</small>
+                                                </div>
+                                                <a href="{{ route('mahasiswa.show', $mahasiswa->id) }}#matriks" class="btn btn-link btn-sm flex-shrink-0">
+                                                    Lihat Matriks
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <select class="form-select" name="eval_form3" id="eval_form3" required>
@@ -130,11 +151,18 @@
                                         </td>
                                     </tr>
 
-                                    {{-- 5. Pengisian Form 4 --}}
+                                    {{-- 5. Form 4 (Link ke #rekap) --}}
                                     <tr>
                                         <td>
-                                            <label for="eval_form4" class="form-label mb-0">Pengisian Form 4</label>
-                                            <small class="d-block text-muted">1: Tidak Lengkap, 2: Cukup Lengkap, 3: Lengkap</small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <label for="eval_form4" class="form-label mb-0">Pengisian Form 4</label>
+                                                    <small class="d-block text-muted">1: Tdk Lengkap, 2: Cukup, 3: Lengkap</small>
+                                                </div>
+                                                <a href="{{ route('mahasiswa.show', $mahasiswa->id) }}#rekap" class="btn btn-link btn-sm flex-shrink-0">
+                                                    Lihat Form 4
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <select class="form-select" name="eval_form4" id="eval_form4" required>
@@ -146,13 +174,20 @@
                                         </td>
                                     </tr>
 
-                                    {{-- 6. Sholat Jamaah (DIPERBARUI) --}}
+                                    {{-- 6. Sholat (Link ke #logbook_sholat) --}}
                                     <tr>
                                         <td>
-                                            <label for="eval_sholat" class="form-label mb-0">
-                                                Sholat Jamaah ({{ $persenSholat }}%)
-                                            </label>
-                                            <small class="d-block text-muted">1: &lt;50%, 2: 51%-75%, 3: &gt;75%</small>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <label for="eval_sholat" class="form-label mb-0">
+                                                        Sholat Jamaah ({{ $persenSholat }}%)
+                                                    </label>
+                                                    <small class="d-block text-muted">1: &lt;50%, 2: 51%-75%, 3: &gt;75%</small>
+                                                </div>
+                                                <a href="{{ route('mahasiswa.show', $mahasiswa->id) }}#logbook_sholat" class="btn btn-link btn-sm flex-shrink-0">
+                                                    Lihat Logbook Sholat
+                                                </a>
+                                            </div>
                                         </td>
                                         <td>
                                             <select class="form-select" name="eval_sholat" id="eval_sholat" required>
