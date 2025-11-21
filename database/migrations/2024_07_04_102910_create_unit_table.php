@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('unit', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('id_dpl');
+            $table->uuid('id_tim_monev')->nullable();
             $table->uuid('id_kkn');
             $table->uuid('id_lokasi')->nullable();
             $table->string('nama', 10);
@@ -24,6 +25,7 @@ return new class extends Migration
             $table->foreign('id_kkn')->references('id')->on('kkn');
             $table->foreign('id_dpl')->references('id')->on('dpl');
             $table->foreign('id_lokasi')->references('id')->on('lokasi');
+            $table->foreign('id_tim_monev')->references('id')->on('tim_monev')->onDelete('set null');
         });
     }
 

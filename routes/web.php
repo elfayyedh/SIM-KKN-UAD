@@ -119,6 +119,8 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     Route::get('/edit/{id}', [App\Http\Controllers\TimMonevController::class, 'edit'])->name('tim-monev.edit');
     Route::put('/update/{id}', [App\Http\Controllers\TimMonevController::class, 'update'])->name('tim-monev.update');
     Route::delete('/destroy/{id}', [App\Http\Controllers\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
+    Route::get('/{id}/plotting', [App\Http\Controllers\Admin\TimMonevController::class, 'plotting'])->name('tim-monev.plotting');
+    Route::put('/{id}/update-plotting', [App\Http\Controllers\Admin\TimMonevController::class, 'updatePlotting'])->name('tim-monev.updatePlotting');
 });
 
 // ! End Admin
@@ -135,8 +137,6 @@ Route::middleware([Authenticate::class, 'role.dosen:monev'])->prefix('monev')->n
     Route::get('/dashboard', [MonevController::class, 'index'])->name('dashboard');
     Route::get('/evaluasi', [MonevController::class, 'index'])->name('evaluasi.index');
     Route::post('/evaluasi/set-kkn', [MonevController::class, 'setActiveKkn'])->name('evaluasi.set-kkn');
-    Route::post('/evaluasi/assign-dpl', [MonevController::class, 'assignDpl'])->name('evaluasi.assign');
-    Route::post('/evaluasi/remove-dpl', [MonevController::class, 'removeDpl'])->name('evaluasi.remove');
     Route::get('/evaluasi/dpl/{id_dpl}/units', [MonevController::class, 'showDplUnits'])->name('evaluasi.dpl-units');
     Route::get('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian', [MonevController::class, 'showPenilaianPage'])
          ->name('evaluasi.penilaian');
@@ -160,6 +160,7 @@ Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/generateProkerUnitPdf/{id_unit}/{id_kkn}', [UnitController::class, 'generateProkerUnitPdf'])->name('unit.generateProkerUnitPdf');
     Route::put('/updateJabatanAnggota', [UnitController::class, 'updateJabatanAnggota'])->name('unit.updateJabatanAnggota');
     Route::put('/updateProfilUnit', [UnitController::class, 'updateProfilUnit'])->name('unit.updateProfilUnit');
+    Route::put('/unit/update-lokasi', [UnitController::class, 'updateLinkLokasi'])->name('unit.updateLinkLokasi');
     Route::get('/export-matriks/{id_unit}/{id_kkn}', function ($idUnit, $idKkn) {
         return Excel::download(new MatrikExport($idUnit, $idKkn), 'matriks kegiatan.xlsx');
     })->name('unit.export-matriks');

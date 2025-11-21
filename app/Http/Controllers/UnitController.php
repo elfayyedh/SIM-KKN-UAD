@@ -352,7 +352,6 @@ class UnitController extends Controller
                 } else {
                     return view('dpl.manajemen unit.edit-unit', compact('unit'));
                 }
-
             } else {
                 throw new \Exception('Anda tidak mempunyai akses untuk unit ini');
             }
@@ -418,6 +417,45 @@ class UnitController extends Controller
             return redirect()->back()->with('success', 'Data profil unit berhasil disimpan.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Data profil unit gagal disimpan.' . $e->getMessage());
+        }
+    }
+
+    public function updateLinkLokasi(Request $request)
+    {
+        ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
+        if ($roleName == "dpl" || $roleName == "Mahasiswa") {
+            if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $request->id_unit) {
+                return redirect()->back()->with('error', 'Anda tidak mempunyai akses untuk mengubah lokasi unit ini');
+            }
+
+            $request->validate([
+                'id_unit'     => 'required|exists:unit,id',
+                'link_lokasi' => 'required|url|active_url',
+            ], [
+                'link_lokasi.url' => 'Format link harus berupa URL (awalan http:// atau https://)',
+                'link_lokasi.active_url' => 'Link tidak valid.'
+            ]);
+
+            try {
+                $unit = Unit::with('lokasi')->findOrFail($request->id_unit);
+                if ($unit->lokasi) {
+                    $unit->lokasi->update([
+                        'link_lokasi' => $request->link_lokasi
+                    ]);
+                } else {
+                    return redirect()->back()->with('error', 'Data Lokasi (Kecamatan/Desa) belum diatur oleh Admin. Tidak bisa simpan link.');
+                }
+
+                return redirect()->back()->with('success', 'Link Google Maps berhasil diperbarui.');
+
+            } catch (\Exception $e) {
+                return redirect()->back()->with('error', 'Gagal menyimpan lokasi: ' . $e->getMessage());
+            }
+
+        } else {
+            // return view('not-found');
+            dd($e);
         }
     }
 
