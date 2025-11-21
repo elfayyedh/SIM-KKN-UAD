@@ -35,7 +35,7 @@
                     <td>
                         @if ($activeRoleName == 'monev')
                             <a href="{{ route('monev.evaluasi.daftar-mahasiswa', $item->id) }}" class="btn btn-info btn-sm">
-                                <i class="bx bx-user-detail me-1"></i> Lihat Anggota
+                                <i class="bx bx-show-alt me-1"></i> Lihat Anggota
                             </a>
                         @else
                             <a href="{{ route('unit.show', $item->id) }}" class="btn btn-primary btn-sm">

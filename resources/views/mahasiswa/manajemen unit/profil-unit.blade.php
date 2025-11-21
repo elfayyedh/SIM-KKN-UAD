@@ -104,8 +104,21 @@
                                             <p class="text-muted fd-flexont-size-13">
                                                 {{ $unit->dpl->dosen->user->nama ?? 'Nama DPL Tidak Ditemukan' }}
                                             </p>
-                                            <p class="text-muted mb-1"> <i class="mdi mdi-map-marker"></i>
+                                            <p class="text-muted mb-1">
+                                                <i class="mdi mdi-map-marker me-1"></i>
                                                 {{ $unit->lokasi->nama }}, {{ $unit->lokasi->kecamatan->kabupaten->nama }}
+
+                                                <span class="mx-1">|</span>
+
+                                                @if($unit->lokasi?->link_lokasi)
+                                                    <a href="{{ $unit->lokasi->link_lokasi }}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                                                        <i class="mdi mdi-google-maps"></i> Buka Peta
+                                                    </a>
+                                                @else
+                                                    <a href="{{ route('unit.edit', $unit->id) }}" class="text-secondary text-decoration-none fst-italic" style="border-bottom: 1px dashed #74788d;">
+                                                        <i class="mdi mdi-map-marker-plus"></i> Tambah Link Maps
+                                                    </a>
+                                                @endif
                                             </p>
                                             <p class="text-muted mb-1"> <i class="mdi mdi-marker"></i>
                                                 {{ $unit->kkn->nama }}

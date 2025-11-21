@@ -88,9 +88,6 @@
                             <ol class="breadcrumb m-0">
                                 <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.index') }}">Evaluasi Unit</a></li>
                                 <li class="breadcrumb-item">
-                                    <a href="{{ route('monev.evaluasi.dpl-units', $user->unit->dpl->id) }}">Daftar Unit</a>
-                                </li>
-                                <li class="breadcrumb-item">
                                     <a href="{{ route('monev.evaluasi.daftar-mahasiswa', $user->unit->id) }}">Daftar Mahasiswa</a>
                                 </li>
                                 <li class="breadcrumb-item"><a href="{{ route('monev.evaluasi.penilaian', $user->id) }}">Penilaian</a></li>

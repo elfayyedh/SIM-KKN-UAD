@@ -4,19 +4,13 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Dpl;
-use App\Models\TimMonev;
-use App\Models\Dosen;
-use Illuminate\Validation\Rule;
-use App\Models\Mahasiswa;
 use App\Models\Unit;
+use App\Models\Mahasiswa;
+use App\Models\EvaluasiMahasiswa;
+use Illuminate\Validation\Rule;
 
 class MonevController extends Controller
 {
-    /**
-     * Helper untuk mendapatkan penugasan Monev yang sedang AKTIF
-     * dari session.
-     */
     private function getActiveMonevAssignment($dosen)
     {
         $allMonevAssignments = $dosen->timMonevAssignments()->with('kkn')->get();
@@ -26,7 +20,6 @@ class MonevController extends Controller
         }
 
         $activeAssignmentId = session('active_monev_assignment_id');
-
         $activeMonevAssignment = $allMonevAssignments->find($activeAssignmentId);
 
         if (!$activeMonevAssignment) {
@@ -40,55 +33,9 @@ class MonevController extends Controller
         ];
     }
 
-    /**
-     * Menampilkan halaman utama Evaluasi Unit (2 kotak).
-     * (Fungsi ini sudah benar)
-     */
-    public function index()
-    {
-        try {
-            $dosen = Auth::user()->dosen;
-            if (!$dosen) {
-                throw new \Exception('Profil Dosen tidak ditemukan.');
-            }
-
-            // Gunakan helper
-            $assignments = $this->getActiveMonevAssignment($dosen);
-            $monevAssignment = $assignments['active']; 
-            $allMonevAssignments = $assignments['all']; 
-            
-            $kkn_id = $monevAssignment->id_kkn;
-
-            $selfDplIds = $dosen->dplAssignments()
-                               ->where('id_kkn', $kkn_id)
-                               ->pluck('id');
-
-            $selectedDpls = $monevAssignment->dplYangDievaluasi()
-                                ->with('dosen.user') 
-                                ->get();
-            
-            $availableDpls = Dpl::where('id_kkn', $kkn_id) 
-                                ->whereNotIn('id', $selectedDpls->pluck('id')) 
-                                ->whereNotIn('id', $selfDplIds) 
-                                ->with('dosen.user') 
-                                ->get();
-
-            return view('tim monev.evaluasi.evaluasi-index', compact(
-                'availableDpls', 
-                'selectedDpls', 
-                'monevAssignment', 
-                'allMonevAssignments' 
-            ));
-
-        } catch (\Exception $e) {
-            return redirect()->route('dashboard')->with('error', $e->getMessage());
-        }
-    }
-
     public function setActiveKkn(Request $request)
     {
         $dosen = Auth::user()->dosen;
-
         $request->validate([
             'assignment_id' => [
                 'required',
@@ -96,96 +43,52 @@ class MonevController extends Controller
                 Rule::exists('tim_monev', 'id')->where('id_dosen', $dosen->id)
             ]
         ]);
-
         session(['active_monev_assignment_id' => $request->assignment_id]);
-
         return redirect()->route('monev.evaluasi.index');
     }
 
-
-    public function assignDpl(Request $request)
+    public function index()
     {
-        $request->validate(['id_dpl' => 'required|uuid|exists:dpl,id']);
-
         try {
             $dosen = Auth::user()->dosen;
-            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
+            if (!$dosen) throw new \Exception('Profil Dosen tidak ditemukan.');
 
-            if ($monevAssignment->dplYangDievaluasi()->count() >= 3) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Gagal: Anda hanya dapat memilih maksimal 3 DPL.'
-                ], 403); 
-            }
+            $assignments = $this->getActiveMonevAssignment($dosen);
+            $monevAssignment = $assignments['active']; 
+            $allMonevAssignments = $assignments['all']; 
 
-            $monevAssignment->dplYangDievaluasi()->attach($request->id_dpl);
-            
-            $newlySelectedDpl = Dpl::with('dosen.user')->find($request->id_dpl);
+            $units = Unit::with(['lokasi', 'dpl.dosen.user'])
+                                ->where('id_tim_monev', $monevAssignment->id)
+                                ->get();
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'DPL berhasil ditambahkan.',
-                'data' => $newlySelectedDpl
-            ]);
+            return view('tim monev.evaluasi.evaluasi-unit', compact(
+                'units', 
+                'monevAssignment', 
+                'allMonevAssignments'
+            ));
 
         } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+            return redirect()->route('dashboard')->with('error', $e->getMessage());
         }
     }
 
-    public function removeDpl(Request $request)
-    {
-        $request->validate(['id_dpl' => 'required|uuid|exists:dpl,id']);
-
-        try {
-            $dosen = Auth::user()->dosen;
-            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
-
-            $monevAssignment->dplYangDievaluasi()->detach($request->id_dpl);
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'DPL berhasil dihapus.'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function showDplUnits($id_dpl)
+    public function showMahasiswaPage($id_unit)
     {
         try {
             $dosen = Auth::user()->dosen;
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
-            
-            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $id_dpl)->exists()) {
-                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi DPL ini.');
-            }
 
-            $dpl = Dpl::with([
-                'dosen.user', 
-                'units.lokasi', 
-                'units.mahasiswa',
-                'units.prokers.kegiatan' 
-            ])->findOrFail($id_dpl);
+            $unit = Unit::with(['mahasiswa.userRole.user', 'dpl.dosen.user'])
+                        ->where('id', $id_unit)
+                        ->where('id_tim_monev', $monevAssignment->id) 
+                        ->firstOrFail();
 
-            $dpl->units->each(function ($unit) use ($dpl) {
-                $unit->kkn_nama = $dpl->kkn ? $dpl->kkn->nama : 'KKN Tanpa Nama';
-                
-                $total_jkem_unit = $unit->prokers->sum(function ($proker) {
-                    return $proker->kegiatan ? $proker->kegiatan->sum('total_jkem') : 0;
-                });
-                $unit->total_jkem_all_prokers = $total_jkem_unit;
-            });
-
-            return view('tim monev.evaluasi.evaluasi-dpl-unit', [
-                'dpl' => $dpl,
-                'units' => $dpl->units
+            return view('tim monev.evaluasi.daftar-mahasiswa', [
+                'unit' => $unit
             ]);
 
         } catch (\Exception $e) {
-            return redirect()->route('monev.evaluasi.index')->with('error', $e->getMessage());
+            return redirect()->route('monev.evaluasi.index')->with('error', 'Unit tidak ditemukan atau Anda tidak memiliki akses.');
         }
     }
 
@@ -198,37 +101,26 @@ class MonevController extends Controller
             $mahasiswa = Mahasiswa::with([
                                 'userRole.user', 
                                 'unit.dpl', 
-                                'unit.kkn', 
+                                'unit.kkn',
                                 'logbookSholat', 
-                                'kegiatan.logbookKegiatan' 
-                            ])
-                            ->findOrFail($id_mahasiswa);
+                                'kegiatan.logbookKegiatan'
+                            ])->findOrFail($id_mahasiswa);
             
-            $dplUnit = $mahasiswa->unit->dpl;
-            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $dplUnit->id)->exists()) {
-                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi mahasiswa di unit ini.');
+            if ($mahasiswa->unit->id_tim_monev != $monevAssignment->id) {
+                throw new \Exception('Anda tidak berhak menilai mahasiswa ini.');
             }
 
             $totalJkem = $mahasiswa->kegiatan->pluck('logbookKegiatan')->flatten()->sum('total_jkem');
             
             $persenSholat = 0;
-            $totalWajibSholat = 0;
-            $totalBerjamaah = 0;
-            $totalHalangan = 0;
-            $penyebut = 0;
-            $totalHari = 0;
-
             if ($mahasiswa->unit && $mahasiswa->unit->tanggal_penerjunan && $mahasiswa->unit->tanggal_penarikan) {
-                
                 $tglMulai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penerjunan);
                 $tglSelesai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penarikan);
-                
                 $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
                 $totalWajibSholat = $totalHari * 5;
                 
                 $totalBerjamaah = $mahasiswa->logbookSholat->where('status', 'sholat berjamaah')->count();
                 $totalHalangan = $mahasiswa->logbookSholat->where('status', 'sedang halangan')->count();
-
                 $penyebut = $totalWajibSholat - $totalHalangan;
 
                 if ($penyebut > 0) {
@@ -236,9 +128,9 @@ class MonevController extends Controller
                 }
             }
             
-            $evaluasi = \App\Models\EvaluasiMahasiswa::where('id_tim_monev', $monevAssignment->id)
-                                                    ->where('id_mahasiswa', $id_mahasiswa)
-                                                    ->first();
+            $evaluasi = EvaluasiMahasiswa::where('id_tim_monev', $monevAssignment->id)
+                                        ->where('id_mahasiswa', $id_mahasiswa)
+                                        ->first();
 
             return view('tim monev.evaluasi.penilaian-mahasiswa', [
                 'mahasiswa' => $mahasiswa,
@@ -269,12 +161,11 @@ class MonevController extends Controller
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
             $mahasiswa = Mahasiswa::findOrFail($id_mahasiswa);
 
-            $dplUnit = $mahasiswa->unit->dpl;
-            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $dplUnit->id)->exists()) {
-                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi mahasiswa di unit ini.');
+            if ($mahasiswa->unit->id_tim_monev != $monevAssignment->id) {
+                throw new \Exception('Anda tidak berhak menilai mahasiswa ini.');
             }
 
-            \App\Models\EvaluasiMahasiswa::updateOrCreate(
+            EvaluasiMahasiswa::updateOrCreate(
                 [
                     'id_tim_monev' => $monevAssignment->id,
                     'id_mahasiswa' => $id_mahasiswa,
@@ -290,38 +181,11 @@ class MonevController extends Controller
                 ]
             );
 
-            return redirect()->route('mahasiswa.show', $id_mahasiswa)
+            return redirect()->route('monev.evaluasi.penilaian', $id_mahasiswa)
                              ->with('success', 'Penilaian berhasil disimpan.');
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage());
-        }
-    }
-
-    public function showMahasiswaPage($id_unit)
-    {
-        try {
-            $dosen = Auth::user()->dosen;
-            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
-
-            $unit = Unit::with([
-                            'mahasiswa.userRole.user', 
-                            'dpl'
-                        ])
-                        ->findOrFail($id_unit);
-
-            $dplUnit = $unit->dpl;
-            if (!$monevAssignment->dplYangDievaluasi()->where('dpl.id', $dplUnit->id)->exists()) {
-                throw new \Exception('Anda tidak ditugaskan untuk mengevaluasi unit ini.');
-            }
-
-            return view('tim monev.evaluasi.daftar-mahasiswa', [
-                'unit' => $unit
-            ]);
-
-        } catch (\Exception $e) {
-            // return redirect()->back()->with('error', $e->getMessage());
-            dd($e);
         }
     }
 }

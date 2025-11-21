@@ -99,7 +99,10 @@ class RoleSeeder extends Seeder
         );
         $lokasi = Lokasi::firstOrCreate(
             ['nama' => 'Busuran, Donotirto, Kretek'],
-            ['id_kecamatan' => $kecamatan->id]
+            [
+                'link_lokasi' => 'https://maps.app.goo.gl/2MggxbQj2b7uyAyDA',
+                'id_kecamatan' => $kecamatan->id
+            ]
         );
 
         $unit = Unit::firstOrCreate(

@@ -41,7 +41,7 @@ class Lokasi extends Model
     }
 
     protected $table = 'lokasi';
-    protected $fillable = ['nama', 'id_kecamatan'];
+    protected $fillable = ['nama', 'link_lokasi', 'id_kecamatan'];
 
     public function kecamatan()
     {

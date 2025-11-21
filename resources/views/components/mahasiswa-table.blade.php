@@ -27,7 +27,13 @@
                     <td><a
                             href="https://wa.me/{{ $item->userRole->user->no_telp }}">{{ $item->userRole->user->no_telp }}</a>
                     </td>
-                    <td><a href="{{ route('unit.show', ['id' => $item->unit->id]) }}">{{ $item->unit->nama }}</a></td>
+                    <td>
+                        @if ($mode == 'monev')
+                            {{ $item->unit->nama }}
+                        @else
+                            <a href="{{ route('unit.show', ['id' => $item->unit->id]) }}">{{ $item->unit->nama }}</a>
+                        @endif
+                    </td>
                     <td>{{ $item->total_jkem }}</td>
                     <td>
                         @if ($mode == 'monev')

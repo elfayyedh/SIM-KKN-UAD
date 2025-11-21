@@ -63,14 +63,4 @@ class Dpl extends Model
     {
         return $this->hasMany(Proker::class, 'id_dpl');
     }
-
-    public function dievaluasiOleh()
-    {
-        return $this->belongsToMany(
-            TimMonev::class,
-            'evaluasi_monev', 
-            'id_dpl',
-            'id_tim_monev'
-        );
-    }
 }
