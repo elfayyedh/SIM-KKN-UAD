@@ -89,7 +89,7 @@ class UnitController extends Controller
         return Auth::user()->userRoles->find(session('selected_role'));
     }
 
-    public function show(string $id = null)
+    public function show(?string $id = null)
     {
         ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
 
@@ -192,24 +192,25 @@ class UnitController extends Controller
     public function kalender()
     {
         try {
-            $userRole = $this->idUserRole();
-            $roleName = $userRole->role->nama_role;
+            ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
             if ($roleName == 'Mahasiswa') {
+                if (!$userRole || !$userRole->mahasiswa) {
+                    throw new \Exception('Data Mahasiswa tidak ditemukan.');
+                }
                 $unit = $userRole->mahasiswa->id_unit;
                 return view('mahasiswa.kalender', compact('unit'));
-            } elseif ($roleName == 'DPL') {
-                // For DPL, we need to get units under their supervision
-                $kkn_id = $userRole->id_kkn;
+            } elseif ($roleName == 'dpl') {
+                // For DPL, get units under their supervision
                 $dosen = Auth::user()->dosen;
                 if (!$dosen) {
                     throw new \Exception('Profil Dosen tidak ditemukan.');
                 }
-                $dplAssignment = Dpl::where('id_dosen', $dosen->id)
-                                    ->where('id_kkn', $kkn_id)
-                                    ->first();
-                if (!$dplAssignment) {
-                    throw new \Exception('Penugasan DPL untuk KKN ini tidak ditemukan.');
+                $dplAssignments = Dpl::where('id_dosen', $dosen->id)->get();
+                if ($dplAssignments->isEmpty()) {
+                    throw new \Exception('Penugasan DPL tidak ditemukan.');
                 }
+                $dplAssignment = $dplAssignments->first();
                 $units = $dplAssignment->units()->pluck('id')->toArray();
                 // Pass the first unit or handle multiple units as needed
                 $unit = $units[0] ?? null;
@@ -217,14 +218,6 @@ class UnitController extends Controller
             } else {
                 return view('not-found');
             }
-            ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
-
-            if ($roleName != 'Mahasiswa' || !$userRole || !$userRole->mahasiswa) {
-                 throw new \Exception('Hanya Mahasiswa yang bisa mengakses kalender ini.');
-            }
-            
-            $unit = $userRole->mahasiswa->id_unit;
-            return view('mahasiswa.kalender', compact('unit'));
         } catch (\Exception $e) {
             return view('not-found');
         }
@@ -454,8 +447,7 @@ class UnitController extends Controller
             }
 
         } else {
-            // return view('not-found');
-            dd($e);
+            return view('not-found');
         }
     }
 
