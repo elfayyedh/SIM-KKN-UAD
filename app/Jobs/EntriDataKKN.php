@@ -5,8 +5,6 @@ namespace App\Jobs;
 use App\Models\QueueProgress;
 use App\Models\User;
 use App\Models\Mahasiswa;
-use App\Models\Dpl;
-use App\Models\Dosen; // 👈 1. PASTIKAN INI DI-IMPORT
 use App\Models\Unit;
 use App\Models\Prodi;
 use App\Models\Lokasi;
@@ -52,12 +50,9 @@ class EntriDataKKN implements ShouldQueue
     {
         $totalSteps = 0;
         try {
-            foreach ($this->jsonData as $dplData) {
-                $totalSteps++; 
-                foreach ($dplData['unit'] as $unitData) {
-                    $totalSteps++; 
-                    $totalSteps += count($unitData['anggota']); 
-                }
+            foreach ($this->jsonData as $unitData) {
+                $totalSteps++;
+                $totalSteps += count($unitData['anggota']);
             }
             $currentStep = 0;
             QueueProgress::where('id', $this->progress)->update([
@@ -67,112 +62,78 @@ class EntriDataKKN implements ShouldQueue
             ]);
 
             try {
-                foreach ($this->jsonData as $dplData) {
-                    $namaLengkapDpl = $dplData['DPL']; 
-                    $emailDpl = $dplData['email']; 
-                    $nipDpl = $dplData['password']; 
-                    $passwordDefault = 'password'; 
-                    $user = User::firstOrCreate([
-                        'email' => $emailDpl,
-                    ], [
-                        'nama' => $namaLengkapDpl,
-                        'password' => bcrypt($passwordDefault),
+                foreach ($this->jsonData as $unitData) {
+                    $kabupaten = Kabupaten::firstOrCreate([
+                        'nama' => $unitData['kabupaten'],
                     ]);
-                    $dosen = Dosen::firstOrCreate([
-                        'nip' => $nipDpl, 
-                    ], [
-                        'id_user' => $user->id, 
+                    $kecamatan = Kecamatan::firstOrCreate([
+                        'nama' => $unitData['kecamatan'],
+                        'id_kabupaten' => $kabupaten->id,
                     ]);
-                    $roleId = Role::where('nama_role', 'DPL')->value('id');
-                    $role = UserRole::firstOrCreate([
-                        'id_user' => $user->id, 
-                        'id_role' => $roleId, 
-                        'id_kkn' => $this->id_kkn
+                    $lokasi = Lokasi::firstOrCreate([
+                        'nama' => $unitData['lokasi'],
+                        'id_kecamatan' => $kecamatan->id,
                     ]);
-                    $dpl = Dpl::firstOrCreate([
-                        'id_dosen' => $dosen->id,
+                    $unit = Unit::firstOrCreate([
+                        'nama' => $unitData['nama'],
+                        'tanggal_penerjunan' => $unitData['tanggal_penerjunan'],
                         'id_kkn' => $this->id_kkn,
+                        'id_lokasi' => $lokasi->id,
+                        'id_dpl' => null, // DPL assignment handled by admin
                     ]);
+
                     $currentStep++;
                     $proses = number_format(($currentStep / $totalSteps) * 100, 2);
                     QueueProgress::where('id', $this->progress)->update([
                         'step' => $currentStep,
                         'progress' => $proses,
                         'status' => 'in_progress',
-                        'message' => 'Processing DPL data'
+                        'message' => 'Processing unit data'
                     ]);
 
-                    foreach ($dplData['unit'] as $unitData) {
-                        $kabupaten = Kabupaten::firstOrCreate([
-                            'nama' => $unitData['kabupaten'],
-                        ]);
-                        $kecamatan = Kecamatan::firstOrCreate([
-                            'nama' => $unitData['kecamatan'],
-                            'id_kabupaten' => $kabupaten->id,
-                        ]);
-                        $lokasi = Lokasi::firstOrCreate([
-                            'nama' => $unitData['lokasi'],
-                            'id_kecamatan' => $kecamatan->id,
-                        ]);
-                        $unit = Unit::firstOrCreate([
-                            'nama' => $unitData['nama'],
-                            'tanggal_penerjunan' => $unitData['tanggal_penerjunan'],
-                            'id_kkn' => $this->id_kkn,
-                            'id_lokasi' => $lokasi->id,
-                            'id_dpl' => $dpl->id, 
-                        ]);
+                    foreach ($unitData['anggota'] as $anggotaData) {
+                        try {
+                            $prodi = Prodi::firstOrCreate([
+                                'nama_prodi' => $anggotaData['prodi'],
+                            ]);
 
-                        $currentStep++;
-                        QueueProgress::where('id', $this->progress)->update([
-                            'step' => $currentStep,
-                            'progress' => $proses,
-                            'status' => 'in_progress',
-                            'message' => 'Processing unit data'
-                        ]);
-                        foreach ($unitData['anggota'] as $anggotaData) {
-                            try {
-                                $prodi = Prodi::firstOrCreate([
-                                    'nama_prodi' => $anggotaData['prodi'],
-                                ]);
+                            $user = User::firstOrCreate([
+                                'email' => $anggotaData['email'],
+                            ], [
+                                'nama' => $anggotaData['nama'],
+                                'password' => bcrypt($anggotaData['nim']),
+                                'no_telp' => $anggotaData['nomorHP'],
+                                'jenis_kelamin' => $anggotaData['jenisKelamin'],
+                            ]);
 
-                                $user = User::firstOrCreate([
-                                    'email' => $anggotaData['email'],
-                                ], [
-                                    'nama' => $anggotaData['nama'],
-                                    'password' => bcrypt($anggotaData['nim']),
-                                    'no_telp' => $anggotaData['nomorHP'],
-                                    'jenis_kelamin' => $anggotaData['jenisKelamin'],
-                                ]);
+                            $roleId = Role::where('nama_role', 'Mahasiswa')->value('id');
+                            $role = UserRole::firstOrCreate(['id_user' => $user->id, 'id_role' => $roleId, 'id_kkn' => $this->id_kkn]);
 
-                                $roleId = Role::where('nama_role', 'Mahasiswa')->value('id');
-                                $role = UserRole::firstOrCreate(['id_user' => $user->id, 'id_role' => $roleId, 'id_kkn' => $this->id_kkn]);
+                            $mahasiswa = Mahasiswa::firstOrCreate([
+                                'id_user_role' => $role->id,
+                                'id_kkn' => $this->id_kkn,
+                                'id_prodi' => $prodi->id,
+                                'nim' => $anggotaData['nim'],
+                                'id_unit' => $unit->id,
+                            ]);
 
-                                $mahasiswa = Mahasiswa::firstOrCreate([
-                                    'id_user_role' => $role->id,
-                                    'id_kkn' => $this->id_kkn,
-                                    'id_prodi' => $prodi->id,
-                                    'nim' => $anggotaData['nim'],
-                                    'id_unit' => $unit->id,
-                                ]);
-
-                                $currentStep++;
-                                $proses = number_format(($currentStep / $totalSteps) * 100, 2);
-                                QueueProgress::where('id', $this->progress)->update([
-                                    'step' => $currentStep,
-                                    'progress' => $proses,
-                                    'status' => 'in_progress',
-                                    'message' => 'Processing member data'
-                                ]);
-                            } catch (\Exception $e) {
-                                QueueProgress::where('id', $this->progress)->update([
-                                    'status' => 'failed',
-                                    'message' => $e->getMessage(),
-                                    'step' => $currentStep,
-                                    'progress' => $proses
-                                ]);
-                                Log::error("Error processing member data: " . $e->getMessage());
-                                return;
-                            }
+                            $currentStep++;
+                            $proses = number_format(($currentStep / $totalSteps) * 100, 2);
+                            QueueProgress::where('id', $this->progress)->update([
+                                'step' => $currentStep,
+                                'progress' => $proses,
+                                'status' => 'in_progress',
+                                'message' => 'Processing member data'
+                            ]);
+                        } catch (\Exception $e) {
+                            QueueProgress::where('id', $this->progress)->update([
+                                'status' => 'failed',
+                                'message' => $e->getMessage(),
+                                'step' => $currentStep,
+                                'progress' => $proses
+                            ]);
+                            Log::error("Error processing member data: " . $e->getMessage());
+                            return;
                         }
                     }
                 }
@@ -190,7 +151,7 @@ class EntriDataKKN implements ShouldQueue
                     'step' => $currentStep,
                     'progress' => $proses
                 ]);
-                Log::error("Error processing DPL data: " . $e->getMessage());
+                Log::error("Error processing unit data: " . $e->getMessage());
             }
         } catch (\Exception $e) {
             QueueProgress::where('id', $this->progress)->update([
