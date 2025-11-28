@@ -19,6 +19,7 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
+ Raffi
         $loginInput = $request->input('email'); 
         $password = $request->input('password');
         $credentials = [];
@@ -37,6 +38,10 @@ class AuthController extends Controller
         if (empty($credentials) || !Auth::attempt($credentials)) {
             return redirect()->back()->with(['error' => 'Username atau Password yang Anda masukkan salah']);
         }
+=======
+        // Ambil kredensial dari request
+        $credentials = $request->only('email', 'password');
+ main
 
         $request->session()->regenerate();
         $user = Auth::user(); 
@@ -73,6 +78,7 @@ class AuthController extends Controller
             return redirect()->route('dashboard');
 
         } else {
+ Raffi
             session()->forget([
                 'user_is_dosen', 
                 'user_has_role_dpl', 
@@ -91,6 +97,10 @@ class AuthController extends Controller
             $defaultRole = $roles->first();
             session(['selected_role' => $defaultRole->id]);
             return redirect()->route('dashboard');
+=======
+            // Autentikasi gagal, redirect kembali dengan pesan error
+            return redirect()->back()->with(['error' => 'Email atau Password yang Anda masukkan salah']);
+ main
         }
     }
 
