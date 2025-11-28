@@ -96,13 +96,13 @@ $(document).ready(function () {
         let customInputs = row.find(".custom-inputs");
 
         if (val === "custom") {
-            // Tampilkan input custom jika dipilih custom
+            // Tampilkan input custom
             customInputs.removeClass("d-none");
         } else {
             // Sembunyikan input custom
             customInputs.addClass("d-none");
 
-            // Isi otomatis inputan di baris tersebut
+            // Isi otomatis inputan
             let data = KRITERIA_PRESETS[val];
             if (data) {
                 row.find(".input-judul").val(data.judul);

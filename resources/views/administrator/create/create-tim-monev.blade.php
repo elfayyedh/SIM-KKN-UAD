@@ -64,7 +64,7 @@
                             <div class="card-body">
                                 <h5 class="card-title mb-3 text-primary">Plotting Unit Bimbingan</h5>
 
-                                {{-- State 1: Belum Pilih KKN/Dosen --}}
+                                {{-- Belum Pilih KKN/Dosen --}}
                                 <div id="empty-state" class="text-center py-5">
                                     <div class="mb-3">
                                         <i class="bx bx-layer display-4 text-muted"></i>
@@ -73,7 +73,7 @@
                                     <p class="text-muted">Silakan pilih <b>Periode KKN</b> dan <b>Dosen</b> terlebih dahulu untuk memuat daftar unit.</p>
                                 </div>
 
-                                {{-- State 2: Loading --}}
+                                {{-- Loading --}}
                                 <div id="loading-state" class="text-center py-5 d-none">
                                     <div class="spinner-border text-primary" role="status">
                                         <span class="visually-hidden">Loading...</span>
@@ -81,7 +81,7 @@
                                     <p class="mt-2">Memuat Data Unit...</p>
                                 </div>
 
-                                {{-- State 3: Tabel Data --}}
+                                {{-- Tabel Data --}}
                                 <div id="table-container" class="d-none">
                                     <div class="alert alert-info">
                                         <i class="mdi mdi-information me-1"></i> Centang unit yang ingin ditugaskan. Unit berwarna <b>kuning</b> sudah dimiliki dosen monev lain (akan ditimpa jika dicentang).
@@ -151,11 +151,10 @@
                 url: "/tim-monev/get-units/" + kknId + "?id_dosen=" + dosenId,
                 type: "GET",
                 success: function(response) {
-                    console.log("Data diterima:", response); // Cek console browser!
+                    console.log("Data diterima:", response);
                     loadingState.addClass('d-none');
                     
                     if (response.length === 0) {
-                        // KASUS: Unit ada tapi DPL-nya dia semua (kena filter)
                         tbody.html(`
                             <tr>
                                 <td colspan="5" class="text-center py-5">

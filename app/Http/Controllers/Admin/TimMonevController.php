@@ -13,32 +13,27 @@ use Illuminate\Support\Facades\DB;
 class TimMonevController extends Controller
 {
     /**
-     * 1. Menampilkan Halaman Daftar Tim Monev
+     * Menampilkan Halaman Daftar Tim Monev
      */
     public function index()
     {
         // Ambil semua data Tim Monev beserta relasinya
         $timMonev = TimMonev::with(['dosen.user', 'kkn'])->get();
-
-        // Sesuaikan nama view ini dengan lokasi file index kamu
-        // Contoh: 'admin.tim_monev.index' atau 'administrator.manajemen_tim_monev.index'
         return view('administrator.read.show-tim-monev', compact('timMonev'));
     }
 
     /**
-     * 2. Menampilkan Halaman Tambah (Create)
+     * Menampilkan Halaman Tambah (Create)
      */
     public function create()
     {
         $dosen = Dosen::with('user')->get();
         $kkn = KKN::where('status', 1)->get(); // Ambil KKN Aktif
-
-        // Sesuaikan nama view ini dengan lokasi file create kamu
         return view('administrator.create.create-tim-monev', compact('dosen', 'kkn'));
     }
 
     /**
-     * 3. Menyimpan Data Baru (Store)
+     * Menyimpan Data Baru (Store)
      */
     public function store(Request $request)
     {
@@ -80,7 +75,7 @@ class TimMonevController extends Controller
     }
 
     /**
-     * 4. Menampilkan Halaman Edit
+     * Menampilkan Halaman Edit
      */
     public function edit($id)
     {
@@ -99,7 +94,7 @@ class TimMonevController extends Controller
     }
 
     /**
-     * 5. Update Data (Simpan Perubahan)
+     * Update Data (Simpan Perubahan)
      */
     public function update(Request $request, $id)
     {
@@ -137,19 +132,13 @@ class TimMonevController extends Controller
     }
 
     /**
-     * 6. Hapus Data (Destroy)
+     * Hapus Data (Destroy)
      */
     public function destroy($id)
     {
         try {
             $timMonev = TimMonev::findOrFail($id);
-            
-            // Unit yang dipegang otomatis jadi NULL karena di migration kita set onDelete('set null')
-            // Tapi kalau mau manual di sini juga bisa:
-            // Unit::where('id_tim_monev', $timMonev->id)->update(['id_tim_monev' => null]);
-
             $timMonev->delete();
-
             return redirect()->route('tim-monev.index')->with('success', 'Tim Monev berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus: ' . $e->getMessage());
@@ -157,7 +146,7 @@ class TimMonevController extends Controller
     }
 
     /**
-     * 7. API AJAX Get Units
+     * API AJAX Get Units
      */
     public function getUnitsByKkn(Request $request, $id_kkn)
     {

@@ -1,5 +1,3 @@
-// assets/js/init/administrator/create-kkn.init.js
-
 $(document).ready(function () {
     // Datepicker
     flatpickr(".datepicker-basic", {
@@ -123,7 +121,7 @@ $(document).ready(function () {
         let container = $("#container-kriteria");
         let rowCount = container.find(".row-kriteria").length;
 
-        // Template HTML Baris Baru (Sederhana)
+        // Template HTML Baris Baru
         let newRow = `
             <div class="row border mb-3 row-kriteria">
                 <div class="col-lg-4">
@@ -191,13 +189,13 @@ $(document).ready(function () {
         row.find(".input-text").val("");
 
         if (val !== "custom") {
-            // Isi otomatis dari Presets
+            // Isi otomatis Presets
             let data = KRITERIA_PRESETS[val];
             if (data) {
                 row.find(".input-judul").val(data.judul);
                 row.find(".input-ket").val(data.ket);
 
-                // Isi ke Hidden Input (User gak liat, tapi data masuk)
+                // Isi otomatis Hidden Input
                 row.find(".input-var").val(data.var_key);
                 row.find(".input-url").val(data.url);
                 row.find(".input-text").val(data.text);
@@ -207,7 +205,6 @@ $(document).ready(function () {
         }
     });
 
-    // Helper Re-Index & Status (Sama seperti sebelumnya)
     function reIndexKriteria() {
         $("#container-kriteria .row-kriteria").each(function (index) {
             $(this)
@@ -242,7 +239,6 @@ $(document).ready(function () {
     function handleError() {
         var status_error = false;
 
-        // List of fields to check
         const fields = [
             { id: "#nama", errorId: "#text-nama", message: "* Wajib diisi!" },
             {
@@ -268,7 +264,6 @@ $(document).ready(function () {
             },
         ];
 
-        // Function to check each field
         function checkField(field) {
             const element = $(field.id);
             const errorElement = $(field.errorId);
@@ -390,7 +385,7 @@ $(document).ready(function () {
 
     var isOnProgress = false;
 
-    // Klik Simpan (Cek Error)
+    // Klik Simpan
     $("#save-change").click(function (e) {
         e.preventDefault();
         if (!isOnProgress) {
