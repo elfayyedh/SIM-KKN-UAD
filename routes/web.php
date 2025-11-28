@@ -22,6 +22,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Controllers\DosenRoleSwitchController;
 use App\Http\Controllers\Admin\TimMonevController;
 use App\Http\Controllers\MonevController;
+use App\Http\Controllers\Admin\KriteriaMonevController;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware([Authenticate::class])->name('dashboard');
 Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('chart-data');
@@ -84,6 +85,13 @@ Route::prefix('/bidang')->middleware([Authenticate::class, AdminMiddleware::clas
     Route::delete('/destroy/{id}', [BidangProkerController::class, 'destroy'])->name('bidang.destroy');
 });
 
+// kriteria form monev
+Route::prefix('/kriteria')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::post('/store', [KriteriaMonevController::class, 'store'])->name('kriteria.store');
+    Route::put('/update/{id}', [KriteriaMonevController::class, 'update'])->name('kriteria.update');
+    Route::delete('/destroy/{id}', [KriteriaMonevController::class, 'destroy'])->name('kriteria.destroy');
+});
+
 Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class])->name('card.value');
 
 
@@ -113,14 +121,14 @@ Route::prefix('/dpl')->middleware([Authenticate::class, AdminMiddleware::class])
 
 // Manajemen Tim Monev
 Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
-    Route::get('/', [App\Http\Controllers\TimMonevController::class, 'index'])->name('tim-monev.index');
-    Route::get('/create', [App\Http\Controllers\TimMonevController::class, 'create'])->name('tim-monev.create');
-    Route::post('/store', [App\Http\Controllers\TimMonevController::class, 'store'])->name('tim-monev.store');
-    Route::get('/edit/{id}', [App\Http\Controllers\TimMonevController::class, 'edit'])->name('tim-monev.edit');
-    Route::put('/update/{id}', [App\Http\Controllers\TimMonevController::class, 'update'])->name('tim-monev.update');
-    Route::delete('/destroy/{id}', [App\Http\Controllers\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
-    Route::get('/{id}/plotting', [App\Http\Controllers\Admin\TimMonevController::class, 'plotting'])->name('tim-monev.plotting');
-    Route::put('/{id}/update-plotting', [App\Http\Controllers\Admin\TimMonevController::class, 'updatePlotting'])->name('tim-monev.updatePlotting');
+    Route::get('/', [App\Http\Controllers\Admin\TimMonevController::class, 'index'])->name('tim-monev.index');
+    Route::get('/create', [App\Http\Controllers\Admin\TimMonevController::class, 'create'])->name('tim-monev.create');
+    Route::post('/store', [App\Http\Controllers\Admin\TimMonevController::class, 'store'])->name('tim-monev.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'edit'])->name('tim-monev.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'update'])->name('tim-monev.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
+    
+    Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
 });
 
 // ! End Admin

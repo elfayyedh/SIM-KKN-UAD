@@ -9,6 +9,8 @@ use App\Models\KKN;
 use App\Models\QueueProgress;
 use Illuminate\Http\Request;
 use App\Models\Dosen;
+use App\Models\KriteriaMonev;
+use Illuminate\Support\Facades\DB;
 
 
 class KKNController extends Controller
@@ -42,34 +44,69 @@ class KKNController extends Controller
             "tanggal_mulai" => 'required|date',
             "tanggal_selesai" => 'required|date',
             "file_excel" => 'required',
-            "fields" => 'required|array'
+            "fields" => 'required|array',
+            "kriteria" => 'nullable|array',
+            "kriteria.*.judul" => 'required_with:kriteria|string',
         ]);
 
+        DB::beginTransaction();
 
-        $kkn = KKN::firstOrCreate([
-            'nama' => $validated['nama'],
-        ], [
-            'thn_ajaran' => $validated['thn_ajaran'],
-            'tanggal_mulai' => $validated['tanggal_mulai'],
-            'tanggal_selesai' => $validated['tanggal_selesai']
-        ]);
-
-
-        foreach ($validated['fields'] as $field) {
-            $bidang = BidangProker::firstOrCreate([
-                'id_kkn' => $kkn->id,
-                'nama' => $field['bidang'],
+        try {
+            $kkn = \App\Models\KKN::firstOrCreate([
+                'nama' => $validated['nama'],
             ], [
-                'tipe' => $field['tipe_bidang'],
-                'syarat_jkem' => $field['syarat_jkem'],
+                'thn_ajaran' => $validated['thn_ajaran'],
+                'tanggal_mulai' => $validated['tanggal_mulai'],
+                'tanggal_selesai' => $validated['tanggal_selesai']
             ]);
+
+            foreach ($validated['fields'] as $field) {
+                \App\Models\BidangProker::firstOrCreate([
+                    'id_kkn' => $kkn->id,
+                    'nama' => $field['bidang'],
+                ], [
+                    'tipe' => $field['tipe_bidang'],
+                    'syarat_jkem' => $field['syarat_jkem'],
+                ]);
+            }
+
+            if ($request->has('kriteria') && is_array($request->kriteria)) {
+                foreach ($request->kriteria as $index => $item) {
+                    if (empty($item['judul'])) continue;
+
+                    KriteriaMonev::create([
+                        'id_kkn'       => $kkn->id, 
+                        'judul'        => $item['judul'],
+                        'keterangan'   => $item['keterangan'] ?? null,
+                        'variable_key' => $item['variable_key'] ?? null,
+                        'link_url'     => $item['link_url'] ?? null,
+                        'link_text'    => $item['link_text'] ?? null,
+                        'urutan'       => $index + 1 
+                    ]);
+                }
+            }
+            $progress = \App\Models\QueueProgress::create([
+                'progress' => 0, 
+                'total' => 0, 
+                'step' => 0, 
+                'status' => 'in_progress', 
+                'message' => 'In Progress'
+            ]);
+
+            DB::commit();
+
+            \App\Jobs\EntriDataKKN::dispatch($validated['file_excel'], $kkn->id, $progress->id);
+
+            return response()->json(['id_progress' => $progress->id]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $progress = QueueProgress::create(['progress' => 0, 'total' => 0, 'step' => 0, 'status' => 'in_progress', 'message' => 'In Progress']);
-
-        EntriDataKKN::dispatch($validated['file_excel'], $kkn->id, $progress->id);
-
-        return response()->json(['id_progress' => $progress->id]);
     }
 
     public function getProgress($id)

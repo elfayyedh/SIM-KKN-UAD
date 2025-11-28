@@ -72,30 +72,30 @@ class BidangProkerController extends Controller
     /**
      * Update the specified resource in storage.
      */
-public function update(Request $request, string $id)
-{
-    $validated = $request->validate(
-        [
-            "nama" => 'required|string',
-            "tipe" => 'required|string',
-            "syarat_jkem" => 'required|numeric',
-        ],
-        [
-            'syarat_jkem.required' => 'Minimal JKEM harus diisi',
-            'syarat_jkem.numeric' => 'JKEM harus angka',
-            'nama.required' => 'Nama Bidang harus diisi',
-            'tipe.required' => 'Tipe harus diisi',
-        ]
-    );
+    public function update(Request $request, string $id)
+    {
+        $validated = $request->validate(
+            [
+                "nama" => 'required|string',
+                "tipe" => 'required|string',
+                "syarat_jkem" => 'required|numeric',
+            ],
+            [
+                'syarat_jkem.required' => 'Minimal JKEM harus diisi',
+                'syarat_jkem.numeric' => 'JKEM harus angka',
+                'nama.required' => 'Nama Bidang harus diisi',
+                'tipe.required' => 'Tipe harus diisi',
+            ]
+        );
 
-    try {
-        $bidangProker = BidangProker::find($id);
-        $bidangProker->update($validated);
-        return redirect()->back()->with('success_bidang', 'Bidang Proker berhasil diperbaharui');
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error_bidang', $e->getMessage());
+        try {
+            $bidangProker = BidangProker::find($id);
+            $bidangProker->update($validated);
+            return redirect()->back()->with('success_bidang', 'Bidang Proker berhasil diperbaharui');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error_bidang', $e->getMessage());
+        }
     }
-}
 
     /**
      * Remove the specified resource from storage.
