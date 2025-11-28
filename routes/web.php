@@ -77,6 +77,7 @@ Route::prefix('/pages')->middleware([Authenticate::class])->group(function () {
 
 //Mendapatkan progress entry data KKN
 Route::get('/queue-progress/{jobId}', [KKNController::class, 'getProgress'])->name('kkn.progress'); // Done
+Route::get('/progress/{jobId}', [KKNController::class, 'getProgress'])->name('progress'); // For dosen upload
 
 //? Manajemen bidang Proker
 Route::prefix('/bidang')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
@@ -109,6 +110,16 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
+// Manajemen Dosen
+Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');
+    Route::get('/create', [App\Http\Controllers\DosenController::class, 'create'])->name('dosen.create');
+    Route::post('/store', [App\Http\Controllers\DosenController::class, 'store'])->name('dosen.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\DosenController::class, 'edit'])->name('dosen.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\DosenController::class, 'update'])->name('dosen.update');
+    Route::delete('/{id}', [App\Http\Controllers\DosenController::class, 'destroy'])->name('dosen.destroy');
+});
+
 // Manajemen DPL
 Route::prefix('/dpl')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\DplController::class, 'index'])->name('dpl.index');
