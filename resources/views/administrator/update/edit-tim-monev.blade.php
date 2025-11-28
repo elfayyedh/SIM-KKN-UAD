@@ -65,9 +65,9 @@
 
                 <div class="row">
                     <div class="col-12">
-                        <div class="card border-info border-top border-3">
+                        <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title mb-3 text-info">Plotting Unit Bimbingan</h5>
+                                <h5 class="card-title mb-3">Plotting Unit Bimbingan</h5>
 
                                 {{-- State Loading --}}
                                 <div id="loading-state" class="text-center py-5 d-none">
