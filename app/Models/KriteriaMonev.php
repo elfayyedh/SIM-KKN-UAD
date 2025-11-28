@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+
+class KriteriaMonev extends Model
+{
+    use HasFactory;
+
+    protected $table = 'kriteria_monev';
+    
+    protected $fillable = [
+        'id_kkn', 
+        'judul', 
+        'keterangan', 
+        'link_url', 
+        'link_text', 
+        'variable_key', 
+        'urutan'
+    ];
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
+    
+    public function getIncrementing()
+    {
+        return false;
+    }
+
+    public function getKeyType()
+    {
+        return 'string';
+    }
+
+    public function kkn()
+    {
+        return $this->hasOne(KKN::class, 'id_kkn')->orderBy('urutan', 'asc');
+    }
+}

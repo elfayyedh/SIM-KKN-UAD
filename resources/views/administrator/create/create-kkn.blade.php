@@ -57,6 +57,14 @@
                                             </div>
                                         </a>
                                     </li>
+
+                                    <li class="nav-item">
+                                        <a href="#kriteria-monev" class="nav-link" data-toggle="tab">
+                                            <div class="step-icon" data-bs-toggle="tooltip" data-bs-placement="top" title="Setting Form Monev">
+                                                <i class="mdi mdi-format-list-checks"></i>
+                                            </div>
+                                        </a>
+                                    </li>
                                 </ul>
                                 <!-- wizard-nav -->
 
@@ -162,31 +170,57 @@
                                     </div>
                                     <!-- tab pane -->
                                     <div class="tab-pane" id="bidang-proker">
-                                        <div>
-                                            <div class="text-center mb-4">
-                                                <h5>Bidang Program Kerja</h5>
-                                                <p class="card-title-desc">Apakah bidang proker KKN di bawah ini sudah
-                                                    benar?</p>
-                                            </div>
-                                            <div id="fieldsContainer">
-
-                                            </div>
-                                            <div class="row">
-                                                <div class="col">
-                                                    <button class="btn btn-soft-primary" id="tambah-bidang"><i
-                                                            class="bx bx-plus"></i> Tambah
-                                                        bidang</button>
-                                                </div>
-                                            </div>
-                                            <ul class="pager wizard twitter-bs-wizard-pager-link">
-                                                <li class="previous"><a href="javascript: void(0);"
-                                                        class="btn btn-primary"><i class="bx bx-chevron-left me-1"></i>
-                                                        Sebelumnya</a></li>
-                                                <li class="float-end"><a href="javascript: void(0);"
-                                                        class="btn btn-primary" id="save-change" data-bs-toggle="modal"
-                                                        data-bs-target=".confirmModal">Simpan Data</a></li>
-                                            </ul>
+                                        <div class="text-center mb-4">
+                                            <h5>Bidang Program Kerja</h5>
+                                            <p class="card-title-desc">Apakah bidang proker KKN di bawah ini sudah benar?</p>
                                         </div>
+                                        <div id="fieldsContainer"></div>
+                                        <div class="row">
+                                            <div class="col">
+                                                <button class="btn btn-soft-primary" id="tambah-bidang">
+                                                    <i class="bx bx-plus"></i> Tambah bidang
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <ul class="pager wizard twitter-bs-wizard-pager-link">
+                                            <li class="previous">
+                                                <a href="javascript: void(0);" class="btn btn-primary">
+                                                    <i class="bx bx-chevron-left me-1"></i> Sebelumnya
+                                                </a>
+                                            </li>
+                                            <li class="next">
+                                                <a href="javascript: void(0);" class="btn btn-primary">
+                                                    Berikutnya <i class="bx bx-chevron-right ms-1"></i>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="tab-pane" id="kriteria-monev">
+                                        <div class="text-center mb-4">
+                                            <h5>Form Penilaian Monev</h5>
+                                            <p class="card-title-desc">Atur kriteria penilaian monev KKN.</p>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <x-kriteria-monev/>
+                                            </div>
+                                        </div>
+
+                                        <ul class="pager wizard twitter-bs-wizard-pager-link">
+                                            <li class="previous">
+                                                <a href="javascript: void(0);" class="btn btn-primary">
+                                                    <i class="bx bx-chevron-left me-1"></i> Sebelumnya
+                                                </a>
+                                            </li>
+                                            <li class="float-end">
+                                                <a href="javascript: void(0);" class="btn btn-success" id="save-change" data-bs-toggle="modal" data-bs-target=".confirmModal">
+                                                    <i class="mdi mdi-content-save-check"></i> Simpan Data KKN
+                                                </a>
+                                            </li>
+                                        </ul>
                                     </div>
                                     <!-- tab pane -->
                                 </div>

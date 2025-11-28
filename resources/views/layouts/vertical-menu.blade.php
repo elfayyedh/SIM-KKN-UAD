@@ -214,7 +214,6 @@
                             <span data-key="t-pages">Manajemen Unit</span>
                         </a>
                         <ul class="sub-menu" aria-expanded="false">
-                            <li><a href="{{ route('dpl.unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
                             <li><a href="{{ route('unit.index') }}" data-key="t-starter-page">Unit Bimbingan </a></li>
                             <li><a href="{{ route('kalender') }}" data-key="t-starter-page">Kalender kegiatan </a></li> 
                         </ul>

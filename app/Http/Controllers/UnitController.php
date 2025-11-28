@@ -16,53 +16,81 @@ use Illuminate\Support\Facades\Auth;
 
 class UnitController extends Controller
 {
-    public function showUnits()
+    public function showUnits(Request $request)
     {
         try {
-            if (session('active_role') != 'dpl') {
-                return redirect()->route('dashboard')->with('error', 'Hanya DPL yang bisa mengakses halaman ini.');
-            }
-
+            $role = session('active_role');
             $dosen = Auth::user()->dosen;
             if (!$dosen) {
                 throw new \Exception('Profil Dosen tidak ditemukan.');
             }
 
-            $dplAssignments = Dpl::where('id_dosen', $dosen->id)
-                                    ->with('kkn') 
-                                    ->get();
+            if ($role == 'dpl') {
+                $dplAssignments = Dpl::where('id_dosen', $dosen->id)->with('kkn')->get();
 
-            if ($dplAssignments->isEmpty()) {
-                throw new \Exception('Penugasan DPL tidak ditemukan.');
+                if ($dplAssignments->isEmpty()) {
+                    throw new \Exception('Penugasan DPL tidak ditemukan.');
+                }
+
+                $units = collect();
+                foreach ($dplAssignments as $assignment) {
+                    // Query Unit
+                    $unitsFromThisAssignment = $assignment->units()
+                        ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan'])
+                        ->withCount('mahasiswa')
+                        ->get();
+
+                    // Inject Nama KKN 
+                    $unitsFromThisAssignment->each(function ($unit) use ($assignment) {
+                        $unit->setAttribute('kkn_nama', $assignment->kkn ? $assignment->kkn->nama : 'KKN Tanpa Nama');
+                    });
+
+                    $units = $units->merge($unitsFromThisAssignment);
+                }
+
+                return view('dpl.manajemen unit.unit', compact('units'));
             }
 
-            $units = collect(); 
-            foreach ($dplAssignments as $assignment) {
-                $unitsFromThisAssignment = $assignment->units()
-                    ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan'])
-                    ->withCount('mahasiswa')
-                    ->get();
-                
-                $unitsFromThisAssignment->each(function($unit) use ($assignment) {
-                    $unit->kkn_nama = $assignment->kkn ? $assignment->kkn->nama : 'KKN Tanpa Nama';
-                });
+            elseif ($role == 'monev') {
+                $allAssignments = \App\Models\TimMonev::where('id_dosen', $dosen->id)
+                                        ->with('kkn')
+                                        ->get();
 
-                $units = $units->merge($unitsFromThisAssignment);
+                if ($allAssignments->isEmpty()) {
+                    throw new \Exception('Anda tidak memiliki penugasan sebagai Tim Monev.');
+                }
+
+                // Filter Dropdown
+                if ($request->has('kkn_id')) {
+                    $activeAssignment = $allAssignments->firstWhere('id_kkn', $request->kkn_id);
+                } else {
+                    $activeId = session('active_monev_assignment_id');
+                    $activeAssignment = $allAssignments->find($activeId);
+                }
+
+                if (!$activeAssignment) $activeAssignment = $allAssignments->first();
+                session(['active_monev_assignment_id' => $activeAssignment->id]);
+
+                $units = Unit::with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan', 'dpl.dosen.user'])
+                            ->where('id_tim_monev', $activeAssignment->id)
+                            ->withCount('mahasiswa')
+                            ->get();
+
+                return view('tim monev.evaluasi.evaluasi-unit', compact(
+                    'units', 
+                    'activeAssignment', 
+                    'allAssignments'
+                ));
             }
 
-            $units->each(function ($unit) {
-                $total_jkem_unit = $unit->prokers->sum(function ($proker) {
-                    return $proker->kegiatan ? $proker->kegiatan->sum('total_jkem') : 0;
-                });
-                $unit->total_jkem_all_prokers = $total_jkem_unit;
-            });
-
-            return view('dpl.manajemen unit.unit', compact('units'));
+            else {
+                return redirect()->route('dashboard')->with('error', 'Hanya DPL dan Tim Monev yang bisa mengakses halaman ini.');
+            }
 
         } catch (\Exception $e) {
             return redirect()->route('dashboard')->with('error', 'Gagal memuat unit: ' . $e->getMessage());
         }
-    }   
+    }
 
     private function getActiveRoleInfo()
     {

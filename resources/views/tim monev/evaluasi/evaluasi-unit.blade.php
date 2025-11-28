@@ -5,12 +5,11 @@
     <link href="{{ asset('assets/libs/datatables.net-responsive-bs4/css/responsive.bootstrap4.min.css') }}" rel="stylesheet" type="text/css" />
 @endsection
 
-@section('title', 'Daftar Unit DPL')
+@section('title', 'Daftar Evaluasi Unit')
 
 @section('content')
 <div class="page-content">
     <div class="container-fluid">
-        <!-- start page title -->
         <div class="row">
             <div class="col-12">
                 <div class="page-title-box d-sm-flex align-items-center justify-content-between">
@@ -24,21 +23,33 @@
             </div>
         </div>
 
+        <div class="row mb-4">
+            <div class="col-12 d-flex justify-content">
+                <form action="{{ route('monev.evaluasi.index') }}" method="GET" id="formFilterKkn" style="min-width: 300px;">
+                    <div class="form-group">
+                        <label for="periode" class="form-label fw-bold text-primary">Pilih Periode KKN</label>
+                        <select name="kkn_id" id="periode" class="form-select border-primary" onchange="document.getElementById('formFilterKkn').submit()">
+                            @foreach ($allAssignments as $assignment)
+                                <option value="{{ $assignment->kkn->id }}" 
+                                    {{ $assignment->id == $activeAssignment->id ? 'selected' : '' }}>
+                                    {{ $assignment->kkn->nama }} ({{ $assignment->kkn->thn_ajaran }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        @if (view()->exists('components.unit-table'))
-                            <x-unit-table :units="$units" />
-                        @else
-                            <p class="text-danger">Komponen 'x-unit-table' tidak ditemukan.</p>
-                            <p>Daftar Unit:</p>
-                            <ul>
-                                @foreach ($units as $unit)
-                                    <li>{{ $unit->nama }} - ({{ $unit->lokasi->nama ?? 'Lokasi Tdk Ada' }})</li>
-                                @endforeach
-                            </ul>
-                        @endif
+                        <div class="mb-3">
+                            <h5 class="card-title">Unit Bimbingan: {{ $activeAssignment->kkn->nama }}</h5>
+                        </div>
+
+                        <x-unit-table :units="$units" />
 
                     </div>
                 </div>
@@ -53,7 +64,7 @@
     <script src="{{ asset('assets/libs/datatables.net-bs4/js/dataTables.bootstrap4.min.js') }}"></script>
     <script>
         $(document).ready(function() {
-            $('.datatable').DataTable(); 
+            $('.datatable-buttons').DataTable(); 
         });
     </script>
 @endsection

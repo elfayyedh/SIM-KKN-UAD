@@ -58,4 +58,9 @@ class TimMonev extends Model
     {
         return $this->hasMany(EvaluasiMahasiswa::class, 'id_tim_monev');
     }
+
+    public function unit()
+    {
+        return $this->hasMany(Unit::class, 'id_tim_monev');
+    }
 }

@@ -70,8 +70,6 @@
                                     <td>
                                         <a class="btn btn-secondary btn-sm" href="{{ route('tim-monev.edit', $item->id) }}"><i
                                                 class="bx bx-edit me-1">Edit</i></a>
-                                        <a href="{{ route('tim-monev.plotting', $item->id) }}" class="btn btn-info btn-sm" title="Atur Unit Bimbingan">
-                                            <i class="mdi mdi-source-branch"></i> Plotting</a>
                                         <form action="{{ route('tim-monev.destroy', $item->id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')

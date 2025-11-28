@@ -1,15 +1,13 @@
-// Datepicker
+// assets/js/init/administrator/create-kkn.init.js
 
 $(document).ready(function () {
+    // Datepicker
     flatpickr(".datepicker-basic", {
-        //Buat tanggal format indonesia
         locale: "id",
         altInput: true,
         altFormat: "l, j F Y",
         dateFormat: "Y-m-d",
     });
-
-    //? Start of Bidang
 
     var fieldTemplate = `
     <div class="row border mb-3">
@@ -40,7 +38,7 @@ $(document).ready(function () {
             </div>
         </div>
     </div>
-`;
+    `;
 
     // Bidang default
     var defaultFields = [
@@ -69,7 +67,177 @@ $(document).ready(function () {
         $(this).closest(".row").remove();
     });
 
-    // ? Simpan data
+    const KRITERIA_PRESETS = {
+        jkem: {
+            judul: "Pencapaian JKEM",
+            ket: "1: <30%, 2: 30-50%, 3: >50%",
+            var_key: "total_jkem",
+            url: "",
+            text: "",
+        },
+        sholat: {
+            judul: "Kedisiplinan Sholat Berjamaah",
+            ket: "1: <=50%, 2: 51%-75%, 3: >75%",
+            var_key: "persen_sholat",
+            url: "#logbook_sholat",
+            text: "Logbook Sholat",
+        },
+        form1: {
+            judul: "Kelengkapan Form 1 (Program Kerja)",
+            ket: "1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai",
+            var_key: "",
+            url: "#program_kerja",
+            text: "Cek Form 1",
+        },
+        form2: {
+            judul: "Kelengkapan Form 2 (Logbook Kegiatan)",
+            ket: "1: Tidak Rutin, 2: Cukup Rutin, 3: Rutin",
+            var_key: "",
+            url: "#logbook_harian",
+            text: "Cek Form 2",
+        },
+        form3: {
+            judul: "Kelengkapan Form 3 (Matriks Kegiatan)",
+            ket: "1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai",
+            var_key: "",
+            url: "#matriks",
+            text: "Cek Form 3",
+        },
+        form4: {
+            judul: "Kelengkapan Form 4 (Rekap Kegiatan)",
+            ket: "1: Tidak Lengkap, 2: Cukup Lengkap, 3: Lengkap",
+            var_key: "",
+            url: "#rekap",
+            text: "Cek Form 4",
+        },
+        custom: {
+            judul: "",
+            ket: "",
+            var_key: "",
+            url: "",
+            text: "",
+        },
+    };
+
+    $("#btn-tambah-kriteria").click(function () {
+        let container = $("#container-kriteria");
+        let rowCount = container.find(".row-kriteria").length;
+
+        // Template HTML Baris Baru (Sederhana)
+        let newRow = `
+            <div class="row border mb-3 row-kriteria">
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label class="form-label">Tipe Kriteria</label>
+                        <select class="form-select select-template">
+                            <option value="" selected disabled>-- Pilih Tipe --</option>
+                            <option value="jkem">Penilaian JKEM</option>
+                            <option value="sholat">Penilaian Sholat</option>
+                            <option value="form1">Penilaian Form 1</option>
+                            <option value="form2">Penilaian Form 2</option>
+                            <option value="form3">Penilaian Form 3</option>
+                            <option value="form4">Penilaian Form 4</option>
+                            <option value="custom" class="fw-bold text-primary">-- Custom / Manual --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label class="form-label">Judul Kriteria <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control input-judul" name="kriteria[${rowCount}][judul]" placeholder="Masukkan Judul" required>
+                        
+                        <input type="hidden" class="input-var" name="kriteria[${rowCount}][variable_key]">
+                        <input type="hidden" class="input-url" name="kriteria[${rowCount}][link_url]">
+                        <input type="hidden" class="input-text" name="kriteria[${rowCount}][link_text]">
+                    </div>
+                </div>
+
+                <div class="col-lg-3">
+                    <div class="mb-3">
+                        <label class="form-label">Keterangan (Skala) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control input-ket" name="kriteria[${rowCount}][keterangan]" placeholder="1:..., 2:..., 3:..." required>
+                    </div>
+                </div>
+
+                <div class="col-lg-1 d-flex align-items-center justify-content-center">
+                    <button type="button" class="btn btn-soft-danger btn-hapus-kriteria mt-3">
+                        <i class="bx bx-trash font-size-18"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.append(newRow);
+        updateKriteriaStatus();
+    });
+
+    // Tombol Hapus Baris
+    $(document).on("click", ".btn-hapus-kriteria", function () {
+        $(this).closest(".row-kriteria").remove();
+        reIndexKriteria();
+        updateKriteriaStatus();
+    });
+
+    // Logic Change Dropdown
+    $(document).on("change", ".select-template", function () {
+        let val = $(this).val();
+        let row = $(this).closest(".row-kriteria");
+
+        // Reset semua input
+        row.find(".input-judul").val("");
+        row.find(".input-ket").val("");
+        row.find(".input-var").val("");
+        row.find(".input-url").val("");
+        row.find(".input-text").val("");
+
+        if (val !== "custom") {
+            // Isi otomatis dari Presets
+            let data = KRITERIA_PRESETS[val];
+            if (data) {
+                row.find(".input-judul").val(data.judul);
+                row.find(".input-ket").val(data.ket);
+
+                // Isi ke Hidden Input (User gak liat, tapi data masuk)
+                row.find(".input-var").val(data.var_key);
+                row.find(".input-url").val(data.url);
+                row.find(".input-text").val(data.text);
+            }
+        } else {
+            row.find(".input-judul").focus();
+        }
+    });
+
+    // Helper Re-Index & Status (Sama seperti sebelumnya)
+    function reIndexKriteria() {
+        $("#container-kriteria .row-kriteria").each(function (index) {
+            $(this)
+                .find(".number")
+                .text(index + 1);
+            $(this)
+                .find("input")
+                .each(function () {
+                    let oldName = $(this).attr("name");
+                    if (oldName) {
+                        let newName = oldName.replace(
+                            /kriteria\[\d+\]/,
+                            `kriteria[${index}]`
+                        );
+                        $(this).attr("name", newName);
+                    }
+                });
+        });
+    }
+
+    function updateKriteriaStatus() {
+        let rowCount = $("#container-kriteria .row-kriteria").length;
+        if (rowCount <= 1) {
+            $(".btn-hapus-kriteria").prop("disabled", true);
+        } else {
+            $(".btn-hapus-kriteria").prop("disabled", false);
+        }
+    }
+
+    updateKriteriaStatus();
 
     function handleError() {
         var status_error = false;
@@ -96,7 +264,7 @@ $(document).ready(function () {
                 id: "#file_excel",
                 errorId: "#text-file",
                 message: "* Wajib diisi!",
-                isFile: true, // Add a flag to indicate this is a file input
+                isFile: true,
             },
         ];
 
@@ -109,42 +277,39 @@ $(document).ready(function () {
             if (field.isFile) {
                 const files = element[0].files;
                 if (files.length === 0) {
-                    // Tidak ada file yang dipilih
                     errorElement.text(field.message);
                     status_error = true;
                     return;
                 } else {
-                    value = files[0]; // Ambil file pertama yang diunggah
+                    value = files[0];
                     const allowedTypes = [
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    ]; // MIME type untuk .xlsx
+                    ];
                     if (!allowedTypes.includes(value.type)) {
-                        // File bukan xlsx
                         errorElement.text("File harus berupa .xlsx");
                         status_error = true;
                         return;
                     }
                 }
             } else {
-                value = element.val(); // Ambil nilai dari input biasa
+                value = element.val();
                 if (value == 0) {
-                    // Nilai kosong
                     errorElement.text(field.message);
                     status_error = true;
                     return;
                 }
             }
-
-            errorElement.text("*"); // Kosongkan pesan error jika ada
+            errorElement.text("*");
         }
 
+        // Cek Bidang Proker
         $("#fieldsContainer .row").each(function () {
             var bidang = $(this).find("#bidang").val();
             var tipe_bidang = $(this).find("#tipe_bidang").val();
             var syarat_jkem = $(this).find("#syarat_jkem").val();
 
             if (bidang === "") {
-                $(this).find("#bidang").next(".error-message").remove(); // Remove previous error message if any
+                $(this).find("#bidang").next(".error-message").remove();
                 $(this)
                     .find("#bidang")
                     .after(
@@ -152,11 +317,11 @@ $(document).ready(function () {
                     );
                 status_error = true;
             } else {
-                $(this).find("#bidang").next(".error-message").remove(); // Clear error message if any
+                $(this).find("#bidang").next(".error-message").remove();
             }
 
             if (syarat_jkem === "") {
-                $(this).find("#syarat_jkem").next(".error-message").remove(); // Remove previous error message if any
+                $(this).find("#syarat_jkem").next(".error-message").remove();
                 $(this)
                     .find("#syarat_jkem")
                     .after(
@@ -164,12 +329,29 @@ $(document).ready(function () {
                     );
                 status_error = true;
             } else {
-                $(this).find("#syarat_jkem").next(".error-message").remove(); // Clear error message if any
+                $(this).find("#syarat_jkem").next(".error-message").remove();
             }
         });
 
-        // Iterate over all fields and check them
+        // Cek Field Utama & Excel
         fields.forEach(checkField);
+
+        // Cek Kriteria Monev
+        $("#container-kriteria .row-kriteria").each(function () {
+            var judulInput = $(this).find(".input-judul");
+            var judulVal = judulInput.val();
+
+            if (judulVal === "") {
+                judulInput.next(".error-message").remove();
+                judulInput.after(
+                    '<div class="error-message text-danger">* Wajib diisi!</div>'
+                );
+                status_error = true;
+            } else {
+                judulInput.next(".error-message").remove();
+            }
+        });
+
         return status_error;
     }
 
@@ -208,23 +390,21 @@ $(document).ready(function () {
 
     var isOnProgress = false;
 
-    // Klik dan cek error
+    // Klik Simpan (Cek Error)
     $("#save-change").click(function (e) {
         e.preventDefault();
-        const file = $("#file_excel").prop("files")[0];
-        const file_excel = convertToJson(file);
-
         if (!isOnProgress) {
             if (handleError()) {
                 modal_statusContainer.html(errorModal);
                 $("#btn-confirm").addClass("d-none");
             } else {
                 modal_statusContainer.html(defaultModal);
-                $("#btn-confirm").removeClass("d-none"); // Ensure the confirm button is shown if no error
+                $("#btn-confirm").removeClass("d-none");
             }
         }
     });
 
+    // Worker Excel
     function convertToJson(file) {
         return new Promise((resolve, reject) => {
             const worker = new Worker("/js/worker.js");
@@ -244,19 +424,19 @@ $(document).ready(function () {
         });
     }
 
+    // Klik Konfirmasi Simpan
     $("#btn-confirm").click(async function (e) {
         e.preventDefault();
         const file = $("#file_excel").prop("files")[0];
         const file_excel = await convertToJson(file);
         modal_statusContainer.html(progressBar);
 
-        // Ambil semua value form
         const nama = $("#nama").val();
         const thn_ajaran = $("#thn_ajaran").val();
         const tanggal_mulai = $("#tanggal_mulai").val();
         const tanggal_selesai = $("#tanggal_selesai").val();
 
-        // Ambil nilai dari setiap bidang
+        // Collect Bidang Proker
         let fields = [];
         $("#fieldsContainer .row").each(function () {
             let field = {
@@ -267,7 +447,21 @@ $(document).ready(function () {
             fields.push(field);
         });
 
-        // Kirim data ke endpoint dengan AJAX
+        // Collect Kriteria Monev
+        let kriteria_monev = [];
+        $("#container-kriteria .row-kriteria").each(function () {
+            let item = {
+                judul: $(this).find("input[name*='[judul]']").val(),
+                keterangan: $(this).find("input[name*='[keterangan]']").val(),
+                variable_key: $(this)
+                    .find("input[name*='[variable_key]']")
+                    .val(),
+                link_url: $(this).find("input[name*='[link_url]']").val(),
+                link_text: $(this).find("input[name*='[link_text]']").val(),
+            };
+            kriteria_monev.push(item);
+        });
+
         $.ajax({
             url: "/kkn/store",
             type: "POST",
@@ -279,9 +473,10 @@ $(document).ready(function () {
                 tanggal_selesai: tanggal_selesai,
                 file_excel: file_excel,
                 fields: fields,
+                kriteria: kriteria_monev,
             },
             success: function (response) {
-                const id_progress = response.id_progress; // Pastikan respons dari server sesuai dengan key id_progress
+                const id_progress = response.id_progress;
                 updateProgress(id_progress);
             },
             error: function (xhr, status, error) {
@@ -297,18 +492,16 @@ $(document).ready(function () {
         var totalBar = $("#total");
         var percent = $("#percent");
         $("#btn-confirm").addClass("d-none");
-        // Ambil progress dengan ajax
+
         $.ajax({
-            url: `/queue-progress/${id}`, // Pastikan template literal Anda digunakan dengan benar
+            url: `/queue-progress/${id}`,
             type: "GET",
             success: function (response) {
                 const progress = response.progress;
                 const step = response.step;
                 const total = response.total;
                 const status = response.status;
-                const message = response.message;
 
-                // Sesuaikan logika berdasarkan respons progress yang diterima
                 if (status === "in_progress") {
                     progressBar.css("width", `${progress}%`);
                     progressBar.text(`${progress}%`);
@@ -320,8 +513,7 @@ $(document).ready(function () {
                         totalBar.text(0);
                     }
                     percent.text(`${progress}%`);
-                    //Jika sudah 100 maka setTimeout berhen
-                    setTimeout(() => updateProgress(id), 300); // Cek lagi setelah 0.3 detik
+                    setTimeout(() => updateProgress(id), 300);
                 } else if (progress == 100 || status === "completed") {
                     isOnProgress = false;
                     modal_statusContainer.html(successFinish);
@@ -341,6 +533,4 @@ $(document).ready(function () {
             },
         });
     }
-
-    //? End of bidang
 });

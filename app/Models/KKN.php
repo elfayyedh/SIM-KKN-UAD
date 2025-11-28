@@ -77,4 +77,9 @@ class KKN extends Model
     {
         return $this->hasMany(BidangProker::class, 'id_kkn');
     }
+
+    public function kriteriaMonev()
+    {
+        return $this->hasMany(KriteriaMonev::class, 'id_kkn')->orderBy('urutan', 'asc');
+    }
 }
