@@ -13,16 +13,13 @@
                             <ol class="breadcrumb m-0">
                                 <li class="breadcrumb-item"><a href="javascript: void(0);">Manajemen KKN</a></li>
                                 <li class="breadcrumb-item"><a href="{{ route('kkn.index') }}">Daftar KKN</a></li>
-                                <li class="breadcrumb-item active">Edit Data KKN</li>
+                                <li class="breadcrumb-item actve">Edit Data KKN</li>
                             </ol>
                         </div>
 
                     </div>
                 </div>
             </div>
-            {{-- ================================================== --}}
-            {{-- CARD 1: INFORMASI UMUM --}}
-            {{-- ================================================== --}}
             <div class="row">
                 <div class="col-12">
                     <div class="card">
@@ -132,18 +129,13 @@
                         </div>
                         <div class="card-body">
                             <x-alert-with-button :sessionError="'error_kriteria'" :sessionSuccess="'success_kriteria'" />
-
-                            {{-- HEADER TABEL (Visual Saja) --}}
-                            
-
-                            {{-- LOOPING FORM INLINE --}}
                             @forelse ($kkn->kriteriaMonev as $index => $kriteria)
                                 <form action="{{ route('kriteria.update', $kriteria->id) }}" method="POST">
                                     @csrf
                                     @method('PUT')
                                     
                                     <div class="row border mb-3 row-kriteria-inline align-items-start">                                        
-                                        {{-- KOLOM 1: TEMPLATE --}}
+                                        {{-- TEMPLATE --}}
                                         <div class="col-lg-3">
                                             <div class="mb-2">
                                                 <div class="row fw-bold mb-2 d-none d-lg-flex px-3">Tipe Template</div>
@@ -160,7 +152,7 @@
                                             </div>
                                         </div>
 
-                                        {{-- KOLOM 2: JUDUL + CUSTOM INPUTS --}}
+                                        {{-- JUDUL + CUSTOM INPUTS --}}
                                         <div class="col-lg-4">
                                             <div class="mb-2">
                                                 <div class="row fw-bold mb-2 d-none d-lg-flex px-3">Judul Kriteria</div>
@@ -172,7 +164,7 @@
                                             </div>
                                         </div>
 
-                                        {{-- KOLOM 3: KETERANGAN --}}
+                                        {{-- KETERANGAN --}}
                                         <div class="col-lg-3">
                                             <div class="mb-2">
                                                 <div class="row fw-bold mb-2 d-none d-lg-flex px-3">Keterangan Skala</div>
@@ -181,7 +173,7 @@
                                             </div>
                                         </div>
 
-                                        {{-- KOLOM 4: AKSI --}}
+                                        {{-- AKSI --}}
                                         <div class="col-lg-2">
                                             <label class="form-label d-none d-lg-block">&nbsp;</label> 
                                             <div class="d-flex gap-2">

@@ -3,10 +3,9 @@
 </div>
 
 <div id="container-kriteria">
-    {{-- ITEM PERTAMA (DEFAULT) --}}
     <div class="row border mb-3 row-kriteria">
 
-        {{-- KOLOM 1: TIPE KRITERIA --}}
+        {{-- TIPE KRITERIA --}}
         <div class="col-lg-4">
             <div class="mb-3">
                 <label class="form-label">Tipe Kriteria</label>
@@ -23,20 +22,19 @@
             </div>
         </div>
 
-        {{-- KOLOM 2: JUDUL --}}
+        {{-- JUDUL --}}
         <div class="col-lg-4">
             <div class="mb-3">
                 <label class="form-label">Judul Kriteria <span class="text-danger">*</span></label>
                 <input type="text" class="form-control input-judul" name="kriteria[0][judul]" placeholder="Masukkan Judul" required>
                 
-                {{-- INPUT HIDDEN (DATA DISIMPAN DISINI SECARA OTOMATIS BY JS) --}}
                 <input type="hidden" class="input-var" name="kriteria[0][variable_key]">
                 <input type="hidden" class="input-url" name="kriteria[0][link_url]">
                 <input type="hidden" class="input-text" name="kriteria[0][link_text]">
             </div>
         </div>
 
-        {{-- KOLOM 3: KETERANGAN --}}
+        {{-- KETERANGAN --}}
         <div class="col-lg-3">
             <div class="mb-3">
                 <label class="form-label">Keterangan (Skala) <span class="text-danger">*</span></label>
@@ -44,7 +42,7 @@
             </div>
         </div>
 
-        {{-- KOLOM 4: TOMBOL HAPUS --}}
+        {{-- TOMBOL HAPUS --}}
         <div class="col-lg-1 d-flex align-items-center justify-content-center">
             <button type="button" class="btn btn-soft-danger btn-hapus-kriteria mt-3" disabled>
                 <i class="bx bx-trash font-size-18"></i>

@@ -110,12 +110,8 @@
                     </div>
                 </div>
             </form>
-            
-            {{-- DATA SEMENTARA: LIST UNIT YG SUDAH DIPEGANG (Untuk JS) --}}
-            {{-- Kita ambil ID unit yang id_tim_monev nya sama dengan Tim Monev yg diedit --}}
             <input type="hidden" id="current_monev_id" value="{{ $timMonev->id }}">
             <input type="hidden" id="owned_units" value="{{ json_encode($units->where('id_tim_monev', $timMonev->id)->pluck('id')) }}">
-
         </div>
     </div>
 @endsection
@@ -163,16 +159,11 @@
                             
                             // Cek Status Kepemilikan
                             let isChecked = false;
-
-                            // KASUS A: Unit ini MILIK SAYA (Sedang diedit)
-                            // Kita cek apakah ID Unit ini ada di array ownedUnits?
-                            // ATAU cek langsung dari response API (jika id_tim_monev == currentMonevId)
                             if (unit.id_tim_monev == currentMonevId) {
                                 statusBadge = `<span class="badge bg-success">Milik Dosen Ini</span>`;
                                 rowClass = 'table-success table-opacity-10'; // Highlight Hijau
                                 isChecked = true;
                             }
-                            // KASUS B: Unit ini MILIK ORANG LAIN
                             else if (unit.tim_monev && unit.tim_monev.dosen && unit.tim_monev.dosen.user) {
                                 let monevName = unit.tim_monev.dosen.user.nama;
                                 statusBadge = `<span class="badge bg-warning text-dark">Milik: ${monevName}</span>`;
@@ -207,13 +198,10 @@
             });
         }
 
-        // 1. Load data pertama kali saat halaman dibuka
         loadUnits();
 
-        // 2. Load ulang saat Dropdown berubah
+        // Load ulang saat Dropdown berubah
         $('#id_kkn, #id_dosen').change(function() {
-            // Reset ownedUnits karena user mengubah filter, jadi kita anggap mulai dari nol
-            // Kecuali kamu mau logika rumit "simpan centangan sementara", tapi biasanya reset lebih aman
             ownedUnits = []; 
             loadUnits();
         });
