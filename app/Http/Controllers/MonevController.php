@@ -132,10 +132,8 @@ class MonevController extends Controller
                 $tglMulai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penerjunan);
                 $tglSelesai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penarikan);
                 $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
-                // For periode kkn alternatif, solat 1 harinya cuma 3
-                $sholatPerHari = stripos($mahasiswa->unit->kkn->nama, 'alternatif') !== false ? 3 : 5;
-                $totalWajibSholat = $totalHari * $sholatPerHari;
-
+                $totalWajibSholat = $totalHari * 5;
+                
                 $totalBerjamaah = $mahasiswa->logbookSholat->where('status', 'sholat berjamaah')->count();
                 $totalHalangan = $mahasiswa->logbookSholat->where('status', 'sedang halangan')->count();
                 $penyebut = $totalWajibSholat - $totalHalangan;
