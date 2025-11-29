@@ -22,11 +22,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
- Raffi
-            'email' => 'required|string',
-=======
             'email' => 'required|email',
- main
             'password' => 'required',
         ];
     }
