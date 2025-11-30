@@ -132,12 +132,23 @@ class MonevController extends Controller
                 $tglMulai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penerjunan);
                 $tglSelesai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penarikan);
                 $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
-                // For periode kkn alternatif, solat 1 harinya cuma 3
-                $sholatPerHari = stripos($mahasiswa->unit->kkn->nama, 'alternatif') !== false ? 3 : 5;
-                $totalWajibSholat = $totalHari * $sholatPerHari;
 
-                $totalBerjamaah = $mahasiswa->logbookSholat->where('status', 'sholat berjamaah')->count();
-                $totalHalangan = $mahasiswa->logbookSholat->where('status', 'sedang halangan')->count();
+                // Untuk periode KKN alternatif, sholat hanya 3 kali per hari (dzuhur, ashar, maghrib)
+                $isAlternatif = stripos($mahasiswa->unit->kkn->nama, 'alternatif') !== false;
+                $prayersPerDay = $isAlternatif ? 3 : 5;
+                $totalWajibSholat = $totalHari * $prayersPerDay;
+
+                // Filter sholat yang dihitung berdasarkan jenis KKN
+                $validPrayers = $isAlternatif ? ['dzuhur', 'ashar', 'maghrib'] : ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+
+                $totalBerjamaah = $mahasiswa->logbookSholat
+                    ->where('status', 'sholat berjamaah')
+                    ->whereIn('waktu', $validPrayers)
+                    ->count();
+                $totalHalangan = $mahasiswa->logbookSholat
+                    ->where('status', 'sedang halangan')
+                    ->whereIn('waktu', $validPrayers)
+                    ->count();
                 $penyebut = $totalWajibSholat - $totalHalangan;
 
                 if ($penyebut > 0) {
