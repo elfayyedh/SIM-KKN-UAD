@@ -52,7 +52,13 @@ class UserController extends Controller
      */
     public function index()
     {
-        //
+        if ($this->getActiveRoleName() != "Admin") {
+            return view('not-found');
+        }
+
+        $mahasiswa = Mahasiswa::with(['userRole.user', 'prodi', 'unit', 'kkn'])->get();
+
+        return view('administrator.read.manajemen-pengguna', compact('mahasiswa'));
     }
 
     /**

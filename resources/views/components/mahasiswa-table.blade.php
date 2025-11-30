@@ -12,6 +12,7 @@
                 <th>Prodi</th>
                 <th>Jenis Kelamin</th>
                 <th>Nomor Telpon</th>
+                <th>KKN</th>
                 <th>Unit</th>
                 <th>Total JKEM</th>
                 <th>Aksi</th>
@@ -27,6 +28,7 @@
                     <td><a
                             href="https://wa.me/{{ $item->userRole->user->no_telp }}">{{ $item->userRole->user->no_telp }}</a>
                     </td>
+                    <td>{{ $item->kkn->nama_kkn }}</td>
                     <td>
                         @if ($mode == 'monev')
                             {{ $item->unit->nama }}
