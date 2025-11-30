@@ -169,6 +169,12 @@
                         </ul>
                     </li>
                     <li>
+                        <a href="{{ route('evaluasi.index') }}">
+                            <i data-feather="check-square"></i>
+                            <span data-key="t-evaluasi">Evaluasi Monev</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="file-text"></i>
                             <span data-key="t-pages">Manajemen Informasi</span>

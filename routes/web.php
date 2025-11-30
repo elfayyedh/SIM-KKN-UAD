@@ -142,6 +142,12 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
 });
 
+// Manajemen Evaluasi Monev
+Route::prefix('/evaluasi')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\EvaluasiController::class, 'index'])->name('evaluasi.index');
+    Route::get('/export', [App\Http\Controllers\Admin\EvaluasiController::class, 'export'])->name('evaluasi.export');
+});
+
 // ! End Admin
 
 // ! DPL
