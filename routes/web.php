@@ -115,7 +115,6 @@ Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class
     Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');
     Route::get('/create', [App\Http\Controllers\DosenController::class, 'create'])->name('dosen.create');
     Route::post('/store', [App\Http\Controllers\DosenController::class, 'store'])->name('dosen.store');
-    Route::get('/edit/{id}', [App\Http\Controllers\DosenController::class, 'edit'])->name('dosen.edit');
     Route::put('/update/{id}', [App\Http\Controllers\DosenController::class, 'update'])->name('dosen.update');
     Route::delete('/{id}', [App\Http\Controllers\DosenController::class, 'destroy'])->name('dosen.destroy');
 });
