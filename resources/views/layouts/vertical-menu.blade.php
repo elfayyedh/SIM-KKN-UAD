@@ -54,20 +54,23 @@
                         <div class="row g-0">
                             <div class="row g-0">
                                 <div class="col">
-                                    <a class="dropdown-icon-item" href="#">
-                                        <img src="{{ asset('') }}" alt="uad">
+                                    <a class="dropdown-icon-item" href="https://www.instagram.com/lppm_uad/" target="_blank">
+                                        <img src="{{ asset('assets/images/logo lppm uad.jpg') }}" alt="uad"
+                                            style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                                         <span>LPPM UAD</span>
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <a class="dropdown-icon-item" href="#">
-                                        <img src="{{ asset('') }}" alt="uad">
+                                    <a class="dropdown-icon-item" href="https://www.instagram.com/portal_uad/" target="_blank">
+                                        <img src="{{ asset('assets/images/logo portal uad.jpg') }}" alt="uad"
+                                            style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                                         <span>PORTAL UAD</span>
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <a class="dropdown-icon-item" href="#">
-                                        <img src="{{ asset('') }}" alt="uad">
+                                    <a class="dropdown-icon-item" href="https://www.instagram.com/kknuad.official/" target="_blank">
+                                        <img src="{{ asset('assets/images/logo kkn uad.jpg') }}" alt="uad"
+                                            style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                                         <span>KKN UAD</span>
                                     </a>
                                 </div>
