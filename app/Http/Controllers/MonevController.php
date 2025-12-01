@@ -106,7 +106,7 @@ class MonevController extends Controller
             return redirect()->route('monev.evaluasi.index')->with('error', 'Unit tidak ditemukan atau Anda tidak memiliki akses.');
         }
     }
-
+    //.
     public function showPenilaianPage($id_mahasiswa)
     {
         try {
@@ -155,7 +155,7 @@ class MonevController extends Controller
                     $persenSholat = round(($totalBerjamaah / $penyebut) * 100, 1);
                 }
             }
-
+            //.
             $kriteriaList = \App\Models\KriteriaMonev::where('id_kkn', $mahasiswa->unit->id_kkn)
                                 ->orderBy('urutan', 'asc')
                                 ->get();
