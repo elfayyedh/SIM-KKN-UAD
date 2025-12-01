@@ -73,7 +73,7 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <a class="btn btn-secondary btn-sm" href="{{ route('dosen.edit', $item->id) }}"><i
+                                        <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->user->id) }}"><i
                                                 class="bx bx-edit me-1"></i>Edit</a>
                                         <button type="button" class="btn btn-danger btn-sm delete-btn" data-id="{{ $item->id }}">
                                             <i class="bx bx-trash me-1"></i>Hapus

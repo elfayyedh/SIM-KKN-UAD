@@ -11,6 +11,7 @@ use App\Models\UserRole;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class DosenController extends Controller
@@ -96,24 +97,7 @@ class DosenController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        // Check if user is admin
-        $user = Auth::user();
-        $isAdmin = $user->userRoles->contains(function ($userRole) {
-            return $userRole->role->nama_role === 'Admin';
-        });
 
-        if (!$isAdmin) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $dosen = Dosen::with(['user'])->findOrFail($id);
-        return view('administrator.update.edit-dosen', compact('dosen'));
-    }
 
     /**
      * Update the specified resource in storage.
@@ -209,4 +193,6 @@ class DosenController extends Controller
             return response()->json(['error' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
         }
     }
+
 }
+
