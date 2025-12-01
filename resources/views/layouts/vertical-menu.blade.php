@@ -144,6 +144,7 @@
                             <span data-key="t-users">Manajemen Pengguna</span>
                         </a>
                         <ul class="sub-menu" aria-expanded="false">
+                            <li><a href="{{ route('user.index') }}" data-key="t-mahasiswa">Mahasiswa</a></li>
                             <li><a href="{{ route('user.admin') }}" data-key="t-akun">Admin</a></li>
                             <li><a href="{{ route('dosen.index') }}" data-key="t-dosen">Dosen</a></li>
                         </ul>
