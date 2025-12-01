@@ -117,8 +117,6 @@ Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class
     Route::post('/store', [App\Http\Controllers\DosenController::class, 'store'])->name('dosen.store');
     Route::get('/edit/{id}', [App\Http\Controllers\DosenController::class, 'edit'])->name('dosen.edit');
     Route::put('/update/{id}', [App\Http\Controllers\DosenController::class, 'update'])->name('dosen.update');
-    Route::get('/edit-password/{id}', [App\Http\Controllers\DosenController::class, 'editPassword'])->name('dosen.edit.password');
-    Route::put('/update-password/{id}', [App\Http\Controllers\DosenController::class, 'updatePassword'])->name('dosen.update.password');
     Route::delete('/{id}', [App\Http\Controllers\DosenController::class, 'destroy'])->name('dosen.destroy');
 });
 

@@ -80,7 +80,7 @@
                             <div class="card-title text-muted fw-bold">Ganti Password</div>
                             <div class="row">
                                 <div class="col-12">
-                                    <form action="{{ route('dosen.update.password', $dosen->id) }}" method="POST"
+                                    <form action="{{ route('user.update.password', $dosen->user->id) }}" method="POST"
                                         id="passwordForm">
                                         @method('PUT')
                                         @csrf
