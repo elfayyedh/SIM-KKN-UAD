@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Models\Dosen;
 use App\Models\KriteriaMonev;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 
 class KKNController extends Controller
@@ -20,7 +21,28 @@ class KKNController extends Controller
      */
     public function index()
     {
-        $kkn = KKN::all();
+        $kkn = KKN::orderBy('created_at', 'desc')->get();
+
+        $kkn->transform(function ($item) {
+            $today = Carbon::now();
+            if (! $item->status) { 
+                $item->status_text = 'Non-Aktif';
+                $item->status_color = 'danger';
+            } 
+            elseif ($today->lt($item->tanggal_mulai)) {
+                $item->status_text = 'Belum Mulai';
+                $item->status_color = 'warning';
+            } 
+            elseif ($today->gt($item->tanggal_selesai)) {
+                $item->status_text = 'Selesai';
+                $item->status_color = 'secondary';
+            } 
+            else {
+                $item->status_text = 'Sedang Berjalan';
+                $item->status_color = 'success';
+            }
+            return $item;
+        });
         return view('administrator.read.read-kkn', compact('kkn'));
     }
 
