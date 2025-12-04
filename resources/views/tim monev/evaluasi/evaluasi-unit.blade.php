@@ -23,30 +23,12 @@
             </div>
         </div>
 
-        <div class="row mb-4">
-            <div class="col-12 d-flex justify-content">
-                <form action="{{ route('monev.evaluasi.index') }}" method="GET" id="formFilterKkn" style="min-width: 300px;">
-                    <div class="form-group">
-                        <label for="periode" class="form-label fw-bold text-primary">Pilih Periode KKN</label>
-                        <select name="kkn_id" id="periode" class="form-select border-primary" onchange="document.getElementById('formFilterKkn').submit()">
-                            @foreach ($allAssignments as $assignment)
-                                <option value="{{ $assignment->kkn->id }}" 
-                                    {{ $assignment->id == $activeAssignment->id ? 'selected' : '' }}>
-                                    {{ $assignment->kkn->nama }} ({{ $assignment->kkn->thn_ajaran }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                </form>
-            </div>
-        </div>
-
         <div class="row">
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
                         <div class="mb-3">
-                            <h5 class="card-title">Unit Bimbingan: {{ $activeAssignment->kkn->nama }}</h5>
+                            <h5 class="card-title">Unit Bimbingan</h5>
                         </div>
 
                         <x-unit-table :units="$units" />

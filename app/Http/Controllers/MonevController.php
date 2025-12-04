@@ -52,35 +52,15 @@ class MonevController extends Controller
         try {
             $dosen = Auth::user()->dosen;
             if (!$dosen) throw new \Exception('Profil Dosen tidak ditemukan.');
+            $allMonevIds = \App\Models\TimMonev::where('id_dosen', $dosen->id)->pluck('id');
 
-            $allAssignments = $dosen->timMonevAssignments()->with('kkn')->get();
-
-            if ($allAssignments->isEmpty()) {
+            if ($allMonevIds->isEmpty()) {
                 throw new \Exception('Anda tidak memiliki penugasan sebagai Tim Monev.');
             }
-
-            if ($request->has('kkn_id')) {
-                $activeAssignment = $allAssignments->firstWhere('id_kkn', $request->kkn_id);
-            } else {
-                $activeId = session('active_monev_assignment_id');
-                $activeAssignment = $allAssignments->find($activeId) ?? $allAssignments->first();
-            }
-
-            if (!$activeAssignment) {
-                $activeAssignment = $allAssignments->first();
-            }
-
-            session(['active_monev_assignment_id' => $activeAssignment->id]);
-
-            $units = \App\Models\Unit::with(['lokasi', 'dpl.dosen.user'])
-                                ->where('id_tim_monev', $activeAssignment->id)
-                                ->get();
-
-            return view('tim monev.evaluasi.evaluasi-unit', compact(
-                'units', 
-                'activeAssignment', 
-                'allAssignments' 
-            ));
+            $units = \App\Models\Unit::with(['lokasi', 'dpl.dosen.user', 'prokers.kegiatan', 'kkn']) 
+                        ->whereIn('id_tim_monev', $allMonevIds)
+                        ->get();
+            return view('tim monev.evaluasi.evaluasi-unit', compact('units'));
 
         } catch (\Exception $e) {
             return redirect()->route('dashboard')->with('error', $e->getMessage());
