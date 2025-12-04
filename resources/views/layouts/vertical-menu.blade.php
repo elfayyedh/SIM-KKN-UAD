@@ -169,6 +169,12 @@
                         </ul>
                     </li>
                     <li>
+                        <a href="{{ route('admin.unit.index') }}">
+                            <i data-feather="layers"></i>
+                            <span data-key="t-pages">Manajemen Unit</span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="javascript: void(0);" class="has-arrow">
                             <i data-feather="file-text"></i>
                             <span data-key="t-pages">Manajemen Informasi</span>
