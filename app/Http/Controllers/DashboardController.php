@@ -38,13 +38,30 @@ class DashboardController extends Controller
             $activeRole = session('active_role'); 
 
             if ($activeRole == 'dpl') {
-                $dosen = Auth::user()->dosen; 
-                $dplAssignment = $dosen ? $dosen->dplAssignments()->first() : null;
+                $dosen = Auth::user()->dosen;
+                $dplAssignments = $dosen ? $dosen->dplAssignments()->with('kkn')->get() : collect();
+
+                $units = collect();
+                foreach ($dplAssignments as $assignment) {
+                    // Query Unit
+                    $unitsFromThisAssignment = $assignment->units()
+                        ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan'])
+                        ->withCount('mahasiswa')
+                        ->get();
+
+                    // Inject Nama KKN
+                    $unitsFromThisAssignment->each(function ($unit) use ($assignment) {
+                        $unit->setAttribute('kkn_nama', $assignment->kkn ? $assignment->kkn->nama : 'KKN Tanpa Nama');
+                    });
+
+                    $units = $units->merge($unitsFromThisAssignment);
+                }
+
                 $email = Auth::user()->email;
-                $id_kkn = $dplAssignment ? $dplAssignment->id_kkn : null;
+                $id_kkn = $dplAssignments->first() ? $dplAssignments->first()->id_kkn : null;
                 // Hanya ambil KKN yang DPL ini ditugaskan
                 $kkn = $dosen ? KKN::whereIn('id', $dosen->dplAssignments()->pluck('id_kkn'))->get() : collect();
-                return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn')); 
+                return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn', 'units'));
 
             } elseif ($activeRole == 'monev') {
                 $dosen = Auth::user()->dosen;

@@ -52,7 +52,7 @@
                                     <h2 class="total-mahasiswa">
                                         <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
                                     </h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua mahasiswa</a>
+                                    <a class="text-decoration-none" href="{{ $units->isNotEmpty() ? route('unit.show', $units->first()->id) : '#' }}">Lihat semua mahasiswa</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-success"
                                     style="width: 50px; height: 50px;">
