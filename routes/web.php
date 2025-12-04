@@ -141,6 +141,11 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
 });
 
+// Manajemen Unit (Admin)
+Route::get('/admin/unit', [UnitController::class, 'adminShowUnits'])
+    ->middleware([Authenticate::class, AdminMiddleware::class])
+    ->name('admin.unit.index');
+
 // ! End Admin
 
 // ! DPL

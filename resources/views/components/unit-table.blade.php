@@ -20,6 +20,9 @@
                 <th>Lokasi</th>
                 <th>Kecamatan</th>
                 <th>Kabupaten</th>
+                @if ($activeRoleName == 'Admin')
+                    <th>KKN</th>
+                @endif
                 <th>Total JKEM</th>
                 <th>Aksi</th>
             </tr>
@@ -31,6 +34,9 @@
                     <td>{{ $item->lokasi->nama }}</td>
                     <td>{{ $item->lokasi->kecamatan->nama }}</td>
                     <td>{{ $item->lokasi->kecamatan->kabupaten->nama }}</td>
+                    @if ($activeRoleName == 'Admin')
+                        <td>{{ $item->kkn->nama ?? '-' }}</td>
+                    @endif
                     <td>{{ $item->total_jkem_all_prokers }}</td>
                     <td>
                         @if ($activeRoleName == 'monev')
