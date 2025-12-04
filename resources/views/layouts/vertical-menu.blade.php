@@ -235,24 +235,25 @@
                         <li class="menu-title" data-key="t-ganti-peran">Ganti Peran Dosen</li>
                         @if(session('active_role') == 'dpl')
                             <li>
-                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-monev-form">
+                                <a href="javascript:void(0);" onclick="document.getElementById('switch-to-monev-form').submit();">
+                                    <i class="mdi mdi-account-switch-outline"></i>
+                                    <span>Masuk sebagai Tim Monev</span>
+                                </a>
+
+                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-monev-form" class="d-none">
                                     @csrf
                                     <input type="hidden" name="role" value="monev">
-                                    <a href="javascript:;" onclick="document.getElementById('switch-to-monev-form').submit();">
-                                        <i class="mdi mdi-account-switch-outline"></i>
-                                        <span>Masuk sebagai Tim Monev</span>
-                                    </a>
                                 </form>
                             </li>
                         @else
                             <li>
-                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-dpl-form">
+                                <a href="javascript:void(0);" onclick="document.getElementById('switch-to-dpl-form').submit();">
+                                    <i class="mdi mdi-account-switch-outline"></i>
+                                    <span>Masuk sebagai DPL</span>
+                                </a>
+                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-dpl-form" class="d-none">
                                     @csrf
                                     <input type="hidden" name="role" value="dpl">
-                                    <a href="javascript:;" onclick="document.getElementById('switch-to-dpl-form').submit();">
-                                        <i class="mdi mdi-account-switch-outline"></i>
-                                        <span>Masuk sebagai DPL</span>
-                                    </a>
                                 </form>
                             </li>
                         @endif
