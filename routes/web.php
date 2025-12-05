@@ -54,10 +54,6 @@ Route::prefix('/kkn')->middleware([Authenticate::class, AdminMiddleware::class])
     Route::put('/update/{id}', [KKNController::class, 'update'])->name('kkn.update'); // Done
 });
 
-Route::post('/tim-monev/store', [TimMonevController::class, 'store'])
-       ->name('admin.tim-monev.store')
-       ->middleware([Authenticate::class, AdminMiddleware::class]);
-
 // Manajemen informasi
 Route::prefix('/informasi')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/faq', [InformasiController::class, 'faqIndex'])->name('informasi.faq');
@@ -139,7 +135,9 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     Route::put('/update/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'update'])->name('tim-monev.update');
     Route::delete('/destroy/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
     
-    Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
+    // Route AJAX
+    Route::get('/get-all-active-units', [App\Http\Controllers\Admin\TimMonevController::class, 'getAllActiveUnits'])
+        ->name('tim-monev.get-all-active-units');
 });
 
 // Manajemen Unit (Admin)
