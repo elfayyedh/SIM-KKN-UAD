@@ -16,15 +16,12 @@ return new class extends Migration
             
             $table->uuid('id_tim_monev'); 
             $table->uuid('id_mahasiswa'); 
-            $table->tinyInteger('eval_jkem')->nullable();
-            $table->tinyInteger('eval_form1')->nullable();
-            $table->tinyInteger('eval_form2')->nullable();
-            $table->tinyInteger('eval_form3')->nullable(); 
-            $table->tinyInteger('eval_form4')->nullable(); 
-            $table->tinyInteger('eval_sholat')->nullable(); 
-
-            $table->text('catatan_monev')->nullable();
-            
+            $table->decimal('eval_jkem')->nullable();
+            $table->decimal('eval_form1')->nullable();
+            $table->decimal('eval_form2')->nullable();
+            $table->decimal('eval_form3')->nullable(); 
+            $table->decimal('eval_form4')->nullable(); 
+            $table->decimal('eval_sholat')->nullable(); 
             $table->timestamps();
 
             $table->foreign('id_tim_monev')->references('id')->on('tim_monev')->onDelete('cascade');
