@@ -89,4 +89,9 @@ class Mahasiswa extends Model
     {
         return $this->hasMany(EvaluasiMahasiswa::class, 'id_mahasiswa');
     }
+
+    public function evaluasiMahasiswa()
+    {
+        return $this->hasMany(EvaluasiMahasiswa::class, 'id_mahasiswa');
+    }
 }

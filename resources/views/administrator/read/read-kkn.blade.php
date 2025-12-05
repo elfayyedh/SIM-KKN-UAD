@@ -50,6 +50,7 @@
                                         <th>Tanggal Mulai</th>
                                         <th>Tanggal Selesai</th>
                                         <th>Status</th>
+                                        <th>Evaluasi Mahasiswa</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -64,6 +65,12 @@
                                                 <span class="badge bg-{{ $k->status_color }}">
                                                     {{ $k->status_text }}
                                                 </span>
+                                            </td>
+                                            <td>
+                                                <a class="btn btn-info btn-sm text-decoration-none"
+                                                    href="{{ route('admin.evaluasi.index', ['kkn_id' => $k->id]) }}"><i
+                                                        class="bx bx-show me-1"></i>Evaluasi
+                                                    Mahasiswa</a>
                                             </td>
                                             <td>
                                                 <a class="btn btn-warning text-decoration-none"
@@ -95,5 +102,16 @@
         <!-- Responsive examples -->
         <script src="{{ asset('assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
         <script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js') }}"></script>
-        <script src="{{ asset('assets/js/init/administrator/read-kkn.init.js') }}"></script>
+
+        <script>
+            $(document).ready(function () {
+                $('#datatable').DataTable({
+                    initComplete: function () {
+                        // Add export button to the left of search filter
+                        var exportBtn = '<a href="{{ route("admin.evaluasi.export", ["kkn_id" => "all"]) }}" class="btn btn-success btn-sm me-2"><i class="bx bx-download me-1"></i>Export All Excel</a>';
+                        $('.dataTables_filter').prepend(exportBtn);
+                    }
+                });
+            });
+        </script>
     @endsection

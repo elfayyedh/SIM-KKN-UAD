@@ -138,8 +138,16 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     Route::get('/edit/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'edit'])->name('tim-monev.edit');
     Route::put('/update/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'update'])->name('tim-monev.update');
     Route::delete('/destroy/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
-    
+
     Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
+});
+
+// Evaluasi Mahasiswa
+Route::prefix('/evaluasi')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\EvaluasiController::class, 'index'])->name('admin.evaluasi.index');
+    Route::post('/store', [App\Http\Controllers\Admin\EvaluasiController::class, 'store'])->name('admin.evaluasi.store');
+    Route::get('/export/{kkn_id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'export'])->name('admin.evaluasi.export');
+    Route::get('/{kkn_id}/mahasiswa/{id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'show'])->name('admin.evaluasi.mahasiswa.show');
 });
 
 // Manajemen Unit (Admin)
