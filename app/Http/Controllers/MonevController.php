@@ -74,13 +74,6 @@ class MonevController extends Controller
         }
     }
 
-    // =========================================================================
-    //  METHOD 1: SHOW DAFTAR MAHASISWA (FULL LOGIC HITUNG STATISTIK)
-    //  Logic hitung JKEM & Sholat ditaruh disini untuk semua mahasiswa
-    // =========================================================================
-    // =========================================================================
-    // METHOD 1: HALAMAN DAFTAR MAHASISWA + FORM PENILAIAN DINAMIS
-    // =========================================================================
     public function showMahasiswaPage($id_unit)
     {
         try {
@@ -88,7 +81,7 @@ class MonevController extends Controller
             $monevData = $this->getActiveMonevAssignment($dosen);
             $monevAssignment = $monevData['active'];
 
-            // 1. Ambil Unit & Data Mahasiswa
+            // Ambil Unit & Data Mahasiswa
             $unit = Unit::with([
                 'kkn', 
                 'mahasiswa.userRole.user', 
@@ -100,7 +93,7 @@ class MonevController extends Controller
             ->where('id_tim_monev', $monevAssignment->id) 
             ->firstOrFail();
 
-            // 2. Data Pendukung (Kriteria & Nilai Existing)
+            // Data Pendukung (Kriteria & Nilai Existing)
             $kriteriaList = KriteriaMonev::where('id_kkn', $unit->id_kkn)->orderBy('urutan', 'asc')->get();
             
             $mhsIds = $unit->mahasiswa->pluck('id');
@@ -116,7 +109,7 @@ class MonevController extends Controller
                 }
             }
 
-            // 3. HITUNG STATISTIK (LOGIC UTAMA)
+            // HITUNG STATISTIK (LOGIC UTAMA)
             foreach ($unit->mahasiswa as $mhs) {
                 $mhs->hitung_jkem = $mhs->kegiatan->pluck('logbookKegiatan')->flatten()->sum('total_jkem');
 
@@ -132,57 +125,20 @@ class MonevController extends Controller
                     $totalWajib = $totalHari * $targetPerHari;
                     
                     if ($isAlternatif) {
-                        // === LOGIC DEBUGGING KKN ALTERNATIF ===
-                        
-                        // 1. Ambil Data Mentah per Tanggal
                         $logbookGrouped = $mhs->logbookSholat
                             ->whereIn('waktu', $validPrayers)
                             ->groupBy('tanggal');
 
-                        // 2. Hitung Poin (Berjamaah)
                         $totalBerjamaah = $logbookGrouped->map(function ($items) use ($targetPerHari) {
                              $countAsli = $items->where('status', 'sholat berjamaah')->count();
-                             // Rumus CAP: Ambil nilai terkecil antara Jumlah Asli vs Target (3)
                              return min($countAsli, $targetPerHari);
                         })->sum();
 
-                        // 3. Hitung Poin (Halangan)
                         $totalHalangan = $logbookGrouped->map(function ($items) use ($targetPerHari) {
                              $countAsli = $items->where('status', 'sedang halangan')->count();
                              return min($countAsli, $targetPerHari);
                         })->sum();
-
-                        // ==========================================
-                        //  JALANKAN DD INI UTK CEK HASIL HITUNGAN
-                        // ==========================================
-                        // Uncomment baris di bawah ini jika ingin melihat debug
-                        /*
-                        dd([
-                            'STATUS' => 'DEBUGGING KKN ALTERNATIF',
-                            'Nama Mahasiswa' => $mhs->userRole->user->nama,
-                            'Total Hari KKN' => $totalHari . ' hari',
-                            'Target Poin Per Hari' => $targetPerHari . ' poin (Max)',
-                            'Total Wajib (Penyebut Awal)' => $totalWajib,
-                            'ANALISA PER TANGGAL' => $logbookGrouped->map(function($items, $tanggal) use ($targetPerHari) {
-                                $jmlBerjamaah = $items->where('status', 'sholat berjamaah')->count();
-                                $diakui = min($jmlBerjamaah, $targetPerHari);
-                                return [
-                                    'Tanggal' => $tanggal,
-                                    'Sholat Berjamaah (Input)' => $jmlBerjamaah,
-                                    'Poin Diakui Sistem' => $diakui . ($jmlBerjamaah > 3 ? ' (Kena Limit)' : ''),
-                                ];
-                            }),
-                            'TOTAL AKHIR' => [
-                                'Total Poin Berjamaah' => $totalBerjamaah,
-                                'Total Poin Halangan' => $totalHalangan,
-                                'Rumus' => "($totalBerjamaah / ($totalWajib - $totalHalangan)) * 100",
-                            ]
-                        ]);
-                        */
-                        // ==========================================
-
                     } else {
-                        // Logic Reguler
                         $totalBerjamaah = $mhs->logbookSholat->where('status', 'sholat berjamaah')->whereIn('waktu', $validPrayers)->count();
                         $totalHalangan = $mhs->logbookSholat->where('status', 'sedang halangan')->whereIn('waktu', $validPrayers)->count();
                     }
@@ -204,9 +160,6 @@ class MonevController extends Controller
         }
     }
 
-    // =========================================================================
-    // METHOD 2: SIMPAN MASSAL (BULK STORE)
-    // =========================================================================
     public function bulkStorePenilaian(Request $request)
     {
         // Validasi input: Array harus ada
@@ -230,7 +183,7 @@ class MonevController extends Controller
 
                 if (empty($filledScores)) continue; 
 
-                // 1. Update/Create Header Evaluasi (Tabel: evaluasi_mahasiswa)
+                //Update/Create Header Evaluasi (Tabel: evaluasi_mahasiswa)
                 $evalHeader = EvaluasiMahasiswa::updateOrCreate(
                     [
                         'id_tim_monev' => $monevAssignment->id,
@@ -241,7 +194,7 @@ class MonevController extends Controller
                     ]
                 );
 
-                // 2. Simpan Detail Nilai (Tabel: evaluasi_mahasiswa_detail)
+                //Simpan Detail Nilai (Tabel: evaluasi_mahasiswa_detail)
                 foreach ($filledScores as $idKriteria => $nilai) {
                     
                     // Pastikan nilai dalam range 1-3
@@ -266,9 +219,6 @@ class MonevController extends Controller
         }
     }
 
-    // =========================================================================
-    //  METHOD 2: SHOW FORM PENILAIAN (Logic Sidebar + Single Calculation)
-    // =========================================================================
     public function showPenilaianPage($id_mahasiswa)
     {
         try {
@@ -276,7 +226,7 @@ class MonevController extends Controller
             $monevData = $this->getActiveMonevAssignment($dosen);
             $monevAssignment = $monevData['active'];
             
-            // 1. Ambil Mahasiswa Target
+            // Ambil Mahasiswa Target
             $mahasiswa = Mahasiswa::with([
                 'userRole.user', 'unit.dpl', 'unit.kkn',
                 'logbookSholat', 'kegiatan.logbookKegiatan'
@@ -287,7 +237,7 @@ class MonevController extends Controller
                 throw new \Exception('Anda tidak berhak menilai mahasiswa ini.');
             }
 
-            // 2. [SIDEBAR] Ambil Daftar Teman Satu Unit
+            // [SIDEBAR] Ambil Daftar Teman Satu Unit
             $daftarTeman = Mahasiswa::with(['userRole.user', 'evaluasiOlehMonev' => function($q) use ($monevAssignment) {
                     $q->where('id_tim_monev', $monevAssignment->id);
                 }])
@@ -295,7 +245,7 @@ class MonevController extends Controller
                 ->orderBy('nim', 'asc')
                 ->get();
 
-            // 3. Hitung Ulang Data Dinamis (Hanya untuk 1 mahasiswa ini agar tampil di Header Form)
+            // Hitung Ulang Data Dinamis (Hanya untuk 1 mahasiswa ini agar tampil di Header Form)
             $totalJkem = $mahasiswa->kegiatan->pluck('logbookKegiatan')->flatten()->sum('total_jkem');
             
             $persenSholat = 0;
@@ -331,7 +281,7 @@ class MonevController extends Controller
                 if ($penyebut > 0) $persenSholat = round(($totalBerjamaah / $penyebut) * 100, 1);
             }
 
-            // 4. Data Pendukung View
+            // Data Pendukung View
             $kriteriaList = KriteriaMonev::where('id_kkn', $mahasiswa->unit->id_kkn)
                                 ->orderBy('urutan', 'asc')
                                 ->get();

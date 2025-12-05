@@ -139,7 +139,7 @@
                                 </table>
                             </div>
 
-                            <!-- TABEL MATRIKS / PEDOMAN PENILAIAN (FULL DINAMIS) -->
+                            <!-- TABEL MATRIKS / PEDOMAN PENILAIAN -->
                             <div class="mt-5 mb-3">
                                 <h5 class="card-title mb-1"> Pedoman Penilaian</h5>
                                 <div class="table-responsive">

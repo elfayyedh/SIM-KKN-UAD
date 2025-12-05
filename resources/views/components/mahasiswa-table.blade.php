@@ -1,6 +1,6 @@
 @props([
-    'mahasiswa', // Data mahasiswa yang dikirim
-    'mode' => 'default' // Penanda baru kita: 'default' (tombol Edit) atau 'monev' (tombol Penilaian)
+    'mahasiswa',
+    'mode' => 'default'
 ])
 
 <div>

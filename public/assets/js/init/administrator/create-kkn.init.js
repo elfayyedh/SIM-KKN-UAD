@@ -7,9 +7,6 @@ $(document).ready(function () {
         dateFormat: "Y-m-d",
     });
 
-    // ============================================================
-    // BAGIAN 1: BIDANG PROKER (LOGIC LAMA TETAP ADA)
-    // ============================================================
     var fieldTemplate = `
     <div class="row border mb-3">
         <div class="col-lg-4">
@@ -67,10 +64,6 @@ $(document).ready(function () {
         e.preventDefault();
         $(this).closest(".row").remove();
     });
-
-    // ============================================================
-    // BAGIAN 2: KRITERIA MONEV (INI YANG DI-UPDATE OTOMATIS)
-    // ============================================================
 
     // Data Preset
     const KRITERIA_PRESETS = {
@@ -265,17 +258,10 @@ $(document).ready(function () {
 
     function updateKriteriaStatus() {
         let rowCount = $("#container-kriteria .row-kriteria").length;
-        // Opsional: Disable hapus jika sisa 1 (di-comment biar bebas hapus)
-        // if (rowCount <= 1) { $(".btn-hapus-kriteria").prop("disabled", true); }
-        // else { $(".btn-hapus-kriteria").prop("disabled", false); }
     }
 
     // JALANKAN INIT DEFAULT SAAT LOAD
     initDefaultKriteria();
-
-    // ============================================================
-    // BAGIAN 3: VALIDASI & SUBMIT EXCEL (TIDAK BERUBAH)
-    // ============================================================
 
     function handleError() {
         var status_error = false;
