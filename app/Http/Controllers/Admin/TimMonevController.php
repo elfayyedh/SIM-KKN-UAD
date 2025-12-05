@@ -89,7 +89,7 @@ class TimMonevController extends Controller
                     ->orderBy('nama', 'asc')
                     ->get();
 
-        // Sesuaikan path view edit kamu
+        // Sesuaikan path view edit
         return view('administrator.update.edit-tim-monev', compact('timMonev', 'dosen', 'kkn', 'units'));
     }
 
@@ -152,7 +152,7 @@ class TimMonevController extends Controller
     {
         $id_dosen_monev = $request->query('id_dosen');
 
-        $units = Unit::with(['lokasi', 'dpl.dosen.user', 'timMonev.dosen.user'])
+        $units = Unit::with(['lokasi', 'dpl.dosen.user', 'timMonev.dosen.user', 'kkn'])
                     ->where('id_kkn', $id_kkn)
                     ->when($id_dosen_monev, function ($query) use ($id_dosen_monev) {
                         return $query->whereDoesntHave('dpl', function($q) use ($id_dosen_monev) {
@@ -163,5 +163,34 @@ class TimMonevController extends Controller
                     ->get();
 
         return response()->json($units);
+    }
+
+    public function getAllActiveUnits()
+    {
+        try {
+            $activeKkn = Kkn::latest()->first();
+
+            if (!$activeKkn) {
+                return response()->json([]);
+            }
+
+            // Ambil ID KKN
+            $activeKknId = $activeKkn->id;
+
+            // Ambil Unit + Relasi
+            $units = Unit::with(['kkn', 'lokasi', 'dpl.dosen.user', 'timMonev.dosen.user'])
+                        ->where('id_kkn', $activeKknId)
+                        ->get();
+
+            return response()->json($units);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => true,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
+        }
     }
 }

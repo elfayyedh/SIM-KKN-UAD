@@ -23,91 +23,95 @@
             <form action="{{ route('tim-monev.store') }}" method="POST">
                 @csrf
                 
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="mdi mdi-information-variant me-2"></i>
+                    Sistem otomatis <b>menyembunyikan Unit</b> dimana Dosen yang dipilih menjabat sebagai DPL.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- PILIH DOSEN -->
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
                             <div class="card-body">
-                                <div class="card-title text-muted fw-bold mb-3">Form Data Tim Monev</div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label for="id_kkn" class="form-label">Pilih Periode KKN <span class="text-danger">*</span></label>
-                                            <select name="id_kkn" id="id_kkn" class="form-select" required>
-                                                <option value="">-- Pilih KKN --</option>
-                                                @foreach ($kkn as $item)
-                                                    <option value="{{ $item->id }}">{{ $item->nama }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label for="id_dosen" class="form-label">Pilih Dosen <span class="text-danger">*</span></label>
-                                            <select name="id_dosen" id="id_dosen" class="form-select" required>
-                                                <option value="">-- Pilih Dosen --</option>
-                                                @foreach ($dosen as $item)
-                                                    <option value="{{ $item->id }}">{{ $item->user->nama }} ({{ $item->nip }})</option>
-                                                @endforeach
-                                            </select>
-                                            <small class="text-muted">* Unit bimbingan dosen ini (sebagai DPL) tidak akan muncul di daftar plotting.</small>
-                                        </div>
-                                    </div>
+                                <div class="card-title text-muted fw-bold mb-3">Pilih Dosen Monev</div>
+                                <div class="table-responsive">
+                                    <table id="datatable-dosen" class="table table-bordered dt-responsive nowrap w-100">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="5%">No</th>
+                                                <th>Nama Dosen</th>
+                                                <th>NIP</th>
+                                                <th>Email</th>
+                                                <th>Jenis Kelamin</th>
+                                                <th width="10%" class="text-center bg-primary text-white">Pilih</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($dosen as $item)
+                                                <tr>
+                                                    <td>{{ $loop->iteration }}</td>
+                                                    <td>{{ $item->user->nama ?? 'N/A' }}</td>
+                                                    <td>{{ $item->nip ?? 'N/A' }}</td>
+                                                    <td>{{ $item->user->email ?? 'N/A' }}</td>
+                                                    <td>{{ $item->user->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
+                                                    <td class="text-center">
+                                                        <div class="form-check d-flex justify-content-center">
+                                                            <input class="form-check-input dosen-selector" type="radio" name="id_dosen" id="dosen_{{ $item->id }}" value="{{ $item->id }}" style="transform: scale(1.3); cursor: pointer;">
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
+                <!-- TABEL UNIT -->
                 <div class="row">
                     <div class="col-12">
                         <div class="card">
                             <div class="card-body">
                                 <h5 class="card-title mb-3">Plotting Unit Bimbingan</h5>
 
-                                {{-- Belum Pilih KKN/Dosen --}}
-                                <div id="empty-state" class="text-center py-5">
-                                    <div class="mb-3">
-                                        <i class="bx bx-layer display-4 text-muted"></i>
-                                    </div>
-                                    <h5 class="text-muted">Lengkapi Form di Atas</h5>
-                                    <p class="text-muted">Silakan pilih <b>Periode KKN</b> dan <b>Dosen</b> terlebih dahulu untuk memuat daftar unit.</p>
-                                </div>
-
-                                {{-- Loading --}}
+                                <!-- Loading -->
                                 <div id="loading-state" class="text-center py-5 d-none">
-                                    <div class="spinner-border text-primary" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </div>
-                                    <p class="mt-2">Memuat Data Unit...</p>
+                                    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+                                    <p class="mt-2">Memuat Semua Data Unit...</p>
                                 </div>
 
-                                {{-- Tabel Data --}}
-                                <div id="table-container" class="d-none">
-                                    <div class="alert alert-info">
-                                        <i class="mdi mdi-information me-1"></i> Centang unit yang ingin ditugaskan. Unit berwarna <b>kuning</b> sudah dimiliki dosen monev lain (akan ditimpa jika dicentang).
+                                <!-- Table Container -->
+                                <div id="table-container">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div class="text-muted"><i class="mdi mdi-check-circle-outline me-1"></i> Centang unit yang akan dimonev.</div>
+                                        <div id="filter-status" class="badge bg-secondary">Menampilkan Semua Unit</div>
                                     </div>
+
                                     <div class="table-responsive">
-                                        <table class="table table-bordered table-striped align-middle">
+                                        <table id="datatable-unit" class="table table-bordered table-striped dt-responsive nowrap w-100">
                                             <thead class="table-light">
                                                 <tr>
                                                     <th width="5%" class="text-center">Pilih</th>
+                                                    <th>Periode KKN</th>
                                                     <th>Nama Unit</th>
                                                     <th>Lokasi</th>
                                                     <th>DPL</th>
                                                     <th>Status Monev</th>
+                                                    <th>ID_DPL</th> 
                                                 </tr>
                                             </thead>
-                                            <tbody id="unit-list-body">
-                                                </tbody>
+                                            <tbody id="unit-list-body"></tbody>
                                         </table>
                                     </div>
                                 </div>
 
                                 <div class="mt-4 d-flex gap-2">
-                                    <button type="submit" class="btn btn-primary"><i class="bx bx-save me-1"></i> Simpan & Plotting</button>
+                                    <button type="submit" class="btn btn-primary"><i class="bx bx-save me-1"></i> Simpan Data</button>
                                     <a href="{{ route('tim-monev.index') }}" class="btn btn-secondary">Batal</a>
                                 </div>
-
                             </div>
                         </div>
                     </div>
@@ -118,100 +122,136 @@
 @endsection
 
 @section('pageScript')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
 <script>
     $(document).ready(function() {
-        
-        // Fungsi Load Data Unit
-        function loadUnits() {
-            let kknId = $('#id_kkn').val();
-            let dosenId = $('#id_dosen').val();
+        var selectedDosenId = null; 
 
-            let emptyState = $('#empty-state');
+        // 1. Table Dosen
+        $('#datatable-dosen').DataTable({
+            responsive: true, lengthChange: true, pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
+            language: { emptyTable: "Tidak ada data dosen", search: "Cari Dosen:" }
+        });
+
+        // 2. Custom Filter Logic
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            if (settings.nTable.id !== 'datatable-unit') return true;
+            if (selectedDosenId == null) return true;
+
+            // Ambil ID DPL dari kolom tersembunyi
+            var dplIdInRow = data[6] || '0'; 
+
+            // Jika ID DPL sama dengan Dosen yang dipilih, SEMBUNYIKAN
+            if (dplIdInRow.toString() === selectedDosenId.toString()) {
+                return false; 
+            }
+            return true;
+        });
+
+        // 3. Load Data
+        loadAllUnits();
+
+        function loadAllUnits() {
             let loadingState = $('#loading-state');
             let tableContainer = $('#table-container');
             let tbody = $('#unit-list-body');
 
-            // Reset View
             tableContainer.addClass('d-none');
-            tbody.empty();
-
-            // Jika salah satu belum dipilih, stop.
-            if (!kknId || !dosenId) {
-                emptyState.removeClass('d-none');
-                return;
-            }
-
-            // Mulai Loading
-            console.log("Requesting units for KKN:", kknId, " Dosen:", dosenId);
-            emptyState.addClass('d-none');
             loadingState.removeClass('d-none');
 
-            // Request AJAX
+            // DEBUGGING: Cek URL ini di Inspect Element -> Network
+            let ajaxUrl = "/tim-monev/get-all-active-units"; 
+
             $.ajax({
-                url: "/tim-monev/get-units/" + kknId + "?id_dosen=" + dosenId,
+                url: ajaxUrl,
                 type: "GET",
                 success: function(response) {
-                    console.log("Data diterima:", response);
-                    loadingState.addClass('d-none');
+                    console.log("Data Unit Diterima:", response); // Cek Console Browser (F12)
                     
-                    if (response.length === 0) {
-                        tbody.html(`
-                            <tr>
-                                <td colspan="5" class="text-center py-5">
-                                    <div class="text-danger mb-2"><i class="bx bx-block display-4"></i></div>
-                                    <h5 class="text-danger">Tidak ada unit tersedia</h5>
-                                    <p class="text-muted">
-                                        Semua unit di KKN ini mungkin dibimbing oleh dosen ini (sebagai DPL), <br>
-                                        sehingga tidak bisa dipilih untuk dimonev.
-                                    </p>
-                                </td>
-                            </tr>
-                        `);
+                    loadingState.addClass('d-none');
+                    tableContainer.removeClass('d-none'); 
+                    
+                    if (!response || response.length === 0) {
+                        tbody.html('<tr><td colspan="7" class="text-center text-danger py-4"><b>DATA KOSONG!</b><br>Pastikan ada KKN Aktif & Unit di Database.<br>Cek Controller <code>getAllActiveUnits</code>.</td></tr>');
                     } else {
-                        // KASUS: Ada unit yang bisa dipilih
                         $.each(response, function(index, unit) {
                             let statusBadge = '<span class="badge bg-light text-secondary">Belum Diplot</span>';
                             let rowClass = '';
-                            let dplName = unit.dpl && unit.dpl.dosen && unit.dpl.dosen.user ? unit.dpl.dosen.user.nama : '<span class="text-danger">Belum ada DPL</span>';
                             
-                            // Cek kepemilikan orang lain
+                            let dplName = (unit.dpl && unit.dpl.dosen && unit.dpl.dosen.user) ? unit.dpl.dosen.user.nama : '<span class="text-danger fst-italic">Belum ada DPL</span>';
+                            let dplId = (unit.dpl && unit.dpl.dosen) ? unit.dpl.dosen.id : '0'; 
+
+                            let kknName = (unit.kkn) ? unit.kkn.nama : '-';
+                            let lokasiName = (unit.lokasi) ? unit.lokasi.nama : '-';
+
                             if (unit.tim_monev && unit.tim_monev.dosen && unit.tim_monev.dosen.user) {
                                 let monevName = unit.tim_monev.dosen.user.nama;
                                 statusBadge = `<span class="badge bg-warning text-dark">Milik: ${monevName}</span>`;
-                                rowClass = 'table-warning';
+                                rowClass = 'table-warning'; 
                             }
+
+                            let hiddenInput = `<input type="hidden" name="kkn_ids[${unit.id}]" value="${unit.id_kkn}">`;
 
                             let row = `
                                 <tr class="${rowClass}">
                                     <td class="text-center">
-                                        <input type="checkbox" name="units[]" value="${unit.id}" class="form-check-input" style="transform: scale(1.3); cursor: pointer;">
+                                        <div class="d-flex justify-content-center">
+                                            ${hiddenInput}
+                                            <input type="checkbox" name="units[]" value="${unit.id}" class="form-check-input" style="transform: scale(1.3); cursor: pointer;">
+                                        </div>
                                     </td>
+                                    <td>${kknName}</td>
                                     <td class="fw-bold">${unit.nama}</td>
-                                    <td><small>${unit.lokasi ? unit.lokasi.nama : '-'}</small></td>
-                                    <td><small class="text-primary">${dplName}</small></td>
+                                    <td><small>${lokasiName}</small></td>
+                                    <td><small class="text-primary fw-bold">${dplName}</small></td>
                                     <td>${statusBadge}</td>
+                                    <td>${dplId}</td> <!-- KOLOM HIDDEN ID DPL -->
                                 </tr>
                             `;
                             tbody.append(row);
                         });
+
+                        // Init DataTable Unit
+                        $('#datatable-unit').DataTable({
+                            responsive: true, destroy: true, lengthChange: true, pageLength: 10, autoWidth: false,
+                            columnDefs: [
+                                { targets: 6, visible: false, searchable: true } // Sembunyikan Kolom ID DPL (Index 6)
+                            ],
+                            language: { search: "Cari Unit:", emptyTable: "Tidak ada data unit", zeroRecords: "Unit tidak ditemukan" }
+                        });
                     }
-                    
-                    // Munculkan Tabel (Penting!)
-                    tableContainer.removeClass('d-none');
                 },
                 error: function(xhr) {
                     loadingState.addClass('d-none');
-                    console.error("Error:", xhr);
-                    alert("Gagal memuat data unit. Cek Console untuk detail.");
+                    console.error("ERROR AJAX:", xhr);
+                    alert("Gagal load data! Cek apakah Route & Controller sudah dibuat? Lihat Console (F12) untuk detail error.");
                 }
             });
         }
 
-        // Trigger saat Dropdown berubah
-        $('#id_kkn, #id_dosen').change(function() {
-            loadUnits();
-        });
+        // Event Listener Pilih Dosen
+        $('#datatable-dosen tbody').on('change', '.dosen-selector', function() {
+            if(this.checked) {
+                $('.dosen-selector').not(this).prop('checked', false);
+                $('#datatable-dosen tbody tr').removeClass('table-success');
+                $(this).closest('tr').addClass('table-success');
+                
+                selectedDosenId = $(this).val();
+                
+                $('#filter-status').removeClass('bg-secondary').addClass('bg-success')
+                    .html('<i class="bx bx-filter-alt"></i> Filter Aktif: Menyembunyikan Bimbingan Dosen Terpilih');
 
+                $('#datatable-unit').DataTable().draw();
+            }
+        });
     });
 </script>
 @endsection
