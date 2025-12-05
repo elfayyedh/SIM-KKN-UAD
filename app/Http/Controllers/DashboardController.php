@@ -145,11 +145,34 @@ class DashboardController extends Controller
             }
             
             if ($activeRole == 'monev') {
-                // Tim Monev logic if needed
+                $dosen = Auth::user()->dosen;
+                $periode = $request->input('periode');
+
+                // Ambil tim monev assignment berdasarkan periode yang dipilih
+                $timMonev = $dosen ? $dosen->timMonevAssignments()->where('id_kkn', $periode)->first() : null;
+
+                if (!$timMonev) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Tim Monev assignment not found for this period'
+                    ], 404);
+                }
+
+                // Filter berdasarkan periode tertentu
+                $units = Unit::where('id_tim_monev', $timMonev->id)
+                    ->where('id_kkn', $periode)
+                    ->get();
+                $unit_ids = $units->pluck('id');
+
+                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
+                    ->where('id_kkn', $periode)
+                    ->count();
+                $total_unit = $units->count();
+
                 return response()->json([
                     'status' => 'success',
-                    'total_mahasiswa' => 0,
-                    'total_unit' => 0,
+                    'total_mahasiswa' => $total_mahasiswa,
+                    'total_unit' => $total_unit,
                 ]);
             }
         }
@@ -372,16 +395,39 @@ class DashboardController extends Controller
                     ->where('unit.id_kkn', $periode)
                     ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
                     ->get();
-                    
+
                 return response()->json($data);
             }
-            
+
             if ($activeRole == 'monev') {
-                // Tim Monev logic if needed
-                return response()->json([]);
+                $dosen = Auth::user()->dosen;
+                $periode = $request->periode;
+
+                // Ambil tim monev assignment berdasarkan periode yang dipilih
+                $timMonev = $dosen ? $dosen->timMonevAssignments()->where('id_kkn', $periode)->first() : null;
+
+                if (!$timMonev) {
+                    return response()->json([]);
+                }
+
+                $data = DB::table('unit')
+                    ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                    ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                    ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                    ->select(
+                        DB::raw('COUNT(unit.id) AS total_unit'),
+                        'kecamatan.nama AS kecamatan',
+                        'kabupaten.nama AS kabupaten'
+                    )
+                    ->where('unit.id_tim_monev', $timMonev->id)
+                    ->where('unit.id_kkn', $periode)
+                    ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
+                    ->get();
+
+                return response()->json($data);
             }
         }
-        
+
         // Handle Admin
         $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
         if ($activeUserRole && $activeUserRole->role && $activeUserRole->role->nama_role == "Admin") {
@@ -404,6 +450,48 @@ class DashboardController extends Controller
 
             $data = $query->get();
             return response()->json($data);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+    }
+
+    public function getBelumDinilaiData(Request $request)
+    {
+        // Check if user is dosen with active role
+        if (session('user_is_dosen', false)) {
+            $activeRole = session('active_role');
+
+            if ($activeRole == 'monev') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->input('periode');
+
+                // Ambil tim monev assignment berdasarkan periode yang dipilih
+                $timMonev = $dosen ? $dosen->timMonevAssignments()->where('id_kkn', $periode)->first() : null;
+
+                if (!$timMonev) {
+                    return response()->json([]);
+                }
+
+                // Get mahasiswa yang belum dinilai oleh tim monev ini
+                $data = DB::table('mahasiswa')
+                    ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                    ->join('user_role', 'mahasiswa.id_user_role', '=', 'user_role.id')
+                    ->join('users', 'user_role.id_user', '=', 'users.id')
+                    ->leftJoin('evaluasi_mahasiswa', function($join) use ($timMonev) {
+                        $join->on('evaluasi_mahasiswa.id_mahasiswa', '=', 'mahasiswa.id')
+                             ->where('evaluasi_mahasiswa.id_tim_monev', '=', $timMonev->id);
+                    })
+                    ->where('unit.id_tim_monev', $timMonev->id)
+                    ->where('mahasiswa.id_kkn', $periode)
+                    ->whereNull('evaluasi_mahasiswa.id')
+                    ->select(
+                        'users.nama as nama_mahasiswa',
+                        'unit.nama_unit as nama_unit'
+                    )
+                    ->get();
+
+                return response()->json($data);
+            }
         }
 
         return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
