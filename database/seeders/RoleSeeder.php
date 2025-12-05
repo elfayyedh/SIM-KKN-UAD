@@ -54,6 +54,7 @@ class RoleSeeder extends Seeder
             [
                 'tanggal_mulai' => '2025-07-19',
                 'tanggal_selesai' => '2026-03-31',
+                'tanggal_cutoff_penilaian' => '2026-01-01',
                 'status' => 1,
             ]
         );

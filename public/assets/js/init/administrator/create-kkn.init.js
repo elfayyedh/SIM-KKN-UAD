@@ -284,6 +284,11 @@ $(document).ready(function () {
                 message: "* Wajib diisi!",
             },
             {
+                id: "#tanggal_cutoff",
+                errorId: "#text-tanggal_cutoff",
+                message: "* Wajib diisi!",
+            },
+            {
                 id: "#file_excel",
                 errorId: "#text-file",
                 message: "* Wajib diisi!",
@@ -422,6 +427,7 @@ $(document).ready(function () {
         const thn_ajaran = $("#thn_ajaran").val();
         const tanggal_mulai = $("#tanggal_mulai").val();
         const tanggal_selesai = $("#tanggal_selesai").val();
+        const tanggal_cutoff = $("#tanggal_cutoff").val();
 
         // Collect Bidang
         let fields = [];
@@ -458,6 +464,7 @@ $(document).ready(function () {
                 thn_ajaran: thn_ajaran,
                 tanggal_mulai: tanggal_mulai,
                 tanggal_selesai: tanggal_selesai,
+                tanggal_cutoff_penilaian: tanggal_cutoff,
                 file_excel: file_excel,
                 fields: fields,
                 kriteria: kriteria_monev,

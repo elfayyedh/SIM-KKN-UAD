@@ -65,6 +65,7 @@ class KKNController extends Controller
             "thn_ajaran" => 'required|string',
             "tanggal_mulai" => 'required|date',
             "tanggal_selesai" => 'required|date',
+            "tanggal_cutoff_penilaian" => 'required|date|after_or_equal:tanggal_mulai|before_or_equal:tanggal_selesai',
             "file_excel" => 'required',
             "fields" => 'required|array',
             "kriteria" => 'nullable|array',
@@ -79,7 +80,8 @@ class KKNController extends Controller
             ], [
                 'thn_ajaran' => $validated['thn_ajaran'],
                 'tanggal_mulai' => $validated['tanggal_mulai'],
-                'tanggal_selesai' => $validated['tanggal_selesai']
+                'tanggal_selesai' => $validated['tanggal_selesai'],
+                'tanggal_cutoff_penilaian' => $validated['tanggal_cutoff_penilaian']
             ]);
 
             foreach ($validated['fields'] as $field) {
@@ -187,12 +189,14 @@ class KKNController extends Controller
                 "thn_ajaran" => 'required|string',
                 "tanggal_mulai" => 'required|date',
                 "tanggal_selesai" => 'required|date',
+                "tanggal_cutoff_penilaian" => 'required|date|after_or_equal:tanggal_mulai|before_or_equal:tanggal_selesai',
             ],
             [
                 'nama.required' => 'Nama harus diisi',
                 'thn_ajaran.required' => 'Tahun Ajaran harus diisi',
                 'tanggal_mulai.required' => 'Tanggal Mulai harus diisi',
                 'tanggal_selesai.required' => 'Tanggal Selesai harus diisi',
+                "tanggal_cutoff_penilaian" => 'Tanggal Cut Off harus diisi',
             ]
         );
 

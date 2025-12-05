@@ -137,8 +137,8 @@
                             <span data-key="t-apps">Manajemen KKN</span>
                         </a>
                         <ul class="sub-menu" aria-expanded="false">
-                            <li><a href="{{ route('kkn.create') }}"><span data-key="t-kkn">Tambah data KKN</span></a></li>
                             <li><a href="{{ route('kkn.index') }}"><span data-key="t-chat">Daftar data KKN</span></a></li>
+                            <li><a href="{{ route('kkn.create') }}"><span data-key="t-kkn">Tambah data KKN</span></a></li>
                         </ul>
                     </li>
                     <li>

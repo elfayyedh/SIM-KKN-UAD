@@ -41,7 +41,7 @@ class KKN extends Model
     }
 
     protected $table = 'kkn';
-    protected $fillable = ['nama', 'tanggal_mulai', 'tanggal_selesai', 'thn_ajaran', 'status'];
+    protected $fillable = ['nama', 'tanggal_mulai', 'tanggal_selesai', 'tanggal_cutoff_penilaian', 'thn_ajaran', 'status'];
     protected $casts = [
         'tanggal_mulai' => 'date',
         'tanggal_selesai' => 'date',
