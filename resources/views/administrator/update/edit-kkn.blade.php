@@ -88,6 +88,23 @@
                                 </div>
 
                                 <div class="row">
+                                    <div class="col-md-6 col-12">
+                                        <div class="mb-3">
+                                            <label for="tanggal_cutoff_penilaian" class="form-label">Tanggal Cut Off Penilaian <span class="text-danger">*</span></label>
+                                            <input type="text"
+                                                class="form-control datepicker-basic @error('tanggal_cutoff_penilaian') is-invalid @enderror"
+                                                id="tanggal_cutoff_penilaian" required name="tanggal_cutoff_penilaian"
+                                                placeholder="Pilih tanggal cut off"
+                                                value="{{ old('tanggal_cutoff_penilaian', $kkn->tanggal_cutoff_penilaian) }}">
+                                            @error('tanggal_cutoff_penilaian')
+                                                <div class="invalid-feedback"> {{ $message }} </div>
+                                            @enderror
+                                            <small class="text-muted">Batas akhir perhitungan otomatis JKEM dan Sholat.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row">
                                     <div class="col-12">
                                         <button class="btn btn-primary w-md" type="submit"><i class="bx bx-save"></i> Simpan</button>
                                     </div>

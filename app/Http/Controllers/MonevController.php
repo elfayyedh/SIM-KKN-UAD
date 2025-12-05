@@ -1,16 +1,23 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Unit;
 use App\Models\Mahasiswa;
 use App\Models\EvaluasiMahasiswa;
+use App\Models\EvaluasiMahasiswaDetail;
+use App\Models\KriteriaMonev;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class MonevController extends Controller
 {
+    /**
+     * Helper: Ambil Assignment Monev Aktif
+     */
     private function getActiveMonevAssignment($dosen)
     {
         $allMonevAssignments = $dosen->timMonevAssignments()->with('kkn')->get();
@@ -52,35 +59,15 @@ class MonevController extends Controller
         try {
             $dosen = Auth::user()->dosen;
             if (!$dosen) throw new \Exception('Profil Dosen tidak ditemukan.');
+            
+            $activeData = $this->getActiveMonevAssignment($dosen);
+            $monevAssignment = $activeData['active'];
 
-            $allAssignments = $dosen->timMonevAssignments()->with('kkn')->get();
+            $units = Unit::with(['lokasi', 'dpl.dosen.user', 'prokers.kegiatan', 'kkn']) 
+                        ->where('id_tim_monev', $monevAssignment->id)
+                        ->get();
 
-            if ($allAssignments->isEmpty()) {
-                throw new \Exception('Anda tidak memiliki penugasan sebagai Tim Monev.');
-            }
-
-            if ($request->has('kkn_id')) {
-                $activeAssignment = $allAssignments->firstWhere('id_kkn', $request->kkn_id);
-            } else {
-                $activeId = session('active_monev_assignment_id');
-                $activeAssignment = $allAssignments->find($activeId) ?? $allAssignments->first();
-            }
-
-            if (!$activeAssignment) {
-                $activeAssignment = $allAssignments->first();
-            }
-
-            session(['active_monev_assignment_id' => $activeAssignment->id]);
-
-            $units = \App\Models\Unit::with(['lokasi', 'dpl.dosen.user'])
-                                ->where('id_tim_monev', $activeAssignment->id)
-                                ->get();
-
-            return view('tim monev.evaluasi.evaluasi-unit', compact(
-                'units', 
-                'activeAssignment', 
-                'allAssignments' 
-            ));
+            return view('tim monev.evaluasi.evaluasi-unit', compact('units'));
 
         } catch (\Exception $e) {
             return redirect()->route('dashboard')->with('error', $e->getMessage());
@@ -91,98 +78,179 @@ class MonevController extends Controller
     {
         try {
             $dosen = Auth::user()->dosen;
-            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
+            $monevData = $this->getActiveMonevAssignment($dosen);
+            $monevAssignment = $monevData['active'];
 
-            $unit = Unit::with(['mahasiswa.userRole.user', 'dpl.dosen.user'])
-                        ->where('id', $id_unit)
-                        ->where('id_tim_monev', $monevAssignment->id) 
-                        ->firstOrFail();
+            // Ambil Unit & Data Mahasiswa
+            $unit = Unit::with([
+                'kkn', 
+                'mahasiswa.userRole.user', 
+                'dpl.dosen.user',
+                'mahasiswa.kegiatan.logbookKegiatan', 
+                'mahasiswa.logbookSholat',
+            ])
+            ->where('id', $id_unit)
+            ->where('id_tim_monev', $monevAssignment->id) 
+            ->firstOrFail();
 
-            return view('tim monev.evaluasi.daftar-mahasiswa', [
-                'unit' => $unit
-            ]);
-
-        } catch (\Exception $e) {
-            return redirect()->route('monev.evaluasi.index')->with('error', 'Unit tidak ditemukan atau Anda tidak memiliki akses.');
-        }
-    }
-
-    public function showPenilaianPage($id_mahasiswa)
-    {
-        try {
-            $dosen = Auth::user()->dosen;
-            $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
+            // Data Pendukung (Kriteria & Nilai Existing)
+            $kriteriaList = KriteriaMonev::where('id_kkn', $unit->id_kkn)->orderBy('urutan', 'asc')->get();
             
-            // Ambil Data Mahasiswa
-            $mahasiswa = \App\Models\Mahasiswa::with([
-                'userRole.user', 'unit.dpl', 'unit.kkn',
-                'logbookSholat', 'kegiatan.logbookKegiatan'
-            ])->findOrFail($id_mahasiswa);
-            
-            // Cek Hak Akses
-            if ($mahasiswa->unit->id_tim_monev != $monevAssignment->id) {
-                throw new \Exception('Anda tidak berhak menilai mahasiswa ini.');
-            }
+            $mhsIds = $unit->mahasiswa->pluck('id');
+            $existingEvaluations = EvaluasiMahasiswa::with('details')
+                ->where('id_tim_monev', $monevAssignment->id)
+                ->whereIn('id_mahasiswa', $mhsIds)
+                ->get();
 
-            //Hitung Variable Dinamis
-            $totalJkem = $mahasiswa->kegiatan->pluck('logbookKegiatan')->flatten()->sum('total_jkem');
-            
-            $persenSholat = 0;
-            if ($mahasiswa->unit && $mahasiswa->unit->tanggal_penerjunan && $mahasiswa->unit->tanggal_penarikan) {
-                $tglMulai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penerjunan);
-                $tglSelesai = \Carbon\Carbon::parse($mahasiswa->unit->tanggal_penarikan);
-                $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
-                // For periode kkn alternatif, solat 1 harinya cuma 3
-                $sholatPerHari = stripos($mahasiswa->unit->kkn->nama, 'alternatif') !== false ? 3 : 5;
-                $totalWajibSholat = $totalHari * $sholatPerHari;
-
-                $totalBerjamaah = $mahasiswa->logbookSholat->where('status', 'sholat berjamaah')->count();
-                $totalHalangan = $mahasiswa->logbookSholat->where('status', 'sedang halangan')->count();
-                $penyebut = $totalWajibSholat - $totalHalangan;
-
-                if ($penyebut > 0) {
-                    $persenSholat = round(($totalBerjamaah / $penyebut) * 100, 1);
+            $mappedNilai = [];
+            foreach ($existingEvaluations as $eval) {
+                foreach ($eval->details as $detail) {
+                    $mappedNilai[$eval->id_mahasiswa][$detail->id_kriteria_monev] = $detail->nilai;
                 }
             }
 
-            $kriteriaList = \App\Models\KriteriaMonev::where('id_kkn', $mahasiswa->unit->id_kkn)
-                                ->orderBy('urutan', 'asc')
-                                ->get();
+            // HITUNG BERDASARKAN TANGGAL CUT OFF
+            $kknData = $unit->kkn;
+            $rawTglSelesai = $kknData->tanggal_cutoff_penilaian ?? $unit->tanggal_penarikan ?? $kknData->tanggal_selesai;
+            $tglMulai   = Carbon::parse($unit->tanggal_penerjunan ?? $kknData->tanggal_mulai);
+            $tglSelesai = Carbon::parse($rawTglSelesai);
 
-            // Kamus Data 
-            $dynamicData = [
-                'total_jkem'    => $totalJkem . ' Menit',
-                'persen_sholat' => $persenSholat . '%',
-                'nama_mhs'      => $mahasiswa->userRole->user->nama
-            ];
+            // HITUNG STATISTIK (LOGIC UTAMA)
+            foreach ($unit->mahasiswa as $mhs) {
+                $mhs->hitung_jkem = $mhs->kegiatan
+                    ->filter(function ($kegiatan) use ($tglSelesai) {
+                        return Carbon::parse($kegiatan->tanggal)->lte($tglSelesai);
+                    })
+                    ->pluck('logbookKegiatan')
+                    ->flatten()
+                    ->sum('total_jkem');
 
-            // Ambil Jawaban Eksisting 
-            $evaluasi = \App\Models\EvaluasiMahasiswa::with('details')
-                            ->where('id_tim_monev', $monevAssignment->id)
-                            ->where('id_mahasiswa', $id_mahasiswa)
-                            ->first();
+                $persenSholat = 0;
+                if ($tglMulai && $tglSelesai) {
+                    
+                    // Hitung total hari (Penerjunan s.d Cutoff)
+                    $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
+                    
+                    $isAlternatif = stripos($unit->kkn->nama ?? '', 'alternatif') !== false;
+                    $targetPerHari = $isAlternatif ? 3 : 5;
+                    $validPrayers = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
+                    
+                    // Total Sholat Wajib selama periode tsb
+                    $totalWajib = $totalHari * $targetPerHari;
+                    
+                    // Hanya ambil yang tanggalnya <= Cutoff
+                    $logbookSholatFiltered = $mhs->logbookSholat->filter(function($log) use ($tglSelesai) {
+                         return Carbon::parse($log->tanggal)->lte($tglSelesai);
+                    });
 
-            $existingAnswers = [];
-            if ($evaluasi) {
-                $existingAnswers = $evaluasi->details->pluck('nilai', 'id_kriteria_monev')->toArray();
+                    if ($isAlternatif) {
+                        // Logic KKN Alternatif (Max 3 sholat/hari yg dihitung)
+                        $logbookGrouped = $logbookSholatFiltered
+                            ->whereIn('waktu', $validPrayers)
+                            ->groupBy('tanggal');
+
+                        $totalBerjamaah = $logbookGrouped->map(function ($items) use ($targetPerHari) {
+                             $countAsli = $items->where('status', 'sholat berjamaah')->count();
+                             return min($countAsli, $targetPerHari);
+                        })->sum();
+
+                        $totalHalangan = $logbookGrouped->map(function ($items) use ($targetPerHari) {
+                             $countAsli = $items->where('status', 'sedang halangan')->count();
+                             return min($countAsli, $targetPerHari);
+                        })->sum();
+                    } else {
+                        // Logic KKN Reguler
+                        $totalBerjamaah = $logbookSholatFiltered
+                                            ->where('status', 'sholat berjamaah')
+                                            ->whereIn('waktu', $validPrayers)
+                                            ->count();
+                                            
+                        $totalHalangan = $logbookSholatFiltered
+                                            ->where('status', 'sedang halangan')
+                                            ->whereIn('waktu', $validPrayers)
+                                            ->count();
+                    }
+
+                    $penyebut = $totalWajib - $totalHalangan;
+                    if ($penyebut > 0) {
+                        $persenSholat = round(($totalBerjamaah / $penyebut) * 100, 0);
+                    }
+                }
+                $mhs->hitung_sholat = $persenSholat;
             }
 
-            return view('tim monev.evaluasi.penilaian-mahasiswa', [
-                'mahasiswa'       => $mahasiswa,
-                'evaluasi'        => $evaluasi,        
-                'kriteriaList'    => $kriteriaList,   
-                'dynamicData'     => $dynamicData,     
-                'existingAnswers' => $existingAnswers, 
+            return view('tim monev.evaluasi.daftar-mahasiswa', [
+                'unit' => $unit,
+                'kriteriaList' => $kriteriaList,
+                'mappedNilai' => $mappedNilai
             ]);
 
         } catch (\Exception $e) {
-            return redirect()->route('dashboard')->with('error', $e->getMessage()); 
+            return redirect()->route('monev.evaluasi.index')->with('error', $e->getMessage());
+        }
+    }
+
+    public function bulkStorePenilaian(Request $request)
+    {
+        // Validasi input: Array harus ada
+        $request->validate([
+            'evaluasi' => 'required|array',
+        ]);
+
+        try {
+            $dosen = Auth::user()->dosen;
+            $monevData = $this->getActiveMonevAssignment($dosen);
+            $monevAssignment = $monevData['active'];
+
+            // Loop setiap mahasiswa yang dikirim dari form
+            // Format: $request->evaluasi[ID_MAHASISWA][ID_KRITERIA] = NILAI
+            foreach ($request->evaluasi as $idMahasiswa => $scores) {
+                
+                // Filter: Hanya proses jika ada setidaknya satu nilai yang diisi (tidak null/kosong)
+                $filledScores = array_filter($scores, function($val) { 
+                    return !is_null($val) && $val !== ''; 
+                });
+
+                if (empty($filledScores)) continue; 
+
+                //Update/Create Header Evaluasi (Tabel: evaluasi_mahasiswa)
+                $evalHeader = EvaluasiMahasiswa::updateOrCreate(
+                    [
+                        'id_tim_monev' => $monevAssignment->id,
+                        'id_mahasiswa' => $idMahasiswa
+                    ],
+                    [
+                        'updated_at' => now() // Trigger update timestamp
+                    ]
+                );
+
+                //Simpan Detail Nilai (Tabel: evaluasi_mahasiswa_detail)
+                foreach ($filledScores as $idKriteria => $nilai) {
+                    
+                    // Pastikan nilai dalam range 1-3
+                    if ($nilai < 1 || $nilai > 3) continue;
+
+                    EvaluasiMahasiswaDetail::updateOrCreate(
+                        [
+                            'id_evaluasi_mahasiswa' => $evalHeader->id,
+                            'id_kriteria_monev'     => $idKriteria
+                        ],
+                        [
+                            'nilai' => $nilai
+                        ]
+                    );
+                }
+            }
+
+            return redirect()->back()->with('success', 'Data penilaian berhasil disimpan.');
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menyimpan: ' . $e->getMessage());
         }
     }
 
     public function storePenilaian(Request $request, $id_mahasiswa)
     {
-        // Validasi Array
         $request->validate([
             'nilai' => 'required|array', 
             'nilai.*' => 'required|numeric|in:1,2,3', 
@@ -192,33 +260,23 @@ class MonevController extends Controller
         try {
             $dosen = Auth::user()->dosen;
             $monevAssignment = $this->getActiveMonevAssignment($dosen)['active'];
-            $mahasiswa = \App\Models\Mahasiswa::findOrFail($id_mahasiswa);
+            $mahasiswa = Mahasiswa::findOrFail($id_mahasiswa);
 
             if ($mahasiswa->unit->id_tim_monev != $monevAssignment->id) {
                 throw new \Exception('Anda tidak berhak menilai mahasiswa ini.');
             }
 
-            // Simpan Header Evaluasi 
-            $evaluasiHeader = \App\Models\EvaluasiMahasiswa::updateOrCreate(
-                [
-                    'id_tim_monev' => $monevAssignment->id,
-                    'id_mahasiswa' => $id_mahasiswa,
-                ],
-                [
-                    'catatan_monev' => $request->catatan_monev
-                ]
+            // Header
+            $evaluasiHeader = EvaluasiMahasiswa::updateOrCreate(
+                ['id_tim_monev' => $monevAssignment->id, 'id_mahasiswa' => $id_mahasiswa],
+                ['catatan_monev' => $request->catatan_monev]
             );
 
-            // Simpan Detail Jawaban 
+            // Detail
             foreach ($request->nilai as $idKriteria => $skor) {
-                \App\Models\EvaluasiMahasiswaDetail::updateOrCreate(
-                    [
-                        'id_evaluasi_mahasiswa' => $evaluasiHeader->id,
-                        'id_kriteria_monev'     => $idKriteria
-                    ],
-                    [
-                        'nilai' => $skor
-                    ]
+                EvaluasiMahasiswaDetail::updateOrCreate(
+                    ['id_evaluasi_mahasiswa' => $evaluasiHeader->id, 'id_kriteria_monev' => $idKriteria],
+                    ['nilai' => $skor]
                 );
             }
 

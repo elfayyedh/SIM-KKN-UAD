@@ -29,6 +29,7 @@ Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middlew
 Route::get('/get-donut-chart', [DashboardController::class, 'getDonutChart'])->middleware([Authenticate::class, AdminMiddleware::class])->name('donut-chart');
 Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class])->name('prodi-data');
 Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class])->name('unit-data');
+Route::get('/get-belum-dinilai-data', [DashboardController::class, 'getBelumDinilaiData'])->middleware([Authenticate::class])->name('belum-dinilai-data');
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
 Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->middleware([Authenticate::class])->name('choose.role');
@@ -115,7 +116,6 @@ Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class
     Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');
     Route::get('/create', [App\Http\Controllers\DosenController::class, 'create'])->name('dosen.create');
     Route::post('/store', [App\Http\Controllers\DosenController::class, 'store'])->name('dosen.store');
-    Route::get('/edit/{id}', [App\Http\Controllers\DosenController::class, 'edit'])->name('dosen.edit');
     Route::put('/update/{id}', [App\Http\Controllers\DosenController::class, 'update'])->name('dosen.update');
     Route::delete('/{id}', [App\Http\Controllers\DosenController::class, 'destroy'])->name('dosen.destroy');
 });
@@ -168,6 +168,8 @@ Route::middleware([Authenticate::class, 'role.dosen:monev'])->prefix('monev')->n
     Route::post('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian/store', [MonevController::class, 'storePenilaian'])
          ->name('evaluasi.penilaian.store');
     Route::get('/evaluasi/unit/{id_unit}/mahasiswa', [MonevController::class, 'showMahasiswaPage'])->name('evaluasi.daftar-mahasiswa');
+    Route::post('/evaluasi/bulk-store', [MonevController::class, 'bulkStorePenilaian'])
+         ->name('evaluasi.bulk-store');
 });
 
 //! Unit

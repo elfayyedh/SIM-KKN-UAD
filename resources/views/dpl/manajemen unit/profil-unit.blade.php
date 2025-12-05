@@ -83,7 +83,7 @@
                         <div class="page-title-right">
                             <ol class="breadcrumb m-0">
                                 <li class="breadcrumb-item"><a href="javascript: void(0);">Manajemen Unit</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('unit.index') }}">Unit Bimbingan</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('unit.index') }}">Daftar Unit</a></li>
                                 <li class="breadcrumb-item"><a href="{{ route('unit.show', $unit->id) }}">Profil Unit</a></li>
                             </ol>
                         </div>
@@ -344,13 +344,33 @@
     <script src="{{ asset('assets/js/init/mahasiswa/unit/matriks.init.js') }}"></script>
     <script src="{{ asset('assets/js/init/mahasiswa/unit/read-rekap-kegiatan.init.js') }}"></script>
     <script>
-        // DPL specific - show comment forms
+        // DPL & Admin specific - show comment forms
         $(document).ready(function() {
-            // Wait for the content to load, then ensure comment forms are visible for DPL
-            setTimeout(function() {
-                $('.comment-form').show();
-                $('.comments-section h6').text('Komentar DPL:');
-            }, 1000);
+            @php
+                $activeRoleName = '';
+                if (Auth::check()) {
+                    if (session('user_is_dosen', false)) {
+                        $activeRoleName = session('active_role');
+                    } else {
+                        $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+                        if ($activeUserRole && $activeUserRole->role) {
+                            $activeRoleName = $activeUserRole->role->nama_role;
+                        }
+                    }
+                }
+            @endphp
+            
+            @if($activeRoleName == 'dpl' || $activeRoleName == 'Admin')
+                // Wait for the content to load, then ensure comment forms are visible
+                setTimeout(function() {
+                    $('.comment-form').show();
+                    @if($activeRoleName == 'Admin')
+                        $('.comments-section h6').text('Komentar Admin:');
+                    @else
+                        $('.comments-section h6').text('Komentar DPL:');
+                    @endif
+                }, 1000);
+            @endif
         });
     </script>
 @endsection

@@ -1,6 +1,6 @@
 @props([
-    'mahasiswa', // Data mahasiswa yang dikirim
-    'mode' => 'default' // Penanda baru kita: 'default' (tombol Edit) atau 'monev' (tombol Penilaian)
+    'mahasiswa',
+    'mode' => 'default'
 ])
 
 <div>
@@ -36,14 +36,8 @@
                     </td>
                     <td>{{ $item->total_jkem }}</td>
                     <td>
-                        @if ($mode == 'monev')
-                            <a href="{{ route('monev.evaluasi.penilaian', $item->id) }}" class="btn btn-success btn-sm">
-                                <i class="bx bx-edit-alt me-1"></i> Beri Penilaian
-                            </a>
-                        @else
-                            <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->userRole->user->id) }}"><i
-                                    class="bx bx-edit me-1">Edit</i></a>
-                        @endif
+                        <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->userRole->user->id) }}"><i
+                                class="bx bx-edit me-1">Edit</i></a>
                     </td>
                 </tr>
             @endforeach

@@ -61,13 +61,14 @@
                                             <td class="formatTanggal">{{ $k->tanggal_mulai }}</td>
                                             <td class="formatTanggal">{{ $k->tanggal_selesai }}</td>
                                             <td>
-                                                <span class="badge bg-{{ $k->status == 1 ? 'success' : 'danger' }}">
-                                                    {{ $k->status == 1 ? 'Aktif' : 'Non-Aktif' }}</span>
+                                                <span class="badge bg-{{ $k->status_color }}">
+                                                    {{ $k->status_text }}
+                                                </span>
                                             </td>
                                             <td>
                                                 <a class="btn btn-warning text-decoration-none"
                                                     href="/kkn/edit/{{ $k->id }}"><i
-                                                        class="bx bx-pencil me-1"></i>Edit data
+                                                        class="bx bx-pencil me-1"></i>Edit
                                                     KKN</a>
                                                 <a class="btn btn-primary text-decoration-none"
                                                     href="/kkn/detail/{{ $k->id }}"><i

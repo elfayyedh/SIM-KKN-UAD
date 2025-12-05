@@ -50,10 +50,11 @@ class RoleSeeder extends Seeder
             ]
         );
         $kkn = KKN::firstOrCreate(
-            ['nama' => 'KKN Reguler 119', 'thn_ajaran' => '2025/2026'],
+            ['nama' => 'KKN Alternatif 119', 'thn_ajaran' => '2025/2026'],
             [
                 'tanggal_mulai' => '2025-07-19',
                 'tanggal_selesai' => '2026-03-31',
+                'tanggal_cutoff_penilaian' => '2026-01-01',
                 'status' => 1,
             ]
         );

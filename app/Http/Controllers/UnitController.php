@@ -16,6 +16,29 @@ use Illuminate\Support\Facades\Auth;
 
 class UnitController extends Controller
 {
+    public function adminShowUnits(Request $request)
+    {
+        // Get all units from all KKN
+        $units = Unit::with([
+            'kkn',
+            'lokasi.kecamatan.kabupaten', 
+            'prokers.kegiatan',
+            'dpl.dosen.user'
+        ])
+        ->withCount('mahasiswa')
+        ->get();
+
+        // Calculate total JKEM for each unit
+        $units->each(function ($unit) {
+            $total_jkem_unit = $unit->prokers->sum(function ($proker) {
+                return $proker->kegiatan->sum('total_jkem');
+            });
+            $unit->total_jkem_all_prokers = $total_jkem_unit;
+        });
+
+        return view('administrator.read.show-unit', compact('units'));
+    }
+
     public function showUnits(Request $request)
     {
         try {
@@ -137,6 +160,10 @@ class UnitController extends Controller
             if ($id == null) {
                 return view('not-found'); 
             }
+        } else if ($roleName == 'Admin') {
+            if ($id == null) {
+                return view('not-found');
+            }
         } else {
             return view('not-found');
         }
@@ -156,6 +183,8 @@ class UnitController extends Controller
             return view('dpl.manajemen unit.profil-unit', compact('unit'));
         } else if ($roleName == 'monev') {
             return view('tim monev.evaluasi.profil-unit', compact('unit'));
+        } else if ($roleName == 'Admin') {
+            return view('dpl.manajemen unit.profil-unit', compact('unit'));
         }
         return view('not-found');
     }
@@ -363,7 +392,7 @@ class UnitController extends Controller
         try {
             ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
             
-            if ($roleName == "dpl" || $roleName == "Mahasiswa") {
+            if ($roleName == "dpl" || $roleName == "Mahasiswa" || $roleName == "Admin") {
                 if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $id) {
                     return view('not-found');
                 }
@@ -385,7 +414,7 @@ class UnitController extends Controller
     {
         ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
 
-        if ($roleName == "dpl" || $roleName == "Mahasiswa") {
+        if ($roleName == "dpl" || $roleName == "Mahasiswa" || $roleName == "Admin") {
             if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $request->id_unit) {
                 return redirect()->back()->with('error', 'Anda tidak mempunyai akses untuk unit ini');
             }
@@ -420,7 +449,7 @@ class UnitController extends Controller
     {
         ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
 
-        if ($roleName != "dpl") {
+        if ($roleName != "dpl" && $roleName != "Admin") {
             return redirect()->back()->with('error', 'Anda tidak mempunyai akses untuk unit ini');
         }
         try {
@@ -445,7 +474,7 @@ class UnitController extends Controller
     {
         ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
 
-        if ($roleName == "dpl" || $roleName == "Mahasiswa") {
+        if ($roleName == "dpl" || $roleName == "Mahasiswa" || $roleName == "Admin") {
             if ($roleName == "Mahasiswa" && $userRole->mahasiswa->id_unit != $request->id_unit) {
                 return redirect()->back()->with('error', 'Anda tidak mempunyai akses untuk mengubah lokasi unit ini');
             }
