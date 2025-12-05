@@ -209,6 +209,29 @@
                                             </div>
                                         </div>
 
+                                        <div class="row mt-4">
+                                            <div class="col-12">
+                                                <div class="card border">
+                                                    <div class="card-header bg-transparent">
+                                                        <h5 class="my-0"><i class="mdi mdi-calendar-clock me-3"></i>Pengaturan Cut Off Penilaian</h5>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-lg-12">
+                                                                <p class="card-title-desc text-muted">
+                                                                    Tanggal ini digunakan sebagai batas akhir perhitungan otomatis untuk <b>JKEM</b> dan <b>Absensi Sholat</b>.
+                                                                </p>
+                                                                <div class="mb-3">
+                                                                    <label for="tanggal_cutoff" class="form-label">Tanggal Cut Off Penilaian <span class="text-danger">*</span></label>
+                                                                    <input type="date" class="form-control datepicker-basic" id="tanggal_cutoff" placeholder="Pilih tanggal cut off">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <ul class="pager wizard twitter-bs-wizard-pager-link">
                                             <li class="previous">
                                                 <a href="javascript: void(0);" class="btn btn-primary">

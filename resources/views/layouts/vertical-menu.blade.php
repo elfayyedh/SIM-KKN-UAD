@@ -54,20 +54,23 @@
                         <div class="row g-0">
                             <div class="row g-0">
                                 <div class="col">
-                                    <a class="dropdown-icon-item" href="#">
-                                        <img src="{{ asset('') }}" alt="uad">
+                                    <a class="dropdown-icon-item" href="https://www.instagram.com/lppm_uad/" target="_blank">
+                                        <img src="{{ asset('assets/images/logo lppm uad.jpg') }}" alt="uad"
+                                            style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                                         <span>LPPM UAD</span>
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <a class="dropdown-icon-item" href="#">
-                                        <img src="{{ asset('') }}" alt="uad">
+                                    <a class="dropdown-icon-item" href="https://www.instagram.com/portal_uad/" target="_blank">
+                                        <img src="{{ asset('assets/images/logo portal uad.jpg') }}" alt="uad"
+                                            style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                                         <span>PORTAL UAD</span>
                                     </a>
                                 </div>
                                 <div class="col">
-                                    <a class="dropdown-icon-item" href="#">
-                                        <img src="{{ asset('') }}" alt="uad">
+                                    <a class="dropdown-icon-item" href="https://www.instagram.com/kknuad.official/" target="_blank">
+                                        <img src="{{ asset('assets/images/logo kkn uad.jpg') }}" alt="uad"
+                                            style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
                                         <span>KKN UAD</span>
                                     </a>
                                 </div>
@@ -134,8 +137,8 @@
                             <span data-key="t-apps">Manajemen KKN</span>
                         </a>
                         <ul class="sub-menu" aria-expanded="false">
-                            <li><a href="{{ route('kkn.create') }}"><span data-key="t-kkn">Tambah data KKN</span></a></li>
                             <li><a href="{{ route('kkn.index') }}"><span data-key="t-chat">Daftar data KKN</span></a></li>
+                            <li><a href="{{ route('kkn.create') }}"><span data-key="t-kkn">Tambah data KKN</span></a></li>
                         </ul>
                     </li>
                     <li>
@@ -238,24 +241,25 @@
                         <li class="menu-title" data-key="t-ganti-peran">Ganti Peran Dosen</li>
                         @if(session('active_role') == 'dpl')
                             <li>
-                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-monev-form">
+                                <a href="javascript:void(0);" onclick="document.getElementById('switch-to-monev-form').submit();">
+                                    <i class="mdi mdi-account-switch-outline"></i>
+                                    <span>Masuk sebagai Tim Monev</span>
+                                </a>
+
+                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-monev-form" class="d-none">
                                     @csrf
                                     <input type="hidden" name="role" value="monev">
-                                    <a href="javascript:;" onclick="document.getElementById('switch-to-monev-form').submit();">
-                                        <i class="mdi mdi-account-switch-outline"></i>
-                                        <span>Masuk sebagai Tim Monev</span>
-                                    </a>
                                 </form>
                             </li>
                         @else
                             <li>
-                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-dpl-form">
+                                <a href="javascript:void(0);" onclick="document.getElementById('switch-to-dpl-form').submit();">
+                                    <i class="mdi mdi-account-switch-outline"></i>
+                                    <span>Masuk sebagai DPL</span>
+                                </a>
+                                <form action="{{ route('dosen.role.switch') }}" method="POST" id="switch-to-dpl-form" class="d-none">
                                     @csrf
                                     <input type="hidden" name="role" value="dpl">
-                                    <a href="javascript:;" onclick="document.getElementById('switch-to-dpl-form').submit();">
-                                        <i class="mdi mdi-account-switch-outline"></i>
-                                        <span>Masuk sebagai DPL</span>
-                                    </a>
                                 </form>
                             </li>
                         @endif

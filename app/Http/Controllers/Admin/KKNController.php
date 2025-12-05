@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Models\Dosen;
 use App\Models\KriteriaMonev;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 
 class KKNController extends Controller
@@ -20,7 +21,28 @@ class KKNController extends Controller
      */
     public function index()
     {
-        $kkn = KKN::all();
+        $kkn = KKN::orderBy('created_at', 'desc')->get();
+
+        $kkn->transform(function ($item) {
+            $today = Carbon::now();
+            if (! $item->status) { 
+                $item->status_text = 'Non-Aktif';
+                $item->status_color = 'danger';
+            } 
+            elseif ($today->lt($item->tanggal_mulai)) {
+                $item->status_text = 'Belum Mulai';
+                $item->status_color = 'warning';
+            } 
+            elseif ($today->gt($item->tanggal_selesai)) {
+                $item->status_text = 'Selesai';
+                $item->status_color = 'secondary';
+            } 
+            else {
+                $item->status_text = 'Sedang Berjalan';
+                $item->status_color = 'success';
+            }
+            return $item;
+        });
         return view('administrator.read.read-kkn', compact('kkn'));
     }
 
@@ -43,6 +65,7 @@ class KKNController extends Controller
             "thn_ajaran" => 'required|string',
             "tanggal_mulai" => 'required|date',
             "tanggal_selesai" => 'required|date',
+            "tanggal_cutoff_penilaian" => 'required|date|after_or_equal:tanggal_mulai|before_or_equal:tanggal_selesai',
             "file_excel" => 'required',
             "fields" => 'required|array',
             "kriteria" => 'nullable|array',
@@ -57,7 +80,8 @@ class KKNController extends Controller
             ], [
                 'thn_ajaran' => $validated['thn_ajaran'],
                 'tanggal_mulai' => $validated['tanggal_mulai'],
-                'tanggal_selesai' => $validated['tanggal_selesai']
+                'tanggal_selesai' => $validated['tanggal_selesai'],
+                'tanggal_cutoff_penilaian' => $validated['tanggal_cutoff_penilaian']
             ]);
 
             foreach ($validated['fields'] as $field) {
@@ -165,12 +189,14 @@ class KKNController extends Controller
                 "thn_ajaran" => 'required|string',
                 "tanggal_mulai" => 'required|date',
                 "tanggal_selesai" => 'required|date',
+                "tanggal_cutoff_penilaian" => 'required|date|after_or_equal:tanggal_mulai|before_or_equal:tanggal_selesai',
             ],
             [
                 'nama.required' => 'Nama harus diisi',
                 'thn_ajaran.required' => 'Tahun Ajaran harus diisi',
                 'tanggal_mulai.required' => 'Tanggal Mulai harus diisi',
                 'tanggal_selesai.required' => 'Tanggal Selesai harus diisi',
+                "tanggal_cutoff_penilaian" => 'Tanggal Cut Off harus diisi',
             ]
         );
 

@@ -29,7 +29,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('id_evaluasi_mahasiswa');
             $table->uuid('id_kriteria_monev');
-            $table->integer('nilai');
+            $table->decimal('nilai');
             $table->timestamps();
 
             $table->foreign('id_evaluasi_mahasiswa')->references('id')->on('evaluasi_mahasiswa')->onDelete('cascade');

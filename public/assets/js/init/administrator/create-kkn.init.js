@@ -1,5 +1,5 @@
 $(document).ready(function () {
-    // Datepicker
+    // 1. Datepicker Init
     flatpickr(".datepicker-basic", {
         locale: "id",
         altInput: true,
@@ -46,7 +46,7 @@ $(document).ready(function () {
         { name: "Tematik/Non-Tematik", tipe: "unit", jkem: 6000 },
     ];
 
-    // Tambahkan bidang default
+    // Tambahkan bidang default saat load
     defaultFields.forEach(function (field) {
         var newField = $(fieldTemplate);
         newField.find("#bidang").val(field.name);
@@ -65,76 +65,82 @@ $(document).ready(function () {
         $(this).closest(".row").remove();
     });
 
+    // Data Preset
     const KRITERIA_PRESETS = {
         jkem: {
             judul: "Pencapaian JKEM",
-            ket: "1: <30%, 2: 30-50%, 3: >50%",
+            ket: "1: <30% (JKEM <2460), 2: 30-50% (JKEM 2460-4100), 3: >50% (JKEM >4100)",
             var_key: "total_jkem",
             url: "",
             text: "",
         },
         sholat: {
-            judul: "Kedisiplinan Sholat Berjamaah",
+            judul: "Sholat",
             ket: "1: <=50%, 2: 51%-75%, 3: >75%",
             var_key: "persen_sholat",
             url: "#logbook_sholat",
             text: "Logbook Sholat",
         },
         form1: {
-            judul: "Kelengkapan Form 1 (Program Kerja)",
+            judul: "Form 1",
             ket: "1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai",
             var_key: "",
             url: "#program_kerja",
             text: "Cek Form 1",
         },
         form2: {
-            judul: "Kelengkapan Form 2 (Logbook Kegiatan)",
+            judul: "Form 2",
             ket: "1: Tidak Rutin, 2: Cukup Rutin, 3: Rutin",
             var_key: "",
             url: "#logbook_harian",
             text: "Cek Form 2",
         },
         form3: {
-            judul: "Kelengkapan Form 3 (Matriks Kegiatan)",
+            judul: "Form 3",
             ket: "1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai",
             var_key: "",
             url: "#matriks",
             text: "Cek Form 3",
         },
         form4: {
-            judul: "Kelengkapan Form 4 (Rekap Kegiatan)",
+            judul: "Form 4",
             ket: "1: Tidak Lengkap, 2: Cukup Lengkap, 3: Lengkap",
             var_key: "",
             url: "#rekap",
             text: "Cek Form 4",
         },
-        custom: {
-            judul: "",
-            ket: "",
-            var_key: "",
-            url: "",
-            text: "",
-        },
+        custom: { judul: "", ket: "", var_key: "", url: "", text: "" },
     };
 
-    $("#btn-tambah-kriteria").click(function () {
-        let container = $("#container-kriteria");
-        let rowCount = container.find(".row-kriteria").length;
-
-        // Template HTML Baris Baru
-        let newRow = `
+    // Helper: Generate HTML Row
+    function getKriteriaRowHTML(index, selectedType = "") {
+        return `
             <div class="row border mb-3 row-kriteria">
                 <div class="col-lg-4">
                     <div class="mb-3">
                         <label class="form-label">Tipe Kriteria</label>
                         <select class="form-select select-template">
-                            <option value="" selected disabled>-- Pilih Tipe --</option>
-                            <option value="jkem">Penilaian JKEM</option>
-                            <option value="sholat">Penilaian Sholat</option>
-                            <option value="form1">Penilaian Form 1</option>
-                            <option value="form2">Penilaian Form 2</option>
-                            <option value="form3">Penilaian Form 3</option>
-                            <option value="form4">Penilaian Form 4</option>
+                            <option value="" disabled ${
+                                selectedType === "" ? "selected" : ""
+                            }>-- Pilih Tipe --</option>
+                            <option value="jkem" ${
+                                selectedType === "jkem" ? "selected" : ""
+                            }>Penilaian JKEM</option>
+                            <option value="sholat" ${
+                                selectedType === "sholat" ? "selected" : ""
+                            }>Penilaian Sholat</option>
+                            <option value="form1" ${
+                                selectedType === "form1" ? "selected" : ""
+                            }>Penilaian Form 1</option>
+                            <option value="form2" ${
+                                selectedType === "form2" ? "selected" : ""
+                            }>Penilaian Form 2</option>
+                            <option value="form3" ${
+                                selectedType === "form3" ? "selected" : ""
+                            }>Penilaian Form 3</option>
+                            <option value="form4" ${
+                                selectedType === "form4" ? "selected" : ""
+                            }>Penilaian Form 4</option>
                             <option value="custom" class="fw-bold text-primary">-- Custom / Manual --</option>
                         </select>
                     </div>
@@ -143,18 +149,18 @@ $(document).ready(function () {
                 <div class="col-lg-4">
                     <div class="mb-3">
                         <label class="form-label">Judul Kriteria <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control input-judul" name="kriteria[${rowCount}][judul]" placeholder="Masukkan Judul" required>
+                        <input type="text" class="form-control input-judul" name="kriteria[${index}][judul]" placeholder="Masukkan Judul" required>
                         
-                        <input type="hidden" class="input-var" name="kriteria[${rowCount}][variable_key]">
-                        <input type="hidden" class="input-url" name="kriteria[${rowCount}][link_url]">
-                        <input type="hidden" class="input-text" name="kriteria[${rowCount}][link_text]">
+                        <input type="hidden" class="input-var" name="kriteria[${index}][variable_key]">
+                        <input type="hidden" class="input-url" name="kriteria[${index}][link_url]">
+                        <input type="hidden" class="input-text" name="kriteria[${index}][link_text]">
                     </div>
                 </div>
 
                 <div class="col-lg-3">
                     <div class="mb-3">
                         <label class="form-label">Keterangan (Skala) <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control input-ket" name="kriteria[${rowCount}][keterangan]" placeholder="1:..., 2:..., 3:..." required>
+                        <input type="text" class="form-control input-ket" name="kriteria[${index}][keterangan]" placeholder="1:..., 2:..., 3:..." required>
                     </div>
                 </div>
 
@@ -165,7 +171,38 @@ $(document).ready(function () {
                 </div>
             </div>
         `;
-        container.append(newRow);
+    }
+
+    // Fungsi Auto Init 6 Baris Default
+    function initDefaultKriteria() {
+        const defaultTypes = [
+            "jkem",
+            "sholat",
+            "form1",
+            "form2",
+            "form3",
+            "form4",
+        ];
+        let container = $("#container-kriteria");
+        container.empty(); // Bersihkan dulu
+
+        defaultTypes.forEach((type, index) => {
+            let html = getKriteriaRowHTML(index, type);
+            let $row = $(html);
+            container.append($row);
+
+            // PENTING: Trigger change agar inputan Judul & Keterangan terisi otomatis dari PRESET
+            $row.find(".select-template").trigger("change");
+        });
+
+        updateKriteriaStatus();
+    }
+
+    // Tombol Tambah Manual
+    $("#btn-tambah-kriteria").click(function () {
+        let container = $("#container-kriteria");
+        let rowCount = container.find(".row-kriteria").length;
+        container.append(getKriteriaRowHTML(rowCount, ""));
         updateKriteriaStatus();
     });
 
@@ -176,26 +213,23 @@ $(document).ready(function () {
         updateKriteriaStatus();
     });
 
-    // Logic Change Dropdown
+    // Logic Dropdown Change (Mengisi Inputan)
     $(document).on("change", ".select-template", function () {
         let val = $(this).val();
         let row = $(this).closest(".row-kriteria");
 
-        // Reset semua input
+        // Reset
         row.find(".input-judul").val("");
         row.find(".input-ket").val("");
         row.find(".input-var").val("");
         row.find(".input-url").val("");
         row.find(".input-text").val("");
 
-        if (val !== "custom") {
-            // Isi otomatis Presets
+        if (val !== "custom" && val !== null) {
             let data = KRITERIA_PRESETS[val];
             if (data) {
                 row.find(".input-judul").val(data.judul);
                 row.find(".input-ket").val(data.ket);
-
-                // Isi otomatis Hidden Input
                 row.find(".input-var").val(data.var_key);
                 row.find(".input-url").val(data.url);
                 row.find(".input-text").val(data.text);
@@ -207,9 +241,6 @@ $(document).ready(function () {
 
     function reIndexKriteria() {
         $("#container-kriteria .row-kriteria").each(function (index) {
-            $(this)
-                .find(".number")
-                .text(index + 1);
             $(this)
                 .find("input")
                 .each(function () {
@@ -227,14 +258,10 @@ $(document).ready(function () {
 
     function updateKriteriaStatus() {
         let rowCount = $("#container-kriteria .row-kriteria").length;
-        if (rowCount <= 1) {
-            $(".btn-hapus-kriteria").prop("disabled", true);
-        } else {
-            $(".btn-hapus-kriteria").prop("disabled", false);
-        }
     }
 
-    updateKriteriaStatus();
+    // JALANKAN INIT DEFAULT SAAT LOAD
+    initDefaultKriteria();
 
     function handleError() {
         var status_error = false;
@@ -254,6 +281,11 @@ $(document).ready(function () {
             {
                 id: "#tanggal_selesai",
                 errorId: "#text-tanggal_selesai",
+                message: "* Wajib diisi!",
+            },
+            {
+                id: "#tanggal_cutoff",
+                errorId: "#text-tanggal_cutoff",
                 message: "* Wajib diisi!",
             },
             {
@@ -300,7 +332,6 @@ $(document).ready(function () {
         // Cek Bidang Proker
         $("#fieldsContainer .row").each(function () {
             var bidang = $(this).find("#bidang").val();
-            var tipe_bidang = $(this).find("#tipe_bidang").val();
             var syarat_jkem = $(this).find("#syarat_jkem").val();
 
             if (bidang === "") {
@@ -328,15 +359,13 @@ $(document).ready(function () {
             }
         });
 
-        // Cek Field Utama & Excel
+        // Cek Field Utama
         fields.forEach(checkField);
 
         // Cek Kriteria Monev
         $("#container-kriteria .row-kriteria").each(function () {
             var judulInput = $(this).find(".input-judul");
-            var judulVal = judulInput.val();
-
-            if (judulVal === "") {
+            if (judulInput.val() === "") {
                 judulInput.next(".error-message").remove();
                 judulInput.after(
                     '<div class="error-message text-danger">* Wajib diisi!</div>'
@@ -351,37 +380,10 @@ $(document).ready(function () {
     }
 
     const modal_statusContainer = $("#modal-status");
-    var defaultModal = `
-    <div class="mb-3">
-        <i class="bx bx-check-circle display-4 text-success"></i>
-    </div>
-    <h5>Konfirmasi penyimpanan data</h5>
-    `;
-
-    var successFinish = `
-    <div class="mb-3">
-        <i class="bx bx-check-circle display-4 text-success"></i>
-    </div>
-    <h5>Yeay, semua data telah disimpan!</h5>
-    `;
-
-    var errorModal = `
-    <div class="mb-3">
-        <i class="bx bx-error-circle display-4 text-danger"></i>
-    </div>
-    <h5>Harap lengkapi data terlebih dahulu</h5>
-    `;
-
-    var progressBar = `
-    <div class="progress-container">
-    <p>Progress input data</p>
-    <div class="progress">
-        <div class="progress-bar" role="progressbar" id="progressBar" style="width: 0%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">0%</div>
-    </div>
-    <div class="progress-status">
-        <p><span>Data inserted: </span><span id="step">0</span>/<span id="total">0</span>(<span id="percent">0%</span>)</p>
-    </div>
-</div>`;
+    var defaultModal = `<div class="mb-3"><i class="bx bx-check-circle display-4 text-success"></i></div><h5>Konfirmasi penyimpanan data</h5>`;
+    var successFinish = `<div class="mb-3"><i class="bx bx-check-circle display-4 text-success"></i></div><h5>Yeay, semua data telah disimpan!</h5>`;
+    var errorModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Harap lengkapi data terlebih dahulu</h5>`;
+    var progressBar = `<div class="progress-container"><p>Progress input data</p><div class="progress"><div class="progress-bar" role="progressbar" id="progressBar" style="width: 0%;">0%</div></div><div class="progress-status"><p><span>Data inserted: </span><span id="step">0</span>/<span id="total">0</span>(<span id="percent">0%</span>)</p></div></div>`;
 
     var isOnProgress = false;
 
@@ -404,15 +406,10 @@ $(document).ready(function () {
         return new Promise((resolve, reject) => {
             const worker = new Worker("/js/worker.js");
             worker.postMessage(file);
-
             worker.onmessage = function (event) {
-                if (event.data.error) {
-                    reject(event.data.error);
-                } else {
-                    resolve(event.data);
-                }
+                if (event.data.error) reject(event.data.error);
+                else resolve(event.data);
             };
-
             worker.onerror = function (error) {
                 reject(error.message);
             };
@@ -430,8 +427,9 @@ $(document).ready(function () {
         const thn_ajaran = $("#thn_ajaran").val();
         const tanggal_mulai = $("#tanggal_mulai").val();
         const tanggal_selesai = $("#tanggal_selesai").val();
+        const tanggal_cutoff = $("#tanggal_cutoff").val();
 
-        // Collect Bidang Proker
+        // Collect Bidang
         let fields = [];
         $("#fieldsContainer .row").each(function () {
             let field = {
@@ -466,6 +464,7 @@ $(document).ready(function () {
                 thn_ajaran: thn_ajaran,
                 tanggal_mulai: tanggal_mulai,
                 tanggal_selesai: tanggal_selesai,
+                tanggal_cutoff_penilaian: tanggal_cutoff,
                 file_excel: file_excel,
                 fields: fields,
                 kriteria: kriteria_monev,
@@ -514,12 +513,7 @@ $(document).ready(function () {
                     modal_statusContainer.html(successFinish);
                 } else if (status === "failed") {
                     isOnProgress = false;
-                    var failedModal = `
-                        <div class="mb-3">
-                            <i class="bx bx-error-circle display-4 text-danger"></i>
-                        </div>
-                        <h5>Terjadi masalah saat memasukkan data, periksa kembali file excel anda</h5>
-                    `;
+                    var failedModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Terjadi masalah saat memasukkan data</h5>`;
                     modal_statusContainer.html(failedModal);
                 }
             },
