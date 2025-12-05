@@ -25,40 +25,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <!-- Nav tabs -->
-                        <ul class="nav nav-tabs nav-tabs-custom nav-justified" role="tablist">
-                            <li class="nav-item">
-                                <a class="nav-link active" data-bs-toggle="tab" href="#mahasiswa" role="tab">
-                                    <span class="d-block d-sm-none"><i class="fas fa-home"></i></span>
-                                    <span class="d-none d-sm-block">Mahasiswa</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#admin" role="tab">
-                                    <span class="d-block d-sm-none"><i class="far fa-user"></i></span>
-                                    <span class="d-none d-sm-block">Admin</span>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" data-bs-toggle="tab" href="#dosen" role="tab">
-                                    <span class="d-block d-sm-none"><i class="far fa-envelope"></i></span>
-                                    <span class="d-none d-sm-block">Dosen</span>
-                                </a>
-                            </li>
-                        </ul>
-
-                        <!-- Tab panes -->
-                        <div class="tab-content p-3 text-muted">
-                            <div class="tab-pane active" id="mahasiswa" role="tabpanel">
-                                <x-mahasiswa-table-with-kkn :mahasiswa="$mahasiswa" />
-                            </div>
-                            <div class="tab-pane" id="admin" role="tabpanel">
-                                <x-admin-table :admin="$admin" />
-                            </div>
-                            <div class="tab-pane" id="dosen" role="tabpanel">
-                                <x-dosen-table :dosen="$dosen" />
-                            </div>
-                        </div>
+                        <x-mahasiswa-table-with-kkn :mahasiswa="$mahasiswa" />
                     </div>
                 </div>
             </div>

@@ -58,14 +58,8 @@ class UserController extends Controller
         }
 
         $mahasiswa = Mahasiswa::with(['userRole.user', 'prodi', 'unit', 'kkn'])->get();
-        $admin = User::whereHas('userRoles', function ($query) {
-            $query->whereHas('role', function ($query) {
-                $query->where('nama_role', 'Admin');
-            });
-        })->get();
-        $dosen = Dosen::with('user')->get();
 
-        return view('administrator.read.manajemen-pengguna', compact('mahasiswa', 'admin', 'dosen'));
+        return view('administrator.read.manajemen-pengguna', compact('mahasiswa'));
     }
 
     /**
