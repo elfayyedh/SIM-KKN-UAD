@@ -58,7 +58,7 @@ class EntriDataDosen implements ShouldQueue
                         'email' => $dosenData['email'],
                     ], [
                         'nama' => $dosenData['nama'],
-                        'password' => bcrypt($dosenData['nidn']),
+                        'password' => bcrypt('password'),
                         'no_telp' => $dosenData['nomorHP'] ?? null,
                         'jenis_kelamin' => $dosenData['jenisKelamin'] ?? 'L',
                     ]);

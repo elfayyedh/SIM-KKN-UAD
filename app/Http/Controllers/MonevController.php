@@ -60,11 +60,11 @@ class MonevController extends Controller
             $dosen = Auth::user()->dosen;
             if (!$dosen) throw new \Exception('Profil Dosen tidak ditemukan.');
             
-            $activeData = $this->getActiveMonevAssignment($dosen);
-            $monevAssignment = $activeData['active'];
+            $allAssignmentIds = $dosen->timMonevAssignments()->pluck('id');
 
             $units = Unit::with(['lokasi', 'dpl.dosen.user', 'prokers.kegiatan', 'kkn']) 
-                        ->where('id_tim_monev', $monevAssignment->id)
+                        ->whereIn('id_tim_monev', $allAssignmentIds)
+                        ->orderBy('id_kkn', 'desc') 
                         ->get();
 
             return view('tim monev.evaluasi.evaluasi-unit', compact('units'));

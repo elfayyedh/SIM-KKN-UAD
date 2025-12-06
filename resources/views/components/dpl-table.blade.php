@@ -28,7 +28,7 @@
                     <td>{{ $item->dosen->user->no_telp ?? 'N/A' }}</td>
                     <td>{{ $item->units->count() }} Unit</td>
                     <td>
-                        <a href="#" class="btn btn-sm btn-primary">Detail</a>
+                        <a href="{{ route('user.edit', $item->dosen->user->id) }}" class="btn btn-secondary btn-sm"><i class="bx bx-edit me-1"></i>Edit</a>
                     </td>
                 </tr>
             @endforeach
