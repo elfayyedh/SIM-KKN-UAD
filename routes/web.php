@@ -190,6 +190,8 @@ Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/export-matriks/{id_unit}/{id_kkn}', function ($idUnit, $idKkn) {
         return Excel::download(new MatrikExport($idUnit, $idKkn), 'matriks kegiatan.xlsx');
     })->name('unit.export-matriks');
+    Route::get('/export-anggota-pdf/{id}', [UnitController::class, 'exportAnggotaPDF'])->name('unit.exportAnggotaPDF');
+    Route::get('/export-rekap-kegiatan-pdf/{id}', [UnitController::class, 'exportRekapKegiatanPDF'])->name('unit.exportRekapKegiatanPDF');
 });
 
 //! End Unit
