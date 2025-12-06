@@ -486,7 +486,7 @@ class DashboardController extends Controller
                     ->whereNull('evaluasi_mahasiswa.id')
                     ->select(
                         'users.nama as nama_mahasiswa',
-                        'unit.nama_unit as nama_unit'
+                        'unit.nama as nama_unit'
                     )
                     ->get();
 

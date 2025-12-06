@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('unit', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('id_dpl');
+            $table->uuid('id_dpl')->nullable();
             $table->uuid('id_tim_monev')->nullable();
             $table->uuid('id_kkn');
             $table->uuid('id_lokasi')->nullable();
