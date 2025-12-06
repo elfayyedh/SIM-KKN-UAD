@@ -140,6 +140,16 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     // Route AJAX
     Route::get('/get-all-active-units', [App\Http\Controllers\Admin\TimMonevController::class, 'getAllActiveUnits'])
         ->name('tim-monev.get-all-active-units');
+
+});
+
+// Evaluasi Mahasiswa
+Route::prefix('/evaluasi')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\EvaluasiController::class, 'index'])->name('admin.evaluasi.index');
+    Route::post('/store', [App\Http\Controllers\Admin\EvaluasiController::class, 'store'])->name('admin.evaluasi.store');
+    Route::get('/export/{kkn_id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'export'])->name('admin.evaluasi.export');
+    Route::get('/{kkn_id}/mahasiswa/{id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'show'])->name('admin.evaluasi.mahasiswa.show');
+    Route::get('/{kkn_id}/mahasiswa/{id}/export', [App\Http\Controllers\Admin\EvaluasiController::class, 'exportDetail'])->name('admin.evaluasi.mahasiswa.export');
 });
 
 // Manajemen Unit (Admin)
