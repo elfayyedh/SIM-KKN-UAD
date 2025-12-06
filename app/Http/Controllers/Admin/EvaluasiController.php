@@ -227,6 +227,37 @@ class EvaluasiController extends Controller
         return Excel::download(new EvaluasiExport($kknId), $filename);
     }
 
+    /**
+     * Export detailed evaluasi for a single mahasiswa to Excel
+     */
+    public function exportDetail(Request $request, $kknId, $mahasiswaId)
+    {
+        // Validate user is authenticated and has Admin role
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->route('login.index')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        $selectedRoleId = session('selected_role');
+        $userRole = $user->userRoles()->with('role')->find($selectedRoleId);
+        if (!$userRole || $userRole->role->nama_role !== 'Admin') {
+            return redirect()->route('dashboard')->with('error', 'Anda tidak memiliki akses untuk export evaluasi.');
+        }
+
+        $kkn = KKN::find($kknId);
+        if (!$kkn) {
+            return redirect()->back()->with('error', 'KKN tidak ditemukan.');
+        }
+
+        $mahasiswa = Mahasiswa::find($mahasiswaId);
+        if (!$mahasiswa) {
+            return redirect()->back()->with('error', 'Mahasiswa tidak ditemukan.');
+        }
+
+        $filename = 'evaluasi_detail_' . str_replace(' ', '_', $mahasiswa->user->nama ?? 'mahasiswa') . '.xlsx';
+        return Excel::download(new \App\Exports\EvaluasiDetailExport($kknId, $mahasiswaId), $filename);
+    }
+
     private function getCardValues($kknId = null)
     {
         if (!$kknId) {

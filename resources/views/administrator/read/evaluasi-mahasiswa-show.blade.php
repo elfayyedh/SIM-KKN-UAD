@@ -30,6 +30,15 @@
 
                         
 
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>Detail Evaluasi</h5>
+                            @if($evaluations->count() > 0)
+                                <a href="{{ route('admin.evaluasi.mahasiswa.export', ['kkn_id' => $kkn->id, 'id' => $mahasiswa->id]) }}" class="btn btn-success">
+                                    <i class="fas fa-download"></i> Export to Excel
+                                </a>
+                            @endif
+                        </div>
+
                         <div class="table-responsive mt-3">
                             <table class="table table-bordered">
                                 <thead>

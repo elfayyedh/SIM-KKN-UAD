@@ -105,13 +105,7 @@
 
         <script>
             $(document).ready(function () {
-                $('#datatable').DataTable({
-                    initComplete: function () {
-                        // Add export button to the left of search filter
-                        var exportBtn = '<a href="{{ route("admin.evaluasi.export", ["kkn_id" => "all"]) }}" class="btn btn-success btn-sm me-2"><i class="bx bx-download me-1"></i>Export All Excel</a>';
-                        $('.dataTables_filter').prepend(exportBtn);
-                    }
-                });
+                $('#datatable').DataTable();
             });
         </script>
     @endsection

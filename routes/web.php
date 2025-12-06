@@ -151,6 +151,7 @@ Route::prefix('/evaluasi')->middleware([Authenticate::class, AdminMiddleware::cl
     Route::post('/store', [App\Http\Controllers\Admin\EvaluasiController::class, 'store'])->name('admin.evaluasi.store');
     Route::get('/export/{kkn_id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'export'])->name('admin.evaluasi.export');
     Route::get('/{kkn_id}/mahasiswa/{id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'show'])->name('admin.evaluasi.mahasiswa.show');
+    Route::get('/{kkn_id}/mahasiswa/{id}/export', [App\Http\Controllers\Admin\EvaluasiController::class, 'exportDetail'])->name('admin.evaluasi.mahasiswa.export');
 });
 
 // Manajemen Unit (Admin)

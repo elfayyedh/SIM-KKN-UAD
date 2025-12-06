@@ -1,0 +1,3 @@
+- [x] Modify EvaluasiExport.php to calculate total score and status in PHP instead of using Excel formulas
+- [x] Remove unnecessary row tracking logic
+- [ ] Test the Excel export to ensure values appear correctly
