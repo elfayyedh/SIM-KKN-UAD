@@ -243,7 +243,7 @@ class UserController extends Controller
                 $query->whereHas('role', function ($query) {
                     $query->where('nama_role', 'Admin');
                 });
-            })->get(); 
+            })->get();
 
             return view('administrator.read.show-admin', compact('admin'));
         } else {
@@ -251,6 +251,14 @@ class UserController extends Controller
         }
     }
 
+    public function mahasiswaIndex()
+    {
+        if ($this->getActiveRoleName() != "Admin") {
+            return view('not-found');
+        }
+        $mahasiswa = Mahasiswa::with(['userRole.user', 'prodi', 'kkn', 'unit'])->get();
+        return view('administrator.read.manajemen-mahasiswa', compact('mahasiswa'));
+    }
 
     /**
      * Update the specified resource in storage.
