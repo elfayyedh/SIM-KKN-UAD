@@ -60,7 +60,10 @@ class User extends Authenticatable
         return $this->belongsTo(Kkn::class, 'id_kkn');
     }
 
-
+    public function dosen()
+    {
+        return $this->hasOne(Dosen::class, 'id_user');
+    }
 
     public function roles()
     {

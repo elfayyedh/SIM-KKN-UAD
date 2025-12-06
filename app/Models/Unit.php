@@ -64,8 +64,22 @@ class Unit extends Model
         return $this->hasMany(Mahasiswa::class, 'id_unit');
     }
 
-    public function proker()
+    public function prokers()
     {
         return $this->hasMany(Proker::class, 'id_unit');
+    }
+
+    protected $appends = ['total_jkem_all_prokers'];
+    
+    public function getTotalJkemAllProkersAttribute()
+    {
+        return $this->prokers->sum(function ($proker) {
+            return $proker->kegiatan->sum('total_jkem');
+        });
+    }
+
+    public function timMonev()
+    {
+        return $this->belongsTo(TimMonev::class, 'id_tim_monev');
     }
 }

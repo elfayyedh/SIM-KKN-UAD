@@ -50,6 +50,7 @@
                                         <th>Tanggal Mulai</th>
                                         <th>Tanggal Selesai</th>
                                         <th>Status</th>
+                                        <th>Evaluasi Mahasiswa</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -61,13 +62,20 @@
                                             <td class="formatTanggal">{{ $k->tanggal_mulai }}</td>
                                             <td class="formatTanggal">{{ $k->tanggal_selesai }}</td>
                                             <td>
-                                                <span class="badge bg-{{ $k->status == 1 ? 'success' : 'danger' }}">
-                                                    {{ $k->status == 1 ? 'Aktif' : 'Non-Aktif' }}</span>
+                                                <span class="badge bg-{{ $k->status_color }}">
+                                                    {{ $k->status_text }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a class="btn btn-info btn-sm text-decoration-none"
+                                                    href="{{ route('admin.evaluasi.index', ['kkn_id' => $k->id]) }}"><i
+                                                        class="bx bx-show me-1"></i>Evaluasi
+                                                    Mahasiswa</a>
                                             </td>
                                             <td>
                                                 <a class="btn btn-warning text-decoration-none"
                                                     href="/kkn/edit/{{ $k->id }}"><i
-                                                        class="bx bx-pencil me-1"></i>Edit data
+                                                        class="bx bx-pencil me-1"></i>Edit
                                                     KKN</a>
                                                 <a class="btn btn-primary text-decoration-none"
                                                     href="/kkn/detail/{{ $k->id }}"><i
@@ -94,5 +102,10 @@
         <!-- Responsive examples -->
         <script src="{{ asset('assets/libs/datatables.net-responsive/js/dataTables.responsive.min.js') }}"></script>
         <script src="{{ asset('assets/libs/datatables.net-responsive-bs4/js/responsive.bootstrap4.min.js') }}"></script>
-        <script src="{{ asset('assets/js/init/administrator/read-kkn.init.js') }}"></script>
+
+        <script>
+            $(document).ready(function () {
+                $('#datatable').DataTable();
+            });
+        </script>
     @endsection

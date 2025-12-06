@@ -12,62 +12,209 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
+    private function getActiveRoleName()
+    {
+        // 2. Ambil user_role yang aktif dari session
+        $userRole = Auth::user()->userRoles()->find(session('selected_role'));
+
+        if ($userRole && $userRole->role) {
+            return $userRole->role->nama_role;
+        }
+
+        return null;
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "Mahasiswa") {
-            $id_unit = Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id_unit;
-            $id_kkn = Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id_kkn;
-            return view('mahasiswa.dasbboard', compact('id_unit', 'id_kkn'));
-        } else if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role == "Admin") {
-            $user = User::where('id', Auth::user()->id)->first();
+        if (session('user_is_dosen', false)) {
+            
+            $activeRole = session('active_role'); 
+
+            if ($activeRole == 'dpl') {
+                $dosen = Auth::user()->dosen;
+                $dplAssignments = $dosen ? $dosen->dplAssignments()->with('kkn')->get() : collect();
+
+                $units = collect();
+                foreach ($dplAssignments as $assignment) {
+                    // Query Unit
+                    $unitsFromThisAssignment = $assignment->units()
+                        ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan'])
+                        ->withCount('mahasiswa')
+                        ->get();
+
+                    // Inject Nama KKN
+                    $unitsFromThisAssignment->each(function ($unit) use ($assignment) {
+                        $unit->setAttribute('kkn_nama', $assignment->kkn ? $assignment->kkn->nama : 'KKN Tanpa Nama');
+                    });
+
+                    $units = $units->merge($unitsFromThisAssignment);
+                }
+
+                $email = Auth::user()->email;
+                $id_kkn = $dplAssignments->first() ? $dplAssignments->first()->id_kkn : null;
+                // Hanya ambil KKN yang DPL ini ditugaskan
+                $kkn = $dosen ? KKN::whereIn('id', $dosen->dplAssignments()->pluck('id_kkn'))->get() : collect();
+                return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn', 'units'));
+
+            } elseif ($activeRole == 'monev') {
+                $dosen = Auth::user()->dosen;
+                $monevAssignment = $dosen ? $dosen->timMonevAssignments()->first() : null;
+                $email = Auth::user()->email;
+                $id_kkn = $monevAssignment ? $monevAssignment->id_kkn : null;
+                // Hanya ambil KKN yang Tim Monev ini ditugaskan
+                $kkn = $dosen ? KKN::whereIn('id', $dosen->timMonevAssignments()->pluck('id_kkn'))->get() : collect();
+                return view('tim monev.dashboard', compact('email', 'id_kkn', 'kkn')); 
+
+            } else {
+                Auth::logout();
+                request()->session()->invalidate();
+                request()->session()->regenerateToken();
+                return redirect()->route('login.index')->with('error', 'Peran Dosen Anda tidak aktif.');
+            }
+        }
+        $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+        if (!$activeUserRole || !$activeUserRole->role) {
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('login.index')->with('error', 'Peran Anda tidak valid atau tidak dikenali.');
+        }
+        $roleName = $activeUserRole->role->nama_role;
+        
+        if ($roleName == "Mahasiswa") {
+            $id_unit = $activeUserRole->mahasiswa->id_unit;
+            $id_kkn = $activeUserRole->mahasiswa->id_kkn;
+            return view('mahasiswa.dasbboard', compact('id_unit', 'id_kkn')); 
+        
+        } else if ($roleName == "Admin") {
+            $user = Auth::user(); 
             $kkn = KKN::all();
-            return view('administrator.dasbboard', compact('user', 'kkn'));
+            return view('administrator.dasbboard', compact('user', 'kkn')); 
+        
+        } else {
+            Auth::logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+            return redirect()->route('login.index')->with('error', 'Role Anda (non-dosen) tidak dikenali.');
         }
     }
 
     public function getCardValue(Request $request)
     {
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
-        if ($role != "Admin") {
+        // Check if user is dosen with active role
+        if (session('user_is_dosen', false)) {
+            $activeRole = session('active_role');
+            
+            if ($activeRole == 'dpl') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->input('periode');
+                
+                // Ambil dpl assignment berdasarkan periode yang dipilih
+                $dpl = $dosen ? $dosen->dplAssignments()->where('id_kkn', $periode)->first() : null;
+                
+                if (!$dpl) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'DPL assignment not found for this period'
+                    ], 404);
+                }
+                
+                // Filter berdasarkan periode tertentu
+                $units = Unit::where('id_dpl', $dpl->id)
+                    ->where('id_kkn', $periode)
+                    ->get();
+                $unit_ids = $units->pluck('id');
+                
+                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
+                    ->where('id_kkn', $periode)
+                    ->count();
+                $total_unit = $units->count();
+
+                return response()->json([
+                    'status' => 'success',
+                    'total_mahasiswa' => $total_mahasiswa,
+                    'total_unit' => $total_unit,
+                ]);
+            }
+            
+            if ($activeRole == 'monev') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->input('periode');
+
+                // Ambil tim monev assignment berdasarkan periode yang dipilih
+                $timMonev = $dosen ? $dosen->timMonevAssignments()->where('id_kkn', $periode)->first() : null;
+
+                if (!$timMonev) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Tim Monev assignment not found for this period'
+                    ], 404);
+                }
+
+                // Filter berdasarkan periode tertentu
+                $units = Unit::where('id_tim_monev', $timMonev->id)
+                    ->where('id_kkn', $periode)
+                    ->get();
+                $unit_ids = $units->pluck('id');
+
+                $total_mahasiswa = Mahasiswa::whereIn('id_unit', $unit_ids)
+                    ->where('id_kkn', $periode)
+                    ->count();
+                $total_unit = $units->count();
+
+                return response()->json([
+                    'status' => 'success',
+                    'total_mahasiswa' => $total_mahasiswa,
+                    'total_unit' => $total_unit,
+                ]);
+            }
+        }
+        
+        // Handle Admin
+        $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+        if ($activeUserRole && $activeUserRole->role && $activeUserRole->role->nama_role == "Admin") {
+            $periode = $request->input('periode');
+            if ($periode == 'semua') {
+                $total_mahasiswa = Mahasiswa::all()->count();
+                $total_unit = Unit::all()->count();
+                $total_dpl = Dpl::all()->count();
+                $total_tim_monev = TimMonev::all()->count();
+            } else {
+                $total_mahasiswa = Mahasiswa::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+                $total_unit = Unit::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+                $total_dpl = Dpl::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+                $total_tim_monev = TimMonev::whereHas('kkn', function ($query) use ($periode) {
+                    $query->where('id', $periode);
+                })->count();
+            }
+
             return response()->json([
-                'data' => null
+                'status' => 'success',
+                'total_mahasiswa' => $total_mahasiswa,
+                'total_unit' => $total_unit,
+                'total_dpl' => $total_dpl,
+                'total_tim_monev' => $total_tim_monev,
             ]);
         }
-
-        $periode = $request->input('periode');
-        if ($periode == 'semua') {
-            $total_mahasiswa = Mahasiswa::all()->count();
-            $total_unit = Unit::all()->count();
-            $total_dpl = Dpl::all()->count();
-            $total_tim_monev = TimMonev::all()->count();
-        } else {
-            $total_mahasiswa = Mahasiswa::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-            $total_unit = Unit::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-            $total_dpl = Dpl::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-            $total_tim_monev = TimMonev::whereHas('kkn', function ($query) use ($periode) {
-                $query->where('id', $periode);
-            })->count();
-        }
-
+        
+        // Role lain tidak punya akses
         return response()->json([
-            'status' => 'success',
-            'total_mahasiswa' => $total_mahasiswa,
-            'total_unit' => $total_unit,
-            'total_dpl' => $total_dpl,
-            'total_tim_monev' => $total_tim_monev,
-        ]);
+            'status' => 'error',
+            'message' => 'Unauthorized'
+        ], 403);
     }
     /**
      * Show the form for creating a new resource.
@@ -138,59 +285,215 @@ class DashboardController extends Controller
 
     public function getProdiData(Request $request)
     {
-        $id_kkn = $request->input('periode');
+        // Check if user is dosen with active role
+        if (session('user_is_dosen', false)) {
+            $activeRole = session('active_role');
+            
+            if ($activeRole == 'dpl') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->input('periode');
+                
+                // Ambil dpl assignment berdasarkan periode yang dipilih
+                $dpl = $dosen ? $dosen->dplAssignments()->where('id_kkn', $periode)->first() : null;
+                
+                if (!$dpl) {
+                    return response()->json([]);
+                }
+                
+                // Get units untuk DPL ini berdasarkan periode
+                $units = Unit::where('id_dpl', $dpl->id)
+                    ->where('id_kkn', $periode)
+                    ->get();
+                $unit_ids = $units->pluck('id');
+                
+                $data = DB::table('mahasiswa')
+                    ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
+                    ->whereIn('mahasiswa.id_unit', $unit_ids)
+                    ->where('mahasiswa.id_kkn', $periode)
+                    ->select(
+                        'prodi.nama_prodi',
+                        DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
+                        DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
+                    )
+                    ->groupBy('prodi.id', 'prodi.nama_prodi')
+                    ->get();
+                    
+                return response()->json($data);
+            }
+            
+            if ($activeRole == 'monev') {
+                // Tim Monev logic if needed
+                return response()->json([]);
+            }
+        }
+        
+        // Handle Admin
+        $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+        if ($activeUserRole && $activeUserRole->role && $activeUserRole->role->nama_role == "Admin") {
+            $id_kkn = $request->input('periode');
 
-        // Jika periode adalah "semua", ambil semua data
-        if ($id_kkn === 'semua') {
-            $data = DB::table('mahasiswa')
-                ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
-                ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
-                ->select(
-                    'prodi.nama_prodi',
-                    DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
-                    DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
-                )
-                ->groupBy('prodi.id', 'prodi.nama_prodi') // Tambahkan 'prodi.nama_prodi' ke group by
-                ->get();
-        } else {
-            // Jika periode adalah id_kkn tertentu, ambil data berdasarkan id_kkn
-            $data = DB::table('mahasiswa')
-                ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
-                ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
-                ->where('mahasiswa.id_kkn', $id_kkn) // Filter berdasarkan id_kkn
-                ->select(
-                    'prodi.nama_prodi',
-                    DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
-                    DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
-                )
-                ->groupBy('prodi.id', 'prodi.nama_prodi')
-                ->get();
+            // Jika periode adalah "semua", ambil semua data
+            if ($id_kkn === 'semua') {
+                $data = DB::table('mahasiswa')
+                    ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
+                    ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                    ->select(
+                        'prodi.nama_prodi',
+                        DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
+                        DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
+                    )
+                    ->groupBy('prodi.id', 'prodi.nama_prodi')
+                    ->get();
+            } else {
+                // Jika periode adalah id_kkn tertentu, ambil data berdasarkan id_kkn
+                $data = DB::table('mahasiswa')
+                    ->join('prodi', 'mahasiswa.id_prodi', '=', 'prodi.id')
+                    ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                    ->where('mahasiswa.id_kkn', $id_kkn)
+                    ->select(
+                        'prodi.nama_prodi',
+                        DB::raw('COUNT(DISTINCT mahasiswa.id_unit) as total_unit'),
+                        DB::raw('COUNT(mahasiswa.id) as total_mahasiswa')
+                    )
+                    ->groupBy('prodi.id', 'prodi.nama_prodi')
+                    ->get();
+            }
+            
+            return response()->json($data);
         }
 
-        return response()->json($data); // Kembalikan data dalam format JSON
+        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
     }
 
     public function getUnitData(Request $request)
     {
-        $periode = $request->periode;
+        // Check if user is dosen with active role
+        if (session('user_is_dosen', false)) {
+            $activeRole = session('active_role');
+            
+            if ($activeRole == 'dpl') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->periode;
+                
+                // Ambil dpl assignment berdasarkan periode yang dipilih
+                $dpl = $dosen ? $dosen->dplAssignments()->where('id_kkn', $periode)->first() : null;
+                
+                if (!$dpl) {
+                    return response()->json([]);
+                }
+                
+                $data = DB::table('unit')
+                    ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                    ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                    ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                    ->select(
+                        DB::raw('COUNT(unit.id) AS total_unit'),
+                        'kecamatan.nama AS kecamatan',
+                        'kabupaten.nama AS kabupaten'
+                    )
+                    ->where('unit.id_dpl', $dpl->id)
+                    ->where('unit.id_kkn', $periode)
+                    ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
+                    ->get();
 
-        $query = DB::table('unit')
-            ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
-            ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
-            ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
-            ->select(
-                DB::raw('COUNT(unit.id) AS total_unit'),
-                'kecamatan.nama AS kecamatan',
-                'kabupaten.nama AS kabupaten'
-            )
-            ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama');
+                return response()->json($data);
+            }
 
-        if ($periode !== 'semua') {
-            $query->where('unit.id_kkn', $periode);
+            if ($activeRole == 'monev') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->periode;
+
+                // Ambil tim monev assignment berdasarkan periode yang dipilih
+                $timMonev = $dosen ? $dosen->timMonevAssignments()->where('id_kkn', $periode)->first() : null;
+
+                if (!$timMonev) {
+                    return response()->json([]);
+                }
+
+                $data = DB::table('unit')
+                    ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                    ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                    ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                    ->select(
+                        DB::raw('COUNT(unit.id) AS total_unit'),
+                        'kecamatan.nama AS kecamatan',
+                        'kabupaten.nama AS kabupaten'
+                    )
+                    ->where('unit.id_tim_monev', $timMonev->id)
+                    ->where('unit.id_kkn', $periode)
+                    ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama')
+                    ->get();
+
+                return response()->json($data);
+            }
         }
 
-        $data = $query->get();
+        // Handle Admin
+        $activeUserRole = Auth::user()->userRoles()->find(session('selected_role'));
+        if ($activeUserRole && $activeUserRole->role && $activeUserRole->role->nama_role == "Admin") {
+            $periode = $request->periode;
 
-        return response()->json($data);
+            $query = DB::table('unit')
+                ->join('lokasi', 'unit.id_lokasi', '=', 'lokasi.id')
+                ->join('kecamatan', 'lokasi.id_kecamatan', '=', 'kecamatan.id')
+                ->join('kabupaten', 'kecamatan.id_kabupaten', '=', 'kabupaten.id')
+                ->select(
+                    DB::raw('COUNT(unit.id) AS total_unit'),
+                    'kecamatan.nama AS kecamatan',
+                    'kabupaten.nama AS kabupaten'
+                )
+                ->groupBy('kecamatan.id', 'kabupaten.id', 'kecamatan.nama', 'kabupaten.nama');
+
+            if ($periode !== 'semua') {
+                $query->where('unit.id_kkn', $periode);
+            }
+
+            $data = $query->get();
+            return response()->json($data);
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+    }
+
+    public function getBelumDinilaiData(Request $request)
+    {
+        // Check if user is dosen with active role
+        if (session('user_is_dosen', false)) {
+            $activeRole = session('active_role');
+
+            if ($activeRole == 'monev') {
+                $dosen = Auth::user()->dosen;
+                $periode = $request->input('periode');
+
+                // Ambil tim monev assignment berdasarkan periode yang dipilih
+                $timMonev = $dosen ? $dosen->timMonevAssignments()->where('id_kkn', $periode)->first() : null;
+
+                if (!$timMonev) {
+                    return response()->json([]);
+                }
+
+                // Get mahasiswa yang belum dinilai oleh tim monev ini
+                $data = DB::table('mahasiswa')
+                    ->join('unit', 'mahasiswa.id_unit', '=', 'unit.id')
+                    ->join('user_role', 'mahasiswa.id_user_role', '=', 'user_role.id')
+                    ->join('users', 'user_role.id_user', '=', 'users.id')
+                    ->leftJoin('evaluasi_mahasiswa', function($join) use ($timMonev) {
+                        $join->on('evaluasi_mahasiswa.id_mahasiswa', '=', 'mahasiswa.id')
+                             ->where('evaluasi_mahasiswa.id_tim_monev', '=', $timMonev->id);
+                    })
+                    ->where('unit.id_tim_monev', $timMonev->id)
+                    ->where('mahasiswa.id_kkn', $periode)
+                    ->whereNull('evaluasi_mahasiswa.id')
+                    ->select(
+                        'users.nama as nama_mahasiswa',
+                        'unit.nama as nama_unit'
+                    )
+                    ->get();
+
+                return response()->json($data);
+            }
+        }
+
+        return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
     }
 }

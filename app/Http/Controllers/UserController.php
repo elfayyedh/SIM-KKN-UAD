@@ -7,13 +7,46 @@ use App\Models\KKN;
 use App\Models\Mahasiswa;
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Dpl;
+use App\Models\Dosen;
+use App\Models\TimMonev;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
+    /**
+     * Helper aman untuk mendapatkan nama role aktif.
+     * Mengembalikan string seperti 'Admin', 'Mahasiswa', 'dpl', 'monev', atau 'Guest'.
+     */
+    private function getActiveRoleName()
+    {
+        if (!Auth::check()) {
+            return 'Guest';
+        }
+
+        if (session('user_is_dosen', false)) {
+            return session('active_role'); 
+        } else {
+            $activeUserRole = Auth::user()->userRoles->find(session('selected_role'));
+            if ($activeUserRole && $activeUserRole->role) {
+                return $activeUserRole->role->nama_role; 
+            }
+        }
+        
+        $roles = Auth::user()->userRoles;
+        if($roles->count() >= 1) {
+            $role = $roles->first();
+            session(['selected_role' => $role->id]);
+            return $role->role->nama_role;
+        }
+
+        return 'Guest'; 
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -34,9 +67,10 @@ class UserController extends Controller
             return redirect('/kkn/create')->with('error', 'Silahkan tambahkan data KKN terlebih dahulu');
         }
     }
+    
     public function createAdmin()
     {
-        if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role != "Admin") {
+        if ($this->getActiveRoleName() != "Admin") {
             return view('not-found');
         }
         return view('administrator.create.create-admin');
@@ -47,21 +81,16 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if (Auth::user()->userRoles->find(session('selected_role'))->role->nama_role != "Admin") {
+        if ($this->getActiveRoleName() != "Admin") {
             return view('not-found');
         }
-        // Validasi data input
+        
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => [
-                'required',
-                'string',
-                'min:8', // Minimal 8 karakter
-                'regex:/[a-z]/', // Harus ada huruf kecil
-                'regex:/[A-Z]/', // Harus ada huruf kapital
-                'regex:/[0-9]/', // Harus ada angka
-                'regex:/[@$!%*?&-_]/', // Harus ada karakter khusus
+                'required', 'string', 'min:8', 'regex:/[a-z]/', 'regex:/[A-Z]/', 
+                'regex:/[0-9]/', 'regex:/[@$!%*?&-_]/'
             ],
             'jenis_kelamin' => 'required|in:L,P',
             'no_telp' => 'required|numeric|digits_between:10,13',
@@ -78,7 +107,6 @@ class UserController extends Controller
                 ->withInput();
         }
 
-        // Proses penyimpanan data
         $user = new User();
         $user->nama = $request->input('nama');
         $user->email = $request->input('email');
@@ -86,13 +114,13 @@ class UserController extends Controller
         $user->jenis_kelamin = $request->input('jenis_kelamin');
         $user->no_telp = $request->input('no_telp');
         $user->save();
-        // Simpan role user
+        
         $role = Role::where('nama_role', 'Admin')->first();
         $user->userRoles()->create([
             'id_role' => $role->id,
         ]);
 
-        return redirect()->route('user.admin') // Ganti dengan route tujuan setelah sukses
+        return redirect()->route('user.admin')
             ->with('success', 'Data berhasil disimpan');
     }
 
@@ -101,25 +129,28 @@ class UserController extends Controller
      */
     public function show()
     {
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
+        $role = $this->getActiveRoleName();
+        $user = Auth::user();
+
         if ($role == "Mahasiswa") {
-            $id = Auth::user()->userRoles->find(session('selected_role'))->mahasiswa->id;
             try {
-                $user = Mahasiswa::with([
-                    'prodi',
-                    'userRole.user',
-                    'kkn',
-                    'unit',
-                    'logbookKegiatan',
-                    'logbookSholat'
+                $activeUserRole = Auth::user()->userRoles()->with('mahasiswa')->find(session('selected_role'));
+                if (!$activeUserRole || !$activeUserRole->mahasiswa) {
+                    throw new \Exception('Data Mahasiswa tidak ditemukan.');
+                }
+                
+                $id = $activeUserRole->mahasiswa->id;
+                $mahasiswa_data = Mahasiswa::with([
+                    'prodi', 'userRole.user', 'kkn', 'unit',
+                    'logbookKegiatan', 'logbookSholat'
                 ])->findOrFail($id);
 
-                $prokerData = BidangProker::with(['proker' => function ($query) use ($user) {
+                $prokerData = BidangProker::with(['proker' => function ($query) use ($mahasiswa_data) {
                     if ($query->getModel()->type == 'individu') {
-                        $query->where('id_mahasiswa', $user->id);
+                        $query->where('id_mahasiswa', $mahasiswa_data->id);
                     }
                 }])
-                    ->where('id_kkn', $user->kkn->id)
+                    ->where('id_kkn', $mahasiswa_data->kkn->id)
                     ->get();
 
                 $prokerData->each(function ($item) {
@@ -129,17 +160,63 @@ class UserController extends Controller
                     $item->total_jkem_bidang = $totalJKEM;
                 });
 
-
-                return view('mahasiswa.profil-user', compact('user', 'prokerData'));
+                return view('mahasiswa.profil-user', ['user' => $mahasiswa_data, 'prokerData' => $prokerData]);
+            
             } catch (\Exception $e) {
                 return view('not-found');
             }
         } else if ($role == "Admin") {
             echo "Under maintenance";
-        } else if ($role == "DPL") {
-            echo "Under maintenance";
-        } else if ($role == "Tim Monev") {
-            echo "Under maintenance";
+
+        } else if ($role == "dpl") { 
+            try {
+                $dosen = $user->dosen; 
+                if (!$dosen) {
+                    throw new \Exception('Data profil Dosen (NIP, dll) tidak ditemukan.');
+                }
+                
+                $dplAssignments = $dosen->dplAssignments()
+                    ->with([
+                        'kkn', 
+                        'units.lokasi.kecamatan.kabupaten', 
+                        'units.prokers.kegiatan'
+                    ]) 
+                    ->get(); 
+                
+                if ($dplAssignments->isEmpty()) {
+                    throw new \Exception('Data penugasan DPL tidak ditemukan.');
+                }
+                
+                $units = collect();
+                foreach ($dplAssignments as $dplAssignment) {
+                    $units = $units->merge($dplAssignment->units);
+                }
+
+                $units->each(function ($unit) {
+                    $total_jkem_unit = $unit->prokers->sum(function ($proker) {
+                        return $proker->kegiatan->sum('total_jkem');
+                    });
+                    $unit->total_jkem_all_prokers = $total_jkem_unit;
+                });
+                
+                return view('dpl.profil-user', compact('user', 'dosen', 'dplAssignments', 'units'));
+            } catch (\Exception $e) {
+                return redirect()->route('dashboard')->with('error', 'Gagal memuat profil: ' . $e->getMessage());
+            }
+
+        } else if ($role == "monev") { 
+            try {
+                $dosen = $user->dosen; 
+                if (!$dosen) {
+                    throw new \Exception('Data profil Dosen tidak ditemukan.');
+                }
+                return view('tim monev.profil-user', compact('user', 'dosen'));
+            
+            } catch (\Exception $e) {
+                return redirect()->route('dashboard')->with('error', $e->getMessage());
+            }
+        } else {
+            return view('not-found');
         }
     }
 
@@ -148,34 +225,25 @@ class UserController extends Controller
      */
     public function edit(string $id)
     {
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
-        if ($role == "Mahasiswa") {
-            if (Auth::user()->id != $id) {
-                return view('not-found');
-            }
-            $user = User::where('id', $id)->first();
-            return view('user-edit', compact('user'));
-        } else if ($role == "Admin") {
-            $user = User::where('id', $id)->first();
-            return view('user-edit', compact('user'));
-        } else {
+        $role = $this->getActiveRoleName();
+        $user = User::findOrFail($id);
+        $loggedInUser = Auth::user();
+
+        if ($loggedInUser->id != $user->id && $role != "Admin") {
             return view('not-found');
         }
+        return view('user-edit', compact('user'));
     }
 
     public function adminShow()
     {
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
+        $role = $this->getActiveRoleName();
         if ($role == "Admin") {
-            // Ambil data user yang memiliki role admin dan jalankan query dengan get()
             $admin = User::whereHas('userRoles', function ($query) {
                 $query->whereHas('role', function ($query) {
                     $query->where('nama_role', 'Admin');
                 });
-            })->get(); // tambahkan get() di sini untuk mengeksekusi query
-
-            // Debugging jika masih diperlukan
-            // dd($admin);
+            })->get();
 
             return view('administrator.read.show-admin', compact('admin'));
         } else {
@@ -183,13 +251,28 @@ class UserController extends Controller
         }
     }
 
+    public function mahasiswaIndex()
+    {
+        if ($this->getActiveRoleName() != "Admin") {
+            return view('not-found');
+        }
+        $mahasiswa = Mahasiswa::with(['userRole.user', 'prodi', 'kkn', 'unit'])->get();
+        return view('administrator.read.manajemen-mahasiswa', compact('mahasiswa'));
+    }
 
     /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
     {
-        // Validate request
+        $role = $this->getActiveRoleName();
+        $user = User::findOrFail($id);
+        $loggedInUser = Auth::user();
+
+        if ($loggedInUser->id != $user->id && $role != "Admin") {
+            return view('not-found');
+        }
+
         $request->validate([
             'nama' => 'required',
             'no_telp' => 'required|numeric|digits_between:10,13',
@@ -201,39 +284,29 @@ class UserController extends Controller
             'nama.required' => 'Nama harus diisi',
             'jenis_kelamin.required' => 'Jenis Kelamin harus diisi',
         ]);
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
-        if ($role == "Admin") {
-            $user = User::where('id', $id)->first();
-            $user->update($request->all());
-            return redirect()->back()->with('success_user', 'Data user berhasil diubah');
-        } else if ($role == "Mahasiswa") {
-            if (Auth::user()->id != $id) {
-                return view('not-found');
-            }
-            $user = User::where('id', $id)->first();
-            $user->update($request->all());
-            return redirect()->back()->with('success_user', 'Data user berhasil diubah');
-        }
+        
+        $user->update($request->all());
+        return redirect()->back()->with('success_user', 'Data user berhasil diubah');
     }
 
     public function updatePassword(Request $request, string $id)
     {
-        $role = Auth::user()->userRoles->find(session('selected_role'))->role->nama_role;
-        if ($role == "Mahasiswa") {
-            if (Auth::user()->id != $id) {
-                return view('not-found');
-            }
+        $user = User::findOrFail($id);
+        $loggedInUser = Auth::user();
+        $loggedInRole = $this->getActiveRoleName();
+
+        if ($loggedInUser->id != $user->id && $loggedInRole != "Admin") {
+            return view('not-found');
         }
-        // Validasi input dari form
+
         $validator = Validator::make($request->all(), [
             'old-password' => 'required',
             'new_password' => [
-                'required',
-                'min:8',
-                'regex:/[a-z]/',      // Harus memiliki minimal 1 huruf kecil
-                'regex:/[A-Z]/',      // Harus memiliki minimal 1 huruf besar
-                'regex:/[0-9]/',      // Harus memiliki minimal 1 angka
-                'regex:/[\W_]/',      // Harus memiliki minimal 1 karakter khusus
+                'required', 'min:8',
+                'regex:/[a-z]/', 
+                'regex:/[A-Z]/', 
+                'regex:/[0-9]/', 
+                'regex:/[\W_]/', 
             ],
             'confirm_password' => 'required|same:new_password',
         ], [
@@ -245,23 +318,20 @@ class UserController extends Controller
             'confirm_password.same' => 'Konfirmasi password tidak cocok dengan password baru.',
         ]);
 
-        // Jika validasi gagal
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
-
-        $user = User::where('id', $id)->first();
-
-        // Memastikan password lama benar
-        if (!Hash::check($request->input('old-password'), $user->password)) {
+        if ($loggedInRole != 'Admin' && !Hash::check($request->input('old-password'), $user->password)) {
             return redirect()->back()->withErrors(['old-password' => 'Password lama salah.']);
         }
+        if (!Hash::check($request->input('old-password'), $user->password)) {
+             return redirect()->back()->withErrors(['old-password' => 'Password lama salah.']);
+        }
 
-        // Update password baru
+
         $user->password = Hash::make($request->input('new_password'));
         $user->save();
 
-        // Redirect dengan pesan sukses
         return redirect()->back()->with('success_pw', 'Password berhasil diubah.');
     }
 

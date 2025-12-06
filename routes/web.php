@@ -13,23 +13,35 @@ use App\Http\Controllers\Public\MahasiswaController;
 use App\Http\Controllers\RoleSelectionController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CommentController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\AuthenticatedUser;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Http\Controllers\DosenRoleSwitchController;
+use App\Http\Controllers\Admin\TimMonevController;
+use App\Http\Controllers\MonevController;
+use App\Http\Controllers\Admin\KriteriaMonevController;
 
 Route::get('/', [DashboardController::class, 'index'])->middleware([Authenticate::class])->name('dashboard');
 Route::get('/chart-data', [DashboardController::class, 'getChartData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('chart-data');
 Route::get('/get-donut-chart', [DashboardController::class, 'getDonutChart'])->middleware([Authenticate::class, AdminMiddleware::class])->name('donut-chart');
-Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('prodi-data');
-Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class, AdminMiddleware::class])->name('unit-data');
+Route::get('/get-prodi-data', [DashboardController::class, 'getProdiData'])->middleware([Authenticate::class])->name('prodi-data');
+Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middleware([Authenticate::class])->name('unit-data');
+Route::get('/get-belum-dinilai-data', [DashboardController::class, 'getBelumDinilaiData'])->middleware([Authenticate::class])->name('belum-dinilai-data');
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
-Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->name('choose.role');
-Route::post('/set-role', [RoleSelectionController::class, 'setRole'])->name('set.role');
+Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->middleware([Authenticate::class])->name('choose.role');
 Route::middleware([Authenticate::class])->get('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/set-role/{role_id}', [RoleSelectionController::class, 'setRole'])
+       ->middleware([Authenticate::class]) 
+       ->name('set.role');
+
+Route::post('/dosen/switch-role', [DosenRoleSwitchController::class, 'switchRole'])
+        ->middleware([Authenticate::class])
+        ->name('dosen.role.switch');
 
 // ! Admin
 //? Manajemen KKN
@@ -62,6 +74,7 @@ Route::prefix('/pages')->middleware([Authenticate::class])->group(function () {
 
 //Mendapatkan progress entry data KKN
 Route::get('/queue-progress/{jobId}', [KKNController::class, 'getProgress'])->name('kkn.progress'); // Done
+Route::get('/progress/{jobId}', [KKNController::class, 'getProgress'])->name('progress'); // For dosen upload
 
 //? Manajemen bidang Proker
 Route::prefix('/bidang')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
@@ -70,7 +83,14 @@ Route::prefix('/bidang')->middleware([Authenticate::class, AdminMiddleware::clas
     Route::delete('/destroy/{id}', [BidangProkerController::class, 'destroy'])->name('bidang.destroy');
 });
 
-Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class, AdminMiddleware::class])->name('card.value');
+// kriteria form monev
+Route::prefix('/kriteria')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::post('/store', [KriteriaMonevController::class, 'store'])->name('kriteria.store');
+    Route::put('/update/{id}', [KriteriaMonevController::class, 'update'])->name('kriteria.update');
+    Route::delete('/destroy/{id}', [KriteriaMonevController::class, 'destroy'])->name('kriteria.destroy');
+});
+
+Route::get('/card-value', [DashboardController::class, 'getCardValue'])->middleware([Authenticate::class])->name('card.value');
 
 
 
@@ -87,12 +107,85 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
+// Manajemen Mahasiswa
+Route::middleware([Authenticate::class, AdminMiddleware::class])->get('/mahasiswa', [UserController::class, 'mahasiswaIndex'])->name('mahasiswa.index');
+// Manajemen Dosen
+Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');
+    Route::get('/create', [App\Http\Controllers\DosenController::class, 'create'])->name('dosen.create');
+    Route::post('/store', [App\Http\Controllers\DosenController::class, 'store'])->name('dosen.store');
+    Route::put('/update/{id}', [App\Http\Controllers\DosenController::class, 'update'])->name('dosen.update');
+    Route::delete('/{id}', [App\Http\Controllers\DosenController::class, 'destroy'])->name('dosen.destroy');
+});
+
+// Manajemen DPL
+Route::prefix('/dpl')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\DplController::class, 'index'])->name('dpl.index');
+    Route::get('/create', [App\Http\Controllers\DplController::class, 'create'])->name('dpl.create');
+    Route::post('/store', [App\Http\Controllers\DplController::class, 'store'])->name('dpl.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\DplController::class, 'edit'])->name('dpl.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\DplController::class, 'update'])->name('dpl.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\DplController::class, 'destroy'])->name('dpl.destroy');
+});
+
+// Manajemen Tim Monev
+Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\TimMonevController::class, 'index'])->name('tim-monev.index');
+    Route::get('/create', [App\Http\Controllers\Admin\TimMonevController::class, 'create'])->name('tim-monev.create');
+    Route::post('/store', [App\Http\Controllers\Admin\TimMonevController::class, 'store'])->name('tim-monev.store');
+    Route::get('/edit/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'edit'])->name('tim-monev.edit');
+    Route::put('/update/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'update'])->name('tim-monev.update');
+    Route::delete('/destroy/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
+    Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
+    // Route AJAX
+    Route::get('/get-all-active-units', [App\Http\Controllers\Admin\TimMonevController::class, 'getAllActiveUnits'])
+        ->name('tim-monev.get-all-active-units');
+
+});
+
+// Evaluasi Mahasiswa
+Route::prefix('/evaluasi')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\EvaluasiController::class, 'index'])->name('admin.evaluasi.index');
+    Route::post('/store', [App\Http\Controllers\Admin\EvaluasiController::class, 'store'])->name('admin.evaluasi.store');
+    Route::get('/export/{kkn_id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'export'])->name('admin.evaluasi.export');
+    Route::get('/{kkn_id}/mahasiswa/{id}', [App\Http\Controllers\Admin\EvaluasiController::class, 'show'])->name('admin.evaluasi.mahasiswa.show');
+    Route::get('/{kkn_id}/mahasiswa/{id}/export', [App\Http\Controllers\Admin\EvaluasiController::class, 'exportDetail'])->name('admin.evaluasi.mahasiswa.export');
+});
+
+// Manajemen Unit (Admin)
+Route::get('/admin/unit', [UnitController::class, 'adminShowUnits'])
+    ->middleware([Authenticate::class, AdminMiddleware::class])
+    ->name('admin.unit.index');
+
 // ! End Admin
 
+// ! DPL
+Route::middleware([Authenticate::class, 'role.dosen:dpl'])->prefix('dpl')->name('dpl.')->group(function () {
+    Route::get('/dashboard', [UnitController::class, 'showUnits'])->name('dashboard');
+    Route::get('/unit', [UnitController::class, 'showUnits'])->name('unit.index');
+});
+
+// ! TIM MONEV
+Route::middleware([Authenticate::class, 'role.dosen:monev'])->prefix('monev')->name('monev.')->group(function () {
+    
+    Route::get('/dashboard', [MonevController::class, 'index'])->name('dashboard');
+    Route::get('/evaluasi', [MonevController::class, 'index'])->name('evaluasi.index');
+    Route::post('/evaluasi/set-kkn', [MonevController::class, 'setActiveKkn'])->name('evaluasi.set-kkn');
+    Route::get('/evaluasi/dpl/{id_dpl}/units', [MonevController::class, 'showDplUnits'])->name('evaluasi.dpl-units');
+    Route::get('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian', [MonevController::class, 'showPenilaianPage'])
+         ->name('evaluasi.penilaian');
+    Route::post('/evaluasi/mahasiswa/{id_mahasiswa}/penilaian/store', [MonevController::class, 'storePenilaian'])
+         ->name('evaluasi.penilaian.store');
+    Route::get('/evaluasi/unit/{id_unit}/mahasiswa', [MonevController::class, 'showMahasiswaPage'])->name('evaluasi.daftar-mahasiswa');
+    Route::post('/evaluasi/bulk-store', [MonevController::class, 'bulkStorePenilaian'])
+         ->name('evaluasi.bulk-store');
+});
 
 //! Unit
 Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/edit/{id}', [UnitController::class, 'edit'])->name('unit.edit');
+    Route::get('/get-table', [UnitController::class, 'getUnitTable'])->name('unit.getTable');
+    Route::get('/', [UnitController::class, 'showUnits'])->name('unit.index');
     Route::get('/detail/{id?}', [UnitController::class, 'show'])->name('unit.show');
     Route::get('/getProker/{id}/{id_kkn}', [UnitController::class, 'getProkerUnit'])->name('unit.getProker');
     Route::get('/getMatriks/{id}/{id_kkn}', [UnitController::class, 'getMatriks'])->name('unit.getMatriks');
@@ -103,6 +196,7 @@ Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/generateProkerUnitPdf/{id_unit}/{id_kkn}', [UnitController::class, 'generateProkerUnitPdf'])->name('unit.generateProkerUnitPdf');
     Route::put('/updateJabatanAnggota', [UnitController::class, 'updateJabatanAnggota'])->name('unit.updateJabatanAnggota');
     Route::put('/updateProfilUnit', [UnitController::class, 'updateProfilUnit'])->name('unit.updateProfilUnit');
+    Route::put('/unit/update-lokasi', [UnitController::class, 'updateLinkLokasi'])->name('unit.updateLinkLokasi');
     Route::get('/export-matriks/{id_unit}/{id_kkn}', function ($idUnit, $idKkn) {
         return Excel::download(new MatrikExport($idUnit, $idKkn), 'matriks kegiatan.xlsx');
     })->name('unit.export-matriks');
@@ -167,6 +261,15 @@ Route::middleware([Authenticate::class])->get('/mahasiswa/detail/{id}', [Mahasis
 Route::middleware([Authenticate::class])->get('/mahasiswa/proker/{id}/{id_kkn}/{id_unit}', [MahasiswaController::class, 'getProkerMahasiswa'])->name('mahasiswa.getProkerMahasiswa');
 
 //! End Mahasiswa
+
+//! Comment
+Route::middleware([Authenticate::class])->prefix('/comment')->group(function () {
+    Route::post('/store', [CommentController::class, 'store'])->name('comment.store');
+    Route::get('/get/{id_bidang_proker}', [CommentController::class, 'getComments'])->name('comment.get');
+    Route::put('/update/{id}', [CommentController::class, 'update'])->name('comment.update');
+    Route::delete('/delete/{id}', [CommentController::class, 'destroy'])->name('comment.delete');
+});
+//! End Comment
 
 Route::middleware([Authenticate::class])->post('/upload-image', [DownloaderController::class, 'upload'])->name('upload.image');
 //! Public

@@ -1,15 +1,11 @@
-// Datepicker
-
 $(document).ready(function () {
+    // Init Datepicker
     flatpickr(".datepicker-basic", {
-        //Buat tanggal format indonesia
         locale: "id",
         altInput: true,
         altFormat: "l, j F Y",
         dateFormat: "Y-m-d",
     });
-
-    //? Start of Bidang
 
     var fieldTemplate = `
     <div class="row border mb-3">
@@ -40,7 +36,7 @@ $(document).ready(function () {
             </div>
         </div>
     </div>
-`;
+    `;
 
     // Bidang default
     var defaultFields = [
@@ -50,7 +46,7 @@ $(document).ready(function () {
         { name: "Tematik/Non-Tematik", tipe: "unit", jkem: 6000 },
     ];
 
-    // Tambahkan bidang default
+    // Load default fields
     defaultFields.forEach(function (field) {
         var newField = $(fieldTemplate);
         newField.find("#bidang").val(field.name);
@@ -69,12 +65,202 @@ $(document).ready(function () {
         $(this).closest(".row").remove();
     });
 
-    // ? Simpan data
+    // Data Preset
+    const KRITERIA_PRESETS = {
+        jkem: {
+            judul: "Pencapaian JKEM",
+            ket: "1: <30% (JKEM <2460), 2: 30-50% (JKEM 2460-4100), 3: >50% (JKEM >4100)",
+            var_key: "total_jkem",
+            url: "",
+            text: "",
+        },
+        sholat: {
+            judul: "Sholat",
+            ket: "1: <=50%, 2: 51%-75%, 3: >75%",
+            var_key: "persen_sholat",
+            url: "#logbook_sholat",
+            text: "Logbook Sholat",
+        },
+        form1: {
+            judul: "Form 1",
+            ket: "1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai",
+            var_key: "",
+            url: "#program_kerja",
+            text: "Cek Form 1",
+        },
+        form2: {
+            judul: "Form 2",
+            ket: "1: Tidak Rutin, 2: Cukup Rutin, 3: Rutin",
+            var_key: "",
+            url: "#logbook_harian",
+            text: "Cek Form 2",
+        },
+        form3: {
+            judul: "Form 3",
+            ket: "1: Tidak Sesuai, 2: Cukup Sesuai, 3: Sesuai",
+            var_key: "",
+            url: "#matriks",
+            text: "Cek Form 3",
+        },
+        form4: {
+            judul: "Form 4",
+            ket: "1: Tidak Lengkap, 2: Cukup Lengkap, 3: Lengkap",
+            var_key: "",
+            url: "#rekap",
+            text: "Cek Form 4",
+        },
+        custom: { judul: "", ket: "", var_key: "", url: "", text: "" },
+    };
+
+    // Helper: Generate HTML Row
+    function getKriteriaRowHTML(index, selectedType = "") {
+        return `
+            <div class="row border mb-3 row-kriteria">
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label class="form-label">Tipe Kriteria</label>
+                        <select class="form-select select-template">
+                            <option value="" disabled ${
+                                selectedType === "" ? "selected" : ""
+                            }>-- Pilih Tipe --</option>
+                            <option value="jkem" ${
+                                selectedType === "jkem" ? "selected" : ""
+                            }>Penilaian JKEM</option>
+                            <option value="sholat" ${
+                                selectedType === "sholat" ? "selected" : ""
+                            }>Penilaian Sholat</option>
+                            <option value="form1" ${
+                                selectedType === "form1" ? "selected" : ""
+                            }>Penilaian Form 1</option>
+                            <option value="form2" ${
+                                selectedType === "form2" ? "selected" : ""
+                            }>Penilaian Form 2</option>
+                            <option value="form3" ${
+                                selectedType === "form3" ? "selected" : ""
+                            }>Penilaian Form 3</option>
+                            <option value="form4" ${
+                                selectedType === "form4" ? "selected" : ""
+                            }>Penilaian Form 4</option>
+                            <option value="custom" class="fw-bold text-primary">-- Custom / Manual --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="mb-3">
+                        <label class="form-label">Judul Kriteria <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control input-judul" name="kriteria[${index}][judul]" placeholder="Masukkan Judul" required>
+                        
+                        <input type="hidden" class="input-var" name="kriteria[${index}][variable_key]">
+                        <input type="hidden" class="input-url" name="kriteria[${index}][link_url]">
+                        <input type="hidden" class="input-text" name="kriteria[${index}][link_text]">
+                    </div>
+                </div>
+
+                <div class="col-lg-3">
+                    <div class="mb-3">
+                        <label class="form-label">Keterangan (Skala) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control input-ket" name="kriteria[${index}][keterangan]" placeholder="1:..., 2:..., 3:..." required>
+                    </div>
+                </div>
+
+                <div class="col-lg-1 d-flex align-items-center justify-content-center">
+                    <button type="button" class="btn btn-soft-danger btn-hapus-kriteria mt-3">
+                        <i class="bx bx-trash font-size-18"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Fungsi Auto Init 6 Baris Default
+    function initDefaultKriteria() {
+        const defaultTypes = [
+            "jkem",
+            "sholat",
+            "form1",
+            "form2",
+            "form3",
+            "form4",
+        ];
+        let container = $("#container-kriteria");
+        container.empty();
+
+        defaultTypes.forEach((type, index) => {
+            let html = getKriteriaRowHTML(index, type);
+            let $row = $(html);
+            container.append($row);
+            $row.find(".select-template").trigger("change");
+        });
+        updateKriteriaStatus();
+    }
+
+    // Tombol Tambah Manual
+    $("#btn-tambah-kriteria").click(function () {
+        let container = $("#container-kriteria");
+        let rowCount = container.find(".row-kriteria").length;
+        container.append(getKriteriaRowHTML(rowCount, ""));
+        updateKriteriaStatus();
+    });
+
+    // Tombol Hapus Baris
+    $(document).on("click", ".btn-hapus-kriteria", function () {
+        $(this).closest(".row-kriteria").remove();
+        reIndexKriteria();
+        updateKriteriaStatus();
+    });
+
+    // Logic Dropdown Change
+    $(document).on("change", ".select-template", function () {
+        let val = $(this).val();
+        let row = $(this).closest(".row-kriteria");
+
+        row.find(".input-judul").val("");
+        row.find(".input-ket").val("");
+        row.find(".input-var").val("");
+        row.find(".input-url").val("");
+        row.find(".input-text").val("");
+
+        if (val !== "custom" && val !== null) {
+            let data = KRITERIA_PRESETS[val];
+            if (data) {
+                row.find(".input-judul").val(data.judul);
+                row.find(".input-ket").val(data.ket);
+                row.find(".input-var").val(data.var_key);
+                row.find(".input-url").val(data.url);
+                row.find(".input-text").val(data.text);
+            }
+        } else {
+            row.find(".input-judul").focus();
+        }
+    });
+
+    function reIndexKriteria() {
+        $("#container-kriteria .row-kriteria").each(function (index) {
+            $(this)
+                .find("input")
+                .each(function () {
+                    let oldName = $(this).attr("name");
+                    if (oldName) {
+                        let newName = oldName.replace(
+                            /kriteria\[\d+\]/,
+                            `kriteria[${index}]`
+                        );
+                        $(this).attr("name", newName);
+                    }
+                });
+        });
+    }
+
+    function updateKriteriaStatus() {
+        let rowCount = $("#container-kriteria .row-kriteria").length;
+    }
+
+    // Jalankan Init Default
+    initDefaultKriteria();
 
     function handleError() {
         var status_error = false;
-
-        // List of fields to check
         const fields = [
             { id: "#nama", errorId: "#text-nama", message: "* Wajib diisi!" },
             {
@@ -93,14 +279,18 @@ $(document).ready(function () {
                 message: "* Wajib diisi!",
             },
             {
+                id: "#tanggal_cutoff",
+                errorId: "#text-tanggal_cutoff",
+                message: "* Wajib diisi!",
+            },
+            {
                 id: "#file_excel",
                 errorId: "#text-file",
                 message: "* Wajib diisi!",
-                isFile: true, // Add a flag to indicate this is a file input
+                isFile: true,
             },
         ];
 
-        // Function to check each field
         function checkField(field) {
             const element = $(field.id);
             const errorElement = $(field.errorId);
@@ -109,42 +299,38 @@ $(document).ready(function () {
             if (field.isFile) {
                 const files = element[0].files;
                 if (files.length === 0) {
-                    // Tidak ada file yang dipilih
                     errorElement.text(field.message);
                     status_error = true;
                     return;
                 } else {
-                    value = files[0]; // Ambil file pertama yang diunggah
+                    value = files[0];
                     const allowedTypes = [
                         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    ]; // MIME type untuk .xlsx
+                    ];
                     if (!allowedTypes.includes(value.type)) {
-                        // File bukan xlsx
                         errorElement.text("File harus berupa .xlsx");
                         status_error = true;
                         return;
                     }
                 }
             } else {
-                value = element.val(); // Ambil nilai dari input biasa
-                if (value == 0) {
-                    // Nilai kosong
+                value = element.val();
+                if (!value || value == 0) {
                     errorElement.text(field.message);
                     status_error = true;
                     return;
                 }
             }
-
-            errorElement.text("*"); // Kosongkan pesan error jika ada
+            errorElement.text("*");
         }
 
+        // Cek Bidang Proker
         $("#fieldsContainer .row").each(function () {
             var bidang = $(this).find("#bidang").val();
-            var tipe_bidang = $(this).find("#tipe_bidang").val();
             var syarat_jkem = $(this).find("#syarat_jkem").val();
 
             if (bidang === "") {
-                $(this).find("#bidang").next(".error-message").remove(); // Remove previous error message if any
+                $(this).find("#bidang").next(".error-message").remove();
                 $(this)
                     .find("#bidang")
                     .after(
@@ -152,11 +338,11 @@ $(document).ready(function () {
                     );
                 status_error = true;
             } else {
-                $(this).find("#bidang").next(".error-message").remove(); // Clear error message if any
+                $(this).find("#bidang").next(".error-message").remove();
             }
 
             if (syarat_jkem === "") {
-                $(this).find("#syarat_jkem").next(".error-message").remove(); // Remove previous error message if any
+                $(this).find("#syarat_jkem").next(".error-message").remove();
                 $(this)
                     .find("#syarat_jkem")
                     .after(
@@ -164,132 +350,149 @@ $(document).ready(function () {
                     );
                 status_error = true;
             } else {
-                $(this).find("#syarat_jkem").next(".error-message").remove(); // Clear error message if any
+                $(this).find("#syarat_jkem").next(".error-message").remove();
             }
         });
 
-        // Iterate over all fields and check them
+        // Cek Field Utama
         fields.forEach(checkField);
+
+        // Cek Kriteria Monev
+        $("#container-kriteria .row-kriteria").each(function () {
+            var judulInput = $(this).find(".input-judul");
+            if (judulInput.val() === "") {
+                judulInput.next(".error-message").remove();
+                judulInput.after(
+                    '<div class="error-message text-danger">* Wajib diisi!</div>'
+                );
+                status_error = true;
+            } else {
+                judulInput.next(".error-message").remove();
+            }
+        });
+
         return status_error;
     }
 
+    // Worker Excel
+    function convertToJson(file) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker("/js/worker.js");
+            worker.postMessage(file);
+            worker.onmessage = function (event) {
+                if (event.data.error) reject(event.data.error);
+                else resolve(event.data);
+            };
+            worker.onerror = function (error) {
+                reject("Worker Error: " + error.message);
+            };
+        });
+    }
+
     const modal_statusContainer = $("#modal-status");
-    var defaultModal = `
-    <div class="mb-3">
-        <i class="bx bx-check-circle display-4 text-success"></i>
-    </div>
-    <h5>Konfirmasi penyimpanan data</h5>
-    `;
-
-    var successFinish = `
-    <div class="mb-3">
-        <i class="bx bx-check-circle display-4 text-success"></i>
-    </div>
-    <h5>Yeay, semua data telah disimpan!</h5>
-    `;
-
-    var errorModal = `
-    <div class="mb-3">
-        <i class="bx bx-error-circle display-4 text-danger"></i>
-    </div>
-    <h5>Harap lengkapi data terlebih dahulu</h5>
-    `;
-
-    var progressBar = `
-    <div class="progress-container">
-    <p>Progress input data</p>
-    <div class="progress">
-        <div class="progress-bar" role="progressbar" id="progressBar" style="width: 0%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">0%</div>
-    </div>
-    <div class="progress-status">
-        <p><span>Data inserted: </span><span id="step">0</span>/<span id="total">0</span>(<span id="percent">0%</span>)</p>
-    </div>
-</div>`;
+    var defaultModal = `<div class="mb-3"><i class="bx bx-check-circle display-4 text-success"></i></div><h5>Konfirmasi penyimpanan data</h5>`;
+    var successFinish = `<div class="mb-3"><i class="bx bx-check-circle display-4 text-success"></i></div><h5>Yeay, semua data telah disimpan!</h5>`;
+    var errorModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Harap lengkapi data terlebih dahulu</h5>`;
+    var progressBarHTML = `<div class="progress-container"><p>Progress input data</p><div class="progress"><div class="progress-bar" role="progressbar" id="progressBar" style="width: 0%;">0%</div></div><div class="progress-status"><p><span>Data inserted: </span><span id="step">0</span>/<span id="total">0</span>(<span id="percent">0%</span>)</p></div></div>`;
 
     var isOnProgress = false;
 
-    // Klik dan cek error
+    // Klik Tombol "Simpan Data KKN"
     $("#save-change").click(function (e) {
         e.preventDefault();
-        const file = $("#file_excel").prop("files")[0];
-        const file_excel = convertToJson(file);
-
         if (!isOnProgress) {
             if (handleError()) {
                 modal_statusContainer.html(errorModal);
                 $("#btn-confirm").addClass("d-none");
             } else {
                 modal_statusContainer.html(defaultModal);
-                $("#btn-confirm").removeClass("d-none"); // Ensure the confirm button is shown if no error
+                $("#btn-confirm").removeClass("d-none");
             }
         }
     });
 
-    function convertToJson(file) {
-        return new Promise((resolve, reject) => {
-            const worker = new Worker("/js/worker.js");
-            worker.postMessage(file);
-
-            worker.onmessage = function (event) {
-                if (event.data.error) {
-                    reject(event.data.error);
-                } else {
-                    resolve(event.data);
-                }
-            };
-
-            worker.onerror = function (error) {
-                reject(error.message);
-            };
-        });
-    }
-
+    // Tombol Action
     $("#btn-confirm").click(async function (e) {
         e.preventDefault();
-        const file = $("#file_excel").prop("files")[0];
-        const file_excel = await convertToJson(file);
-        modal_statusContainer.html(progressBar);
 
-        // Ambil semua value form
-        const nama = $("#nama").val();
-        const thn_ajaran = $("#thn_ajaran").val();
-        const tanggal_mulai = $("#tanggal_mulai").val();
-        const tanggal_selesai = $("#tanggal_selesai").val();
+        // Ambil & Convert File
+        const fileInput = $("#file_excel").prop("files")[0];
+        if (!fileInput) return alert("File Excel belum dipilih!");
 
-        // Ambil nilai dari setiap bidang
-        let fields = [];
-        $("#fieldsContainer .row").each(function () {
-            let field = {
-                bidang: $(this).find("#bidang").val(),
-                tipe_bidang: $(this).find("#tipe_bidang").val(),
-                syarat_jkem: $(this).find("#syarat_jkem").val(),
-            };
-            fields.push(field);
-        });
+        modal_statusContainer.html(progressBarHTML);
 
-        // Kirim data ke endpoint dengan AJAX
-        $.ajax({
-            url: "/kkn/store",
-            type: "POST",
-            data: {
-                _token: $("meta[name='csrf-token']").attr("content"),
-                nama: nama,
-                thn_ajaran: thn_ajaran,
-                tanggal_mulai: tanggal_mulai,
-                tanggal_selesai: tanggal_selesai,
-                file_excel: file_excel,
-                fields: fields,
-            },
-            success: function (response) {
-                const id_progress = response.id_progress; // Pastikan respons dari server sesuai dengan key id_progress
-                updateProgress(id_progress);
-            },
-            error: function (xhr, status, error) {
-                console.log("Error");
-            },
-        });
+        try {
+            const file_excel = await convertToJson(fileInput);
+            console.log("Data Excel Berhasil Diparsing");
+
+            // Collect Data
+            const nama = $("#nama").val();
+            const thn_ajaran = $("#thn_ajaran").val();
+            const tanggal_mulai = $("#tanggal_mulai").val();
+            const tanggal_selesai = $("#tanggal_selesai").val();
+            const tanggal_cutoff = $("#tanggal_cutoff").val();
+
+            let fields = [];
+            $("#fieldsContainer .row").each(function () {
+                fields.push({
+                    bidang: $(this).find("#bidang").val(),
+                    tipe_bidang: $(this).find("#tipe_bidang").val(),
+                    syarat_jkem: $(this).find("#syarat_jkem").val(),
+                });
+            });
+
+            let kriteria_monev = [];
+            $("#container-kriteria .row-kriteria").each(function () {
+                kriteria_monev.push({
+                    judul: $(this).find("input[name*='[judul]']").val(),
+                    keterangan: $(this)
+                        .find("input[name*='[keterangan]']")
+                        .val(),
+                    variable_key: $(this)
+                        .find("input[name*='[variable_key]']")
+                        .val(),
+                    link_url: $(this).find("input[name*='[link_url]']").val(),
+                    link_text: $(this).find("input[name*='[link_text]']").val(),
+                });
+            });
+
+            // Kirim AJAX
+            $.ajax({
+                url: "/kkn/store",
+                type: "POST",
+                data: {
+                    _token: $("meta[name='csrf-token']").attr("content"),
+                    nama: nama,
+                    thn_ajaran: thn_ajaran,
+                    tanggal_mulai: tanggal_mulai,
+                    tanggal_selesai: tanggal_selesai,
+                    tanggal_cutoff_penilaian: tanggal_cutoff,
+                    file_excel: file_excel,
+                    fields: fields,
+                    kriteria: kriteria_monev,
+                },
+                success: function (response) {
+                    console.log("Response Sukses:", response);
+                    const id_progress = response.id_progress;
+                    updateProgress(id_progress);
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", xhr.responseText);
+                    $("#btn-confirm").addClass("d-none");
+                    modal_statusContainer.html(
+                        `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Gagal Mengirim Data: ${xhr.statusText}</h5>`
+                    );
+                },
+            });
+        } catch (error) {
+            console.error("Worker/Processing Error:", error);
+            modal_statusContainer.html(
+                `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Gagal memproses Excel: ${error}</h5>`
+            );
+        }
     });
 
+    // Fungsi Monitoring Progress
     function updateProgress(id) {
         isOnProgress = true;
         var progressBar = $("#progressBar");
@@ -297,18 +500,16 @@ $(document).ready(function () {
         var totalBar = $("#total");
         var percent = $("#percent");
         $("#btn-confirm").addClass("d-none");
-        // Ambil progress dengan ajax
+
         $.ajax({
-            url: `/queue-progress/${id}`, // Pastikan template literal Anda digunakan dengan benar
+            url: `/queue-progress/${id}`,
             type: "GET",
             success: function (response) {
                 const progress = response.progress;
                 const step = response.step;
                 const total = response.total;
                 const status = response.status;
-                const message = response.message;
 
-                // Sesuaikan logika berdasarkan respons progress yang diterima
                 if (status === "in_progress") {
                     progressBar.css("width", `${progress}%`);
                     progressBar.text(`${progress}%`);
@@ -320,27 +521,24 @@ $(document).ready(function () {
                         totalBar.text(0);
                     }
                     percent.text(`${progress}%`);
-                    //Jika sudah 100 maka setTimeout berhen
-                    setTimeout(() => updateProgress(id), 300); // Cek lagi setelah 0.3 detik
-                } else if (progress == 100 || status === "completed") {
+
+                    // Loop cek lagi setiap 1 detik
+                    setTimeout(() => updateProgress(id), 1000);
+                } else if (status === "completed" || progress == 100) {
                     isOnProgress = false;
+                    progressBar.css("width", `100%`);
+                    progressBar.text(`100%`);
                     modal_statusContainer.html(successFinish);
                 } else if (status === "failed") {
                     isOnProgress = false;
-                    var failedModal = `
-                        <div class="mb-3">
-                            <i class="bx bx-error-circle display-4 text-danger"></i>
-                        </div>
-                        <h5>Terjadi masalah saat memasukkan data, periksa kembali file excel anda</h5>
-                    `;
+                    // Tetap tampilkan pesan error detail agar debugging mudah
+                    var failedModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Gagal: ${response.message}</h5>`;
                     modal_statusContainer.html(failedModal);
                 }
             },
-            error: function (xhr, status, error) {
-                console.log("Error");
+            error: function () {
+                console.log("Gagal cek progress");
             },
         });
     }
-
-    //? End of bidang
 });

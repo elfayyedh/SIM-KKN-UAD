@@ -1,3 +1,8 @@
+@props([
+    'mahasiswa',
+    'mode' => 'default'
+])
+
 <div>
     <table class="datatable-buttons table table-striped table-bordered dt-responsive nowrap w-100">
         <thead>
@@ -18,11 +23,17 @@
                     <td>{{ $item->userRole->user->nama }}</td>
                     <td>{{ $item->nim }}</td>
                     <td>{{ $item->prodi->nama_prodi }}</td>
-                    <td>{{ $item->userRole->user->jenis_kelamin }}</td>
+                    <td>{{ $item->userRole->user->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                     <td><a
                             href="https://wa.me/{{ $item->userRole->user->no_telp }}">{{ $item->userRole->user->no_telp }}</a>
                     </td>
-                    <td><a href="{{ route('unit.show', ['id' => $item->unit->id]) }}">{{ $item->unit->nama }}</a></td>
+                    <td>
+                        @if ($mode == 'monev')
+                            {{ $item->unit->nama }}
+                        @else
+                            <a href="{{ route('unit.show', ['id' => $item->unit->id]) }}">{{ $item->unit->nama }}</a>
+                        @endif
+                    </td>
                     <td>{{ $item->total_jkem }}</td>
                     <td>
                         <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->userRole->user->id) }}"><i

@@ -42,15 +42,25 @@ class TimMonev extends Model
     }
 
     protected $table = 'tim_monev';
-    protected $fillable = ['id_user', 'id_kkn'];
+    protected $fillable = ['id_dosen', 'id_kkn'];
 
-    public function userRole()
+    public function dosen()
     {
-        return $this->belongsTo(UserRole::class, 'id_user_role');
+        return $this->belongsTo(Dosen::class, 'id_dosen');
     }
 
     public function kkn()
     {
         return $this->belongsTo(Kkn::class, 'id_kkn');
+    }
+
+    public function evaluasiMahasiswa()
+    {
+        return $this->hasMany(EvaluasiMahasiswa::class, 'id_tim_monev');
+    }
+
+    public function unit()
+    {
+        return $this->hasMany(Unit::class, 'id_tim_monev');
     }
 }

@@ -1,4 +1,2 @@
-- [x] Ubah LoginRequest untuk menerima 'identifier' sebagai required field
-- [x] Ubah AuthController untuk mendukung login dengan email atau NIM
-- [x] Ubah view login untuk input "Email atau NIM"
-- [x] Test login functionality (Server running, manual testing required)
+- [ ] Add "Evaluasi Mahasiswa" column header next to Status in read-kkn.blade.php
+- [ ] Add corresponding table data cell for each KKN row with a placeholder or button

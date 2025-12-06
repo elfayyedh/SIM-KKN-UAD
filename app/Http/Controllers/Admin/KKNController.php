@@ -8,6 +8,10 @@ use App\Models\BidangProker;
 use App\Models\KKN;
 use App\Models\QueueProgress;
 use Illuminate\Http\Request;
+use App\Models\Dosen;
+use App\Models\KriteriaMonev;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 
 class KKNController extends Controller
@@ -17,7 +21,28 @@ class KKNController extends Controller
      */
     public function index()
     {
-        $kkn = KKN::all();
+        $kkn = KKN::orderBy('created_at', 'desc')->get();
+
+        $kkn->transform(function ($item) {
+            $today = Carbon::now();
+            if (! $item->status) { 
+                $item->status_text = 'Non-Aktif';
+                $item->status_color = 'danger';
+            } 
+            elseif ($today->lt($item->tanggal_mulai)) {
+                $item->status_text = 'Belum Mulai';
+                $item->status_color = 'warning';
+            } 
+            elseif ($today->gt($item->tanggal_selesai)) {
+                $item->status_text = 'Selesai';
+                $item->status_color = 'secondary';
+            } 
+            else {
+                $item->status_text = 'Sedang Berjalan';
+                $item->status_color = 'success';
+            }
+            return $item;
+        });
         return view('administrator.read.read-kkn', compact('kkn'));
     }
 
@@ -40,35 +65,72 @@ class KKNController extends Controller
             "thn_ajaran" => 'required|string',
             "tanggal_mulai" => 'required|date',
             "tanggal_selesai" => 'required|date',
+            "tanggal_cutoff_penilaian" => 'required|date|after_or_equal:tanggal_mulai|before_or_equal:tanggal_selesai',
             "file_excel" => 'required',
-            "fields" => 'required|array'
+            "fields" => 'required|array',
+            "kriteria" => 'nullable|array',
+            "kriteria.*.judul" => 'required_with:kriteria|string',
         ]);
 
+        DB::beginTransaction();
 
-        $kkn = KKN::firstOrCreate([
-            'nama' => $validated['nama'],
-        ], [
-            'thn_ajaran' => $validated['thn_ajaran'],
-            'tanggal_mulai' => $validated['tanggal_mulai'],
-            'tanggal_selesai' => $validated['tanggal_selesai']
-        ]);
-
-
-        foreach ($validated['fields'] as $field) {
-            $bidang = BidangProker::firstOrCreate([
-                'id_kkn' => $kkn->id,
-                'nama' => $field['bidang'],
+        try {
+            $kkn = \App\Models\KKN::firstOrCreate([
+                'nama' => $validated['nama'],
             ], [
-                'tipe' => $field['tipe_bidang'],
-                'syarat_jkem' => $field['syarat_jkem'],
+                'thn_ajaran' => $validated['thn_ajaran'],
+                'tanggal_mulai' => $validated['tanggal_mulai'],
+                'tanggal_selesai' => $validated['tanggal_selesai'],
+                'tanggal_cutoff_penilaian' => $validated['tanggal_cutoff_penilaian']
             ]);
+
+            foreach ($validated['fields'] as $field) {
+                \App\Models\BidangProker::firstOrCreate([
+                    'id_kkn' => $kkn->id,
+                    'nama' => $field['bidang'],
+                ], [
+                    'tipe' => $field['tipe_bidang'],
+                    'syarat_jkem' => $field['syarat_jkem'],
+                ]);
+            }
+
+            if ($request->has('kriteria') && is_array($request->kriteria)) {
+                foreach ($request->kriteria as $index => $item) {
+                    if (empty($item['judul'])) continue;
+
+                    KriteriaMonev::create([
+                        'id_kkn'       => $kkn->id, 
+                        'judul'        => $item['judul'],
+                        'keterangan'   => $item['keterangan'] ?? null,
+                        'variable_key' => $item['variable_key'] ?? null,
+                        'link_url'     => $item['link_url'] ?? null,
+                        'link_text'    => $item['link_text'] ?? null,
+                        'urutan'       => $index + 1 
+                    ]);
+                }
+            }
+            $progress = \App\Models\QueueProgress::create([
+                'progress' => 0, 
+                'total' => 0, 
+                'step' => 0, 
+                'status' => 'in_progress', 
+                'message' => 'In Progress'
+            ]);
+
+            DB::commit();
+
+            \App\Jobs\EntriDataKKN::dispatch($validated['file_excel'], $kkn->id, $progress->id);
+
+            return response()->json(['id_progress' => $progress->id]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
         }
-
-        $progress = QueueProgress::create(['progress' => 0, 'total' => 0, 'step' => 0, 'status' => 'in_progress', 'message' => 'In Progress']);
-
-        EntriDataKKN::dispatch($validated['file_excel'], $kkn->id, $progress->id);
-
-        return response()->json(['id_progress' => $progress->id]);
     }
 
     public function getProgress($id)
@@ -88,17 +150,19 @@ class KKNController extends Controller
         $kkn = KKN::with([
             'mahasiswa.prodi',
             'mahasiswa.userRole.user',
-            'dpl.userRole.user',
-            'dpl.units',
-            'timMonev.userRole.user',
-            'unit.lokasi.kecamatan.kabupaten'
+            'dpl.dosen.user',    
+            'dpl.units',           
+            'timMonev.dosen.user',  
+            'units.lokasi.kecamatan.kabupaten', 
+            'units.mahasiswa'                
         ])->find($id);
-
-        foreach ($kkn->unit as $unit) {
+        foreach ($kkn->units as $unit) { 
             $unit->total_jkem = $unit->mahasiswa->sum('total_jkem');
         }
 
-        return view('administrator.read.detail-kkn', compact('kkn'));
+        $dosens = Dosen::with('user')->get();
+
+        return view('administrator.read.detail-kkn', compact('kkn', 'dosens'));
     }
 
     /**
@@ -125,12 +189,14 @@ class KKNController extends Controller
                 "thn_ajaran" => 'required|string',
                 "tanggal_mulai" => 'required|date',
                 "tanggal_selesai" => 'required|date',
+                "tanggal_cutoff_penilaian" => 'required|date|after_or_equal:tanggal_mulai|before_or_equal:tanggal_selesai',
             ],
             [
                 'nama.required' => 'Nama harus diisi',
                 'thn_ajaran.required' => 'Tahun Ajaran harus diisi',
                 'tanggal_mulai.required' => 'Tanggal Mulai harus diisi',
                 'tanggal_selesai.required' => 'Tanggal Selesai harus diisi',
+                "tanggal_cutoff_penilaian" => 'Tanggal Cut Off harus diisi',
             ]
         );
 

@@ -57,7 +57,7 @@
                                     <h2 class="total-mahasiswa">
                                         <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
                                     </h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua mahasiswa</a>
+                                    <a class="text-decoration-none" href="{{ route('mahasiswa.index') }}">Lihat semua mahasiswa</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-success"
                                     style="width: 50px; height: 50px;">
@@ -76,7 +76,7 @@
                                     <h2 class="total-unit">
                                         <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
                                     </h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua unit</a>
+                                    <a class="text-decoration-none" href="{{ route('unit.index') }}">Lihat semua unit</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-info"
                                     style="width: 50px; height: 50px;">
@@ -95,7 +95,7 @@
                                     <h2 class="total-dpl">
                                         <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
                                     </h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua DPL</a>
+                                    <a class="text-decoration-none" href="{{ route('dpl.index') }}">Lihat semua DPL</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-warning"
                                     style="width: 50px; height: 50px;">
@@ -114,7 +114,7 @@
                                     <h2 class="total-tim_monev">
                                         <div class="placeholder-glow"><span class="placeholder col-12"></span></div>
                                     </h2>
-                                    <a class="text-decoration-none" href="#">Lihat semua Tim Monev</a>
+                                    <a class="text-decoration-none" href="{{ route('tim-monev.index') }}">Lihat semua Tim Monev</a>
                                 </div>
                                 <div class="position-absolute d-flex justify-content-center align-items-center bottom-0 end-0 rounded bg-sublte-secondary"
                                     style="width: 50px; height: 50px;">

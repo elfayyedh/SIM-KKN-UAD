@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use App\Models\LogbookSholat;
+use App\Models\Kegiatan;
 
 class Mahasiswa extends Model
 {
@@ -81,5 +83,15 @@ class Mahasiswa extends Model
     public function logbookSholat()
     {
         return $this->hasMany(LogbookSholat::class, 'id_mahasiswa');
+    }
+
+    public function evaluasiOlehMonev()
+    {
+        return $this->hasMany(EvaluasiMahasiswa::class, 'id_mahasiswa');
+    }
+
+    public function evaluasiMahasiswa()
+    {
+        return $this->hasMany(EvaluasiMahasiswa::class, 'id_mahasiswa');
     }
 }
