@@ -1,5 +1,5 @@
 $(document).ready(function () {
-    // 1. Datepicker Init
+    // Init Datepicker
     flatpickr(".datepicker-basic", {
         locale: "id",
         altInput: true,
@@ -46,7 +46,7 @@ $(document).ready(function () {
         { name: "Tematik/Non-Tematik", tipe: "unit", jkem: 6000 },
     ];
 
-    // Tambahkan bidang default saat load
+    // Load default fields
     defaultFields.forEach(function (field) {
         var newField = $(fieldTemplate);
         newField.find("#bidang").val(field.name);
@@ -184,17 +184,14 @@ $(document).ready(function () {
             "form4",
         ];
         let container = $("#container-kriteria");
-        container.empty(); // Bersihkan dulu
+        container.empty();
 
         defaultTypes.forEach((type, index) => {
             let html = getKriteriaRowHTML(index, type);
             let $row = $(html);
             container.append($row);
-
-            // PENTING: Trigger change agar inputan Judul & Keterangan terisi otomatis dari PRESET
             $row.find(".select-template").trigger("change");
         });
-
         updateKriteriaStatus();
     }
 
@@ -213,12 +210,11 @@ $(document).ready(function () {
         updateKriteriaStatus();
     });
 
-    // Logic Dropdown Change (Mengisi Inputan)
+    // Logic Dropdown Change
     $(document).on("change", ".select-template", function () {
         let val = $(this).val();
         let row = $(this).closest(".row-kriteria");
 
-        // Reset
         row.find(".input-judul").val("");
         row.find(".input-ket").val("");
         row.find(".input-var").val("");
@@ -260,12 +256,11 @@ $(document).ready(function () {
         let rowCount = $("#container-kriteria .row-kriteria").length;
     }
 
-    // JALANKAN INIT DEFAULT SAAT LOAD
+    // Jalankan Init Default
     initDefaultKriteria();
 
     function handleError() {
         var status_error = false;
-
         const fields = [
             { id: "#nama", errorId: "#text-nama", message: "* Wajib diisi!" },
             {
@@ -320,7 +315,7 @@ $(document).ready(function () {
                 }
             } else {
                 value = element.val();
-                if (value == 0) {
+                if (!value || value == 0) {
                     errorElement.text(field.message);
                     status_error = true;
                     return;
@@ -379,15 +374,30 @@ $(document).ready(function () {
         return status_error;
     }
 
+    // Worker Excel
+    function convertToJson(file) {
+        return new Promise((resolve, reject) => {
+            const worker = new Worker("/js/worker.js");
+            worker.postMessage(file);
+            worker.onmessage = function (event) {
+                if (event.data.error) reject(event.data.error);
+                else resolve(event.data);
+            };
+            worker.onerror = function (error) {
+                reject("Worker Error: " + error.message);
+            };
+        });
+    }
+
     const modal_statusContainer = $("#modal-status");
     var defaultModal = `<div class="mb-3"><i class="bx bx-check-circle display-4 text-success"></i></div><h5>Konfirmasi penyimpanan data</h5>`;
     var successFinish = `<div class="mb-3"><i class="bx bx-check-circle display-4 text-success"></i></div><h5>Yeay, semua data telah disimpan!</h5>`;
     var errorModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Harap lengkapi data terlebih dahulu</h5>`;
-    var progressBar = `<div class="progress-container"><p>Progress input data</p><div class="progress"><div class="progress-bar" role="progressbar" id="progressBar" style="width: 0%;">0%</div></div><div class="progress-status"><p><span>Data inserted: </span><span id="step">0</span>/<span id="total">0</span>(<span id="percent">0%</span>)</p></div></div>`;
+    var progressBarHTML = `<div class="progress-container"><p>Progress input data</p><div class="progress"><div class="progress-bar" role="progressbar" id="progressBar" style="width: 0%;">0%</div></div><div class="progress-status"><p><span>Data inserted: </span><span id="step">0</span>/<span id="total">0</span>(<span id="percent">0%</span>)</p></div></div>`;
 
     var isOnProgress = false;
 
-    // Klik Simpan
+    // Klik Tombol "Simpan Data KKN"
     $("#save-change").click(function (e) {
         e.preventDefault();
         if (!isOnProgress) {
@@ -401,84 +411,88 @@ $(document).ready(function () {
         }
     });
 
-    // Worker Excel
-    function convertToJson(file) {
-        return new Promise((resolve, reject) => {
-            const worker = new Worker("/js/worker.js");
-            worker.postMessage(file);
-            worker.onmessage = function (event) {
-                if (event.data.error) reject(event.data.error);
-                else resolve(event.data);
-            };
-            worker.onerror = function (error) {
-                reject(error.message);
-            };
-        });
-    }
-
-    // Klik Konfirmasi Simpan
+    // Tombol Action
     $("#btn-confirm").click(async function (e) {
         e.preventDefault();
-        const file = $("#file_excel").prop("files")[0];
-        const file_excel = await convertToJson(file);
-        modal_statusContainer.html(progressBar);
 
-        const nama = $("#nama").val();
-        const thn_ajaran = $("#thn_ajaran").val();
-        const tanggal_mulai = $("#tanggal_mulai").val();
-        const tanggal_selesai = $("#tanggal_selesai").val();
-        const tanggal_cutoff = $("#tanggal_cutoff").val();
+        // Ambil & Convert File
+        const fileInput = $("#file_excel").prop("files")[0];
+        if (!fileInput) return alert("File Excel belum dipilih!");
 
-        // Collect Bidang
-        let fields = [];
-        $("#fieldsContainer .row").each(function () {
-            let field = {
-                bidang: $(this).find("#bidang").val(),
-                tipe_bidang: $(this).find("#tipe_bidang").val(),
-                syarat_jkem: $(this).find("#syarat_jkem").val(),
-            };
-            fields.push(field);
-        });
+        modal_statusContainer.html(progressBarHTML);
 
-        // Collect Kriteria Monev
-        let kriteria_monev = [];
-        $("#container-kriteria .row-kriteria").each(function () {
-            let item = {
-                judul: $(this).find("input[name*='[judul]']").val(),
-                keterangan: $(this).find("input[name*='[keterangan]']").val(),
-                variable_key: $(this)
-                    .find("input[name*='[variable_key]']")
-                    .val(),
-                link_url: $(this).find("input[name*='[link_url]']").val(),
-                link_text: $(this).find("input[name*='[link_text]']").val(),
-            };
-            kriteria_monev.push(item);
-        });
+        try {
+            const file_excel = await convertToJson(fileInput);
+            console.log("Data Excel Berhasil Diparsing");
 
-        $.ajax({
-            url: "/kkn/store",
-            type: "POST",
-            data: {
-                _token: $("meta[name='csrf-token']").attr("content"),
-                nama: nama,
-                thn_ajaran: thn_ajaran,
-                tanggal_mulai: tanggal_mulai,
-                tanggal_selesai: tanggal_selesai,
-                tanggal_cutoff_penilaian: tanggal_cutoff,
-                file_excel: file_excel,
-                fields: fields,
-                kriteria: kriteria_monev,
-            },
-            success: function (response) {
-                const id_progress = response.id_progress;
-                updateProgress(id_progress);
-            },
-            error: function (xhr, status, error) {
-                console.log("Error");
-            },
-        });
+            // Collect Data
+            const nama = $("#nama").val();
+            const thn_ajaran = $("#thn_ajaran").val();
+            const tanggal_mulai = $("#tanggal_mulai").val();
+            const tanggal_selesai = $("#tanggal_selesai").val();
+            const tanggal_cutoff = $("#tanggal_cutoff").val();
+
+            let fields = [];
+            $("#fieldsContainer .row").each(function () {
+                fields.push({
+                    bidang: $(this).find("#bidang").val(),
+                    tipe_bidang: $(this).find("#tipe_bidang").val(),
+                    syarat_jkem: $(this).find("#syarat_jkem").val(),
+                });
+            });
+
+            let kriteria_monev = [];
+            $("#container-kriteria .row-kriteria").each(function () {
+                kriteria_monev.push({
+                    judul: $(this).find("input[name*='[judul]']").val(),
+                    keterangan: $(this)
+                        .find("input[name*='[keterangan]']")
+                        .val(),
+                    variable_key: $(this)
+                        .find("input[name*='[variable_key]']")
+                        .val(),
+                    link_url: $(this).find("input[name*='[link_url]']").val(),
+                    link_text: $(this).find("input[name*='[link_text]']").val(),
+                });
+            });
+
+            // Kirim AJAX
+            $.ajax({
+                url: "/kkn/store",
+                type: "POST",
+                data: {
+                    _token: $("meta[name='csrf-token']").attr("content"),
+                    nama: nama,
+                    thn_ajaran: thn_ajaran,
+                    tanggal_mulai: tanggal_mulai,
+                    tanggal_selesai: tanggal_selesai,
+                    tanggal_cutoff_penilaian: tanggal_cutoff,
+                    file_excel: file_excel,
+                    fields: fields,
+                    kriteria: kriteria_monev,
+                },
+                success: function (response) {
+                    console.log("Response Sukses:", response);
+                    const id_progress = response.id_progress;
+                    updateProgress(id_progress);
+                },
+                error: function (xhr, status, error) {
+                    console.error("AJAX Error:", xhr.responseText);
+                    $("#btn-confirm").addClass("d-none");
+                    modal_statusContainer.html(
+                        `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Gagal Mengirim Data: ${xhr.statusText}</h5>`
+                    );
+                },
+            });
+        } catch (error) {
+            console.error("Worker/Processing Error:", error);
+            modal_statusContainer.html(
+                `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Gagal memproses Excel: ${error}</h5>`
+            );
+        }
     });
 
+    // Fungsi Monitoring Progress
     function updateProgress(id) {
         isOnProgress = true;
         var progressBar = $("#progressBar");
@@ -507,18 +521,23 @@ $(document).ready(function () {
                         totalBar.text(0);
                     }
                     percent.text(`${progress}%`);
-                    setTimeout(() => updateProgress(id), 300);
-                } else if (progress == 100 || status === "completed") {
+
+                    // Loop cek lagi setiap 1 detik
+                    setTimeout(() => updateProgress(id), 1000);
+                } else if (status === "completed" || progress == 100) {
                     isOnProgress = false;
+                    progressBar.css("width", `100%`);
+                    progressBar.text(`100%`);
                     modal_statusContainer.html(successFinish);
                 } else if (status === "failed") {
                     isOnProgress = false;
-                    var failedModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Terjadi masalah saat memasukkan data</h5>`;
+                    // Tetap tampilkan pesan error detail agar debugging mudah
+                    var failedModal = `<div class="mb-3"><i class="bx bx-error-circle display-4 text-danger"></i></div><h5>Gagal: ${response.message}</h5>`;
                     modal_statusContainer.html(failedModal);
                 }
             },
-            error: function (xhr, status, error) {
-                console.log("Error");
+            error: function () {
+                console.log("Gagal cek progress");
             },
         });
     }

@@ -56,8 +56,8 @@
                                 <td>{{ $item->prodi->nama_prodi ?? 'N/A' }}</td>
                                 <td>{{ $item->userRole->user->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                                 <td>{{ $item->userRole->user->no_telp ?? 'N/A' }}</td>
-                                <td>{{ $item->unit->nama_unit ?? 'N/A' }}</td>
-                                <td>{{ $item->kkn->nama_kkn ?? 'N/A' }}</td>
+                                <td>{{ $item->unit->nama ?? 'N/A' }}</td>
+                                <td>{{ $item->kkn->nama ?? 'N/A' }}</td>
                                 <td>{{ $item->total_jkem ?? 0 }}</td>
                                 <td>
                                     <a href="{{ route('user.edit', $item->userRole->user->id) }}" class="btn btn-sm btn-primary">Edit</a>
