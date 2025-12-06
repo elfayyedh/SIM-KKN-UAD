@@ -107,6 +107,8 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
     Route::put('/update/{id}', [UserController::class, 'update'])->name('user.update'); // TODO
     Route::put('/update-password/{id}', [UserController::class, 'updatePassword'])->name('user.update.password'); // TODO
 });
+// Manajemen Mahasiswa
+Route::middleware([Authenticate::class, AdminMiddleware::class])->get('/mahasiswa', [UserController::class, 'mahasiswaIndex'])->name('mahasiswa.index');
 // Manajemen Dosen
 Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');
