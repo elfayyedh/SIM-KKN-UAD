@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class ProkerController extends Controller
 {
@@ -785,28 +786,37 @@ class ProkerController extends Controller
     }
     public function exportProkerPDF($id)
     {
-        $unit = Unit::where('id', $id)->first();
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+        
+        $unit = Unit::with(['lokasi', 'dpl.dosen.user', 'kkn'])->where('id', $id)->first();
         $prokers = BidangProker::with([
             'proker' => function ($query) use ($id) {
-                $query->where('id_unit', $id);
-            },
-            'proker.kegiatan',
-            'proker.kegiatan.mahasiswa.userRole.user',
-            'proker.kegiatan.tanggalRencanaProker',
-            'proker.kegiatan.logbookKegiatan.logbookHarian',
-            'proker.organizer',
-            'proker.tempatDanSasaran',
+                $query->where('id_unit', $id)
+                    ->with([
+                        'kegiatan' => function ($q) {
+                            $q->select('id', 'id_proker', 'nama', 'frekuensi', 'jkem', 'total_jkem', 'id_mahasiswa')
+                              ->with([
+                                  'mahasiswa.userRole.user:id,nama',
+                                  'tanggalRencanaProker:id,id_kegiatan,tanggal'
+                              ]);
+                        }
+                    ]);
+            }
         ])
             ->where('id_kkn', $unit->id_kkn)
             ->get();
 
         foreach ($prokers as $bidangProker) {
-
             foreach ($bidangProker->proker as $proker) {
                 // Hitung total_jkem untuk setiap Proker
                 $proker->total_jkem = $proker->kegiatan->sum('total_jkem');
             }
         }
-        return view('mahasiswa.manajemen proker.export-pdf-proker', compact('unit', 'prokers'));
+        
+        $pdf = PDF::loadView('mahasiswa.manajemen proker.export-pdf-proker', compact('unit', 'prokers'))
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Program Kerja Unit ' . $unit->nama . '.pdf');
     }
 }
