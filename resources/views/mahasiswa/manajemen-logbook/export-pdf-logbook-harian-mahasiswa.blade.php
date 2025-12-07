@@ -1,21 +1,9 @@
-@php
-    $penerjunanDate = \Carbon\Carbon::parse($tanggal_penerjunan);
-    $penarikanDate = \Carbon\Carbon::parse($tanggal_penarikan);
-    $sholatTimes = ['Subuh', 'Dzuhur', 'Ashar', 'Maghrib', 'Isya'];
-    $dataSholat = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
-    $statusIcons = [
-        'sholat berjamaah' => 'bx-check-circle text-success',
-        'sedang halangan' => 'bx-minus-circle text-secondary',
-        'tidak sholat berjamaah' => 'bx-x-circle text-danger',
-        'belum diisi' => 'bx-info-circle text-warning',
-    ];
-@endphp
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logbook Sholat Mahasiswa - {{ $mahasiswa->userRole->user->nama }}</title>
+    <title>Logbook Harian Mahasiswa - {{ $mahasiswa->userRole->user->nama }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -69,11 +57,15 @@
             background-color: #e0e0e0;
             font-weight: bold;
         }
+        .total-row {
+            font-weight: bold;
+            background-color: #f8f8f8;
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>LOGBOOK SHOLAT MAHASISWA</h1>
+        <h1>LOGBOOK HARIAN MAHASISWA</h1>
         <p>KULIAH KERJA NYATA (KKN)</p>
         <p>Periode: {{ \Carbon\Carbon::parse($tanggal_penerjunan)->format('d-m-Y') }} s/d {{ \Carbon\Carbon::parse($tanggal_penarikan)->format('d-m-Y') }}</p>
     </div>
@@ -104,39 +96,57 @@
     </div>
 
     <div class="logbook-section">
-        <h3>Riwayat Sholat Berjamaah</h3>
+        <h3>Riwayat Kegiatan Harian</h3>
 
-        @if($data && $data->count() > 0)
+        @if($logbookData && $logbookData->count() > 0)
             <table class="logbook-table">
                 <thead>
                     <tr>
                         <th width="5%">No</th>
-                        <th width="15%">Tanggal</th>
-                        <th width="15%">Waktu</th>
-                        <th width="25%">Keterangan</th>
-                        <th width="15%">Jumlah Jamaah</th>
-                        <th width="25%">Nama Imam</th>
+                        <th width="10%">Tanggal</th>
+                        <th width="20%">Kegiatan</th>
+                        <th width="10%">Bidang</th>
+                        <th width="10%">Jenis</th>
+                        <th width="8%">Jam Mulai</th>
+                        <th width="8%">Jam Selesai</th>
+                        <th width="8%">Total JKEM</th>
+                        <th width="21%">Deskripsi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @php $no = 1; @endphp
-                    @foreach($data as $entry)
-                        <tr>
-                            <td style="text-align: center;">{{ $no++ }}</td>
-                            <td>{{ \Carbon\Carbon::parse($entry->tanggal)->format('d-m-Y') }}</td>
-                            <td>{{ ucfirst($entry->waktu) }}</td>
-                            <td>{{ ucwords($entry->status) }}</td>
-                            <td style="text-align: center;">{{ $entry->jumlah_jamaah ? $entry->jumlah_jamaah . ' jamaah' : '-' }}</td>
-                            <td>{{ $entry->imam ?: '-' }}</td>
-                        </tr>
+                    @php $no = 1; $totalJKEM = 0; @endphp
+                    @foreach($logbookData as $logbook)
+                        @if($logbook->logbookKegiatan && $logbook->logbookKegiatan->count() > 0)
+                            @foreach($logbook->logbookKegiatan as $kegiatan)
+                                @php $totalJKEM += $kegiatan->total_jkem; @endphp
+                                <tr>
+                                    <td>{{ $no++ }}</td>
+                                    <td>{{ \Carbon\Carbon::parse($logbook->tanggal)->format('d-m-Y') }}</td>
+                                    <td>{{ $kegiatan->kegiatan ? $kegiatan->kegiatan->nama : '-' }}</td>
+                                    <td>{{ $kegiatan->kegiatan && $kegiatan->kegiatan->proker && $kegiatan->kegiatan->proker->bidang ? $kegiatan->kegiatan->proker->bidang->nama : '-' }}</td>
+                                    <td>{{ $kegiatan->jenis }}</td>
+                                    <td>{{ $kegiatan->jam_mulai }}</td>
+                                    <td>{{ $kegiatan->jam_selesai }}</td>
+                                    <td>{{ $kegiatan->total_jkem }}</td>
+                                    <td>{{ $kegiatan->deskripsi ?: '-' }}</td>
+                                </tr>
+                            @endforeach
+                        @endif
                     @endforeach
+                    <tr class="total-row">
+                        <td colspan="7" style="text-align: right;"><strong>Total JKEM:</strong></td>
+                        <td><strong>{{ $totalJKEM }}</strong></td>
+                        <td></td>
+                    </tr>
                 </tbody>
             </table>
         @else
-            <p>Tidak ada data logbook sholat untuk periode ini.</p>
+            <p>Tidak ada data logbook harian untuk periode ini.</p>
         @endif
     </div>
 
-
+    <div style="margin-top: 50px; text-align: center; font-size: 12px;">
+        <p>Dokumen ini dibuat secara otomatis pada {{ date('d-m-Y H:i:s') }}</p>
+    </div>
 </body>
 </html>
