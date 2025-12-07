@@ -174,9 +174,6 @@
                             <div class="card">
                                 <div class="card-header">
                                     <a class="btn btn-dark"
-                                        href="{{ route('proker.exportProker', ['id' => $unit->id]) }}"><i
-                                            class="bx bxs-file-export"></i>Export Excel</a>
-                                    <a class="btn btn-dark"
                                         href="{{ route('proker.exportProkerPDF', ['id' => $unit->id]) }}"><i
                                             class="mdi mdi-file-export"></i>Export PDF</a>
                                 </div>
@@ -234,7 +231,11 @@
 
                         <div class="tab-pane" id="anggota" role="tabpanel">
                             <div class="card">
-
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.exportAnggotaPDF', ['id' => $unit->id]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-anggota" style="overflow-x: auto">
 
                                 </div>
@@ -274,6 +275,11 @@
 
                         <div class="tab-pane" id="rekap" role="tabpanel">
                             <div class="card">
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.exportRekapKegiatanPDF', ['id' => $unit->id]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-responsive" id="rekap_kegiatan">
                                     @for ($i = 0; $i < 5; $i++)
                                         <table

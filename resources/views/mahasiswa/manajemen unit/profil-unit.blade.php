@@ -175,9 +175,6 @@
                             <div class="card">
                                 <div class="card-header">
                                     <a class="btn btn-dark"
-                                        href="{{ route('proker.exportProker', ['id' => $unit->id]) }}"><i
-                                            class="bx bxs-file-export"></i>Export Excel</a>
-                                    <a class="btn btn-dark"
                                         href="{{ route('proker.exportProkerPDF', ['id' => $unit->id]) }}"><i
                                             class="mdi mdi-file-export"></i>Export PDF</a>
                                 </div>
@@ -235,7 +232,11 @@
 
                         <div class="tab-pane" id="anggota" role="tabpanel">
                             <div class="card">
-
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.exportAnggotaPDF', ['id' => $unit->id]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-anggota" style="overflow-x: auto">
 
                                 </div>
@@ -246,9 +247,9 @@
                         <div class="tab-pane" id="matriks" role="tabpanel">
                             <div class="card">
                                 <div class="card-header">
-                                    {{-- <a class="btn btn-dark"
+                                    <a class="btn btn-dark"
                                         href="{{ route('unit.export-matriks', ['id_unit' => $unit->id, 'id_kkn' => $unit->id_kkn]) }}"><i
-                                            class="bx bxs-file-export"></i>Export Excel</a> --}}
+                                            class="bx bxs-file-export"></i>Export Excel</a>
                                 </div>
                                 <div class="card-body" style="overflow-x: auto;">
                                     <table class="table-content-border" style="width: 100%;">
@@ -275,6 +276,11 @@
 
                         <div class="tab-pane" id="rekap" role="tabpanel">
                             <div class="card">
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.exportRekapKegiatanPDF', ['id' => $unit->id]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-responsive" id="rekap_kegiatan">
                                     @for ($i = 0; $i < 5; $i++)
                                         <table

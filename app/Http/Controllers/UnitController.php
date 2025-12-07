@@ -556,4 +556,51 @@ class UnitController extends Controller
             return '<p class="text-danger">Error memuat tabel: ' . $e->getMessage() . '</p>';
         }
     }
+
+    public function exportAnggotaPDF($id)
+    {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+        
+        $unit = Unit::with(['lokasi.kecamatan.kabupaten', 'dpl.dosen.user', 'kkn'])->findOrFail($id);
+        $anggota = Mahasiswa::with(['userRole.user', 'prodi'])
+            ->where('id_unit', $id)
+            ->get();
+
+        $pdf = PDF::loadView('mahasiswa.manajemen unit.export-anggota-pdf', compact('unit', 'anggota'))
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Daftar Anggota Unit ' . $unit->nama . '.pdf');
+    }
+
+    public function exportRekapKegiatanPDF($id)
+    {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+        
+        $unit = Unit::with(['lokasi.kecamatan.kabupaten', 'dpl.dosen.user', 'kkn'])->findOrFail($id);
+        
+        $kegiatan = BidangProker::with([
+            'proker' => function ($query) use ($id) {
+                $query->where('id_unit', $id)
+                    ->with([
+                        'tempatDanSasaran',
+                        'kegiatan' => function ($q) {
+                            $q->with([
+                                // Load LogbookKegiatan beserta Dananya
+                                'logbookKegiatan' => function($lk) {
+                                    $lk->with(['dana', 'logbookHarian']);
+                                }
+                            ]);
+                        }
+                    ]);
+            }
+        ])->where('id_kkn', $unit->id_kkn)->get();
+
+        $pdf = PDF::loadView('mahasiswa.manajemen unit.export-rekap-kegiatan-pdf', compact('unit', 'kegiatan'))
+            ->setPaper('a4', 'landscape')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Rekap Kegiatan Unit ' . $unit->nama . '.pdf');
+    }
 }
