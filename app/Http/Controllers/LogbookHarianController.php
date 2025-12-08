@@ -8,6 +8,7 @@ use App\Models\LogbookHarian;
 use App\Models\LogbookKegiatan;
 use App\Models\LogbookSholat;
 use App\Models\Mahasiswa;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -365,16 +366,59 @@ class LogbookHarianController extends Controller
     }
 
     // Get logbook sholat PDF
-    public function getPDF(string $id, string $tanggal_penerjunan, string $tanggal_penarikan)
+    public function exportLogbookHarianPDF($id_mahasiswa, $tanggal_penerjunan, $tanggal_penarikan)
     {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+
         $tanggal_penerjunan = Carbon::parse($tanggal_penerjunan)->format('Y-m-d');
         $tanggal_penarikan = Carbon::parse($tanggal_penarikan)->format('Y-m-d');
 
-        $data = LogbookHarian::where('id_mahasiswa', $id)
+        $mahasiswa = Mahasiswa::with(['userRole.user', 'unit.lokasi.kecamatan.kabupaten', 'prodi'])->findOrFail($id_mahasiswa);
+
+        // Ambil data logbook harian dengan relasi
+        $logbookHarian = LogbookHarian::with([
+            'logbookKegiatan.kegiatan.proker.bidang',
+            'logbookKegiatan.dana'
+        ])
+        ->where('id_mahasiswa', $id_mahasiswa)
+        ->whereBetween('tanggal', [$tanggal_penerjunan, $tanggal_penarikan])
+        ->orderBy('tanggal')
+        ->get();
+
+        $pdf = PDF::loadView('mahasiswa.manajemen-logbook.export-pdf-logbook-harian-mahasiswa', [
+            'mahasiswa' => $mahasiswa,
+            'logbookData' => $logbookHarian,
+            'tanggal_penerjunan' => $tanggal_penerjunan,
+            'tanggal_penarikan' => $tanggal_penarikan
+        ])
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Logbook Harian ' . $mahasiswa->userRole->user->nama . '.pdf');
+    }
+
+    public function exportPDF(string $id, string $tanggal_penerjunan, string $tanggal_penarikan)
+    {
+        return $this->getPDF($id, $tanggal_penerjunan, $tanggal_penarikan);
+    }
+
+    public function getPDF(string $id, string $tanggal_penerjunan, string $tanggal_penarikan)
+    {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+
+        $tanggal_penerjunan = Carbon::parse($tanggal_penerjunan)->format('Y-m-d');
+        $tanggal_penarikan = Carbon::parse($tanggal_penarikan)->format('Y-m-d');
+
+        $data = LogbookSholat::where('id_mahasiswa', $id)
             ->whereBetween('tanggal', [$tanggal_penerjunan, $tanggal_penarikan])
             ->get();
-        $mahasiswa = Mahasiswa::with(['unit.dpl', 'unit.lokasi', 'prodi'])->where('id', $id)->first();
-        return view('mahasiswa.pdf_sholat', compact('data', 'mahasiswa', 'tanggal_penerjunan', 'tanggal_penarikan'));
+        $mahasiswa = Mahasiswa::with(['unit.dpl.dosen.user', 'unit.lokasi.kecamatan.kabupaten', 'prodi'])->where('id', $id)->first();
+
+        $pdf = PDF::loadView('mahasiswa.pdf_sholat', compact('data', 'mahasiswa', 'tanggal_penerjunan', 'tanggal_penarikan'))
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Logbook Sholat ' . $mahasiswa->userRole->user->nama . '.pdf');
     }
 
     public function halanganFullDay(Request $request)
