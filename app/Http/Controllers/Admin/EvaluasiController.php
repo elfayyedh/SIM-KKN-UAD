@@ -88,6 +88,7 @@ class EvaluasiController extends Controller
 
         // Get belum dinilai data
         $belumDinilaiData = $this->getBelumDinilaiData($kknId);
+        // dd($mappedNilai);
 
         return view('administrator.read.evaluasi-mahasiswa', compact('kkns', 'kkn', 'mahasiswa', 'kriteriaList', 'mappedNilai', 'timMonevInfo', 'cardValues', 'unitData', 'belumDinilaiData'));
     }

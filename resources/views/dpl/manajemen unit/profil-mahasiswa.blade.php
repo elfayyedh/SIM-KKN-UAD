@@ -123,6 +123,11 @@
                     <div class="tab-content">
                         <div class="tab-pane active" id="program_kerja" role="tabpanel">
                             <div class="card">
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('proker.exportProkerMahasiswaPDF', ['id_mahasiswa' => $user->id, 'id_kkn' => $user->id_kkn, 'id_unit' => $user->id_unit]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body" id="program_kerja_mahasiswa">
                                     <table
                                         class="table table-bordered table-hover table-responsive text-nowrap nowrap w-100">
@@ -175,6 +180,11 @@
 
                         <div class="tab-pane" id="logbook_harian" role="tabpanel">
                             <div class="card">
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('logbook.harian.exportPDF', ['id_mahasiswa' => $user->id, 'tanggal_penerjunan' => $user->unit->tanggal_penerjunan, 'tanggal_penarikan' => $user->unit->tanggal_penarikan != null ? $user->unit->tanggal_penarikan : $user->kkn->tanggal_selesai]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-responsive">
                                     <table
                                         class="table table-bordered table-hover table-responsive text-nowrap nowrap w-100">
@@ -254,8 +264,8 @@
 
                         <div class="tab-pane mb-3" id="logbook_sholat" role="tabpanel">
                             <div class="col-12 mb-3 mt-3">
-                                <a href="{{ route('logbook.sholat.getPDF', ['id' => $user->id, 'tanggal_penerjunan' => $user->unit->tanggal_penerjunan, 'tanggal_penarikan' => $user->unit->tanggal_penarikan != null ? $user->unit->tanggal_penarikan : $user->kkn->tanggal_selesai]) }}"
-                                    class="btn btn-dark btn-md"><i class="bx bx-printer me-1"></i>Print</a>
+                                <a href="{{ route('logbook.sholat.exportPDF', ['id' => $user->id, 'tanggal_penerjunan' => $user->unit->tanggal_penerjunan, 'tanggal_penarikan' => $user->unit->tanggal_penarikan != null ? $user->unit->tanggal_penarikan : $user->kkn->tanggal_selesai]) }}"
+                                    class="btn btn-dark btn-md"><i class="bx bx-printer me-1"></i>Export PDF</a>
                             </div>
                             <div class="card mb-0" style="overflow-x: auto">
                                 <table

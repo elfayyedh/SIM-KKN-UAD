@@ -3,20 +3,27 @@
 namespace App\Exports;
 
 use App\Models\Mahasiswa;
+use App\Models\KriteriaMonev;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
 class EvaluasiExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithCustomStartCell
 {
     protected $kknId;
+    protected $kriteriaList;
 
     public function __construct($kknId)
     {
         $this->kknId = $kknId;
+        $this->kriteriaList = KriteriaMonev::where('id_kkn', $kknId)
+            ->orderBy('urutan', 'asc')
+            ->get();
     }
 
     public function collection()
@@ -24,31 +31,28 @@ class EvaluasiExport implements FromCollection, WithHeadings, WithMapping, WithS
         return Mahasiswa::with([
             'userRole.user',
             'unit.lokasi.kecamatan.kabupaten',
-            'evaluasiMahasiswa'
+            'evaluasiMahasiswa.evaluasiMahasiswaDetail'
         ])
         ->where('id_kkn', $this->kknId)
         ->get();
     }
 
-    // HEADER BARIS 2 (A2–K2)
     public function headings(): array
     {
-        return [
-            'Nama Mahasiswa', // A
-            'NIM',            // B
-            'Unit',           // C
-            'Lokasi',         // D
-            'Capaian JKEM',   // E
-            'Sholat',         // F
-            'Form 1',         // G
-            'Form 2',         // H
-            'Form 3',         // I
-            'Form 4',         // J
-            'Jumlah Nilai'    // K (now as subheader under the 'Nilai' group)
+        $headers = [
+            'Nama Mahasiswa',
+            'NIM',
+            'Unit',
+            'Lokasi',
         ];
+
+        foreach ($this->kriteriaList as $kriteria) {
+            $headers[] = $kriteria->judul ?? $kriteria->nama_kriteria;
+        }
+        $headers[] = 'Jumlah Nilai';
+        return $headers;
     }
 
-    // HEADINGS mulai dari A2 agar data mulai A3
     public function startCell(): string
     {
         return 'A2';
@@ -60,87 +64,76 @@ class EvaluasiExport implements FromCollection, WithHeadings, WithMapping, WithS
         $nim  = $mhs->nim ?? '';
         $unit = $mhs->unit->nama ?? '';
 
-        // lokasi aman
         $lokasi = '-';
-        if (
-            $mhs->unit &&
-            $mhs->unit->lokasi &&
-            $mhs->unit->lokasi->kecamatan &&
-            $mhs->unit->lokasi->kecamatan->kabupaten
-        ) {
-            $lokasi = $mhs->unit->lokasi->kecamatan->kabupaten->nama;
+        if ($mhs->unit && $mhs->unit->lokasi && $mhs->unit->lokasi->kecamatan && $mhs->unit->lokasi->kecamatan->kabupaten) {
+            $lokasi = $mhs->unit->lokasi->nama . ', ' . $mhs->unit->lokasi->kecamatan->kabupaten->nama;
         }
 
-        // nilai evaluasi
-        $jkem = 0;
-        $sholat = 0;
-        $form1 = 0;
-        $form2 = 0;
-        $form3 = 0;
-        $form4 = 0;
-
+        $nilaiMap = [];
+        
         if ($mhs->evaluasiMahasiswa) {
-            foreach ($mhs->evaluasiMahasiswa as $e) {
-                $jkem   += $e->eval_jkem ?? 0;
-                $sholat += $e->eval_sholat ?? 0;
-                $form1  += $e->form_1 ?? ($e->form1 ?? 0);
-                $form2  += $e->form_2 ?? ($e->form2 ?? 0);
-                $form3  += $e->form_3 ?? ($e->form3 ?? 0);
-                $form4  += $e->form_4 ?? ($e->form4 ?? 0);
+            $evaluations = $mhs->evaluasiMahasiswa->sortByDesc('created_at');
+            foreach ($evaluations as $eval) {
+                if ($eval->evaluasiMahasiswaDetail) {
+                    foreach ($eval->evaluasiMahasiswaDetail as $detail) {
+                        if (!isset($nilaiMap[$detail->id_kriteria_monev])) {
+                            $nilaiMap[$detail->id_kriteria_monev] = $detail->nilai;
+                        }
+                    }
+                }
             }
         }
 
-        // Hitung jumlah nilai (tetapi kolom Jumlah Nilai akan dikosongkan sesuai permintaan)
-        $jumlahNilai = $jkem + $sholat + $form1 + $form2 + $form3 + $form4;
-
-        return [
+        $row = [
             $nama,
             $nim,
             $unit,
-            $lokasi,
-            $jkem ?: '',
-            $sholat ?: '',
-            $form1 ?: '',
-            $form2 ?: '',
-            $form3 ?: '',
-            $form4 ?: '',
-            ''
+            $lokasi
         ];
+
+        $totalScore = 0;
+
+        // Loop sesuai urutan header Kriteria
+        foreach ($this->kriteriaList as $kriteria) {
+            $val = $nilaiMap[$kriteria->id] ?? '';
+            $row[] = $val;
+
+            // --- LOGIKA PENJUMLAHAN ---
+            if ($val !== '' && is_numeric($val)) {
+                $totalScore += $val;
+            }
+        }
+        $row[] = $totalScore;
+        return $row;
     }
 
     public function styles(Worksheet $sheet)
     {
-        // Baris 1: Judul "Nilai" — sekarang mencakup Form 1..4 dan Jumlah Nilai (E1:K1)
-        $sheet->setCellValue('E1', 'Nilai');
-        $sheet->mergeCells('E1:K1');
+        $totalColumns = 4 + $this->kriteriaList->count() + 1;
+        
+        // Konversi angka ke huruf kolom Excel
+        $lastColumnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalColumns);
 
-        // Styling header baris 1–2
-        $sheet->getStyle('A1:K2')->applyFromArray([
-            'font' => [
-                'bold' => true,
-            ],
+        // Header Utama
+        $sheet->setCellValue('A1', 'REKAP NILAI EVALUASI MAHASISWA');
+        $sheet->mergeCells('A1:' . $lastColumnLetter . '1');
+        
+        // Styling Header
+        $sheet->getStyle('A1:' . $lastColumnLetter . '2')->applyFromArray([
+            'font' => ['bold' => true],
             'alignment' => [
-                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
-                'vertical'   => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-                'wrapText'   => true,
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical'   => Alignment::VERTICAL_CENTER,
             ],
             'borders' => [
-                'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                ],
+                'allBorders' => ['borderStyle' => Border::BORDER_THIN],
             ],
         ]);
 
-        // Auto-size kolom
-        foreach (range('A', 'K') as $col) {
-            $sheet->getColumnDimension($col)->setAutoSize(true);
+        // Auto Size semua kolom
+        for ($i = 1; $i <= $totalColumns; $i++) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+            $sheet->getColumnDimension($colLetter)->setAutoSize(true);
         }
-
-        // Tinggi baris
-        $sheet->getRowDimension(1)->setRowHeight(22);
-        $sheet->getRowDimension(2)->setRowHeight(20);
-
-        // Freeze panes baris atas
-        $sheet->freezePane('A3');
     }
 }

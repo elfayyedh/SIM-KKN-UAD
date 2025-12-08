@@ -46,7 +46,7 @@ class EvaluasiMahasiswa extends Model
         return $this->belongsTo(Mahasiswa::class, 'id_mahasiswa');
     }
 
-    public function details()
+    public function evaluasiMahasiswaDetail()
     {
         return $this->hasMany(EvaluasiMahasiswaDetail::class, 'id_evaluasi_mahasiswa');
     }

@@ -45,7 +45,6 @@
                             <thead class="table-light">
                                 <tr>
                                     <th rowspan="2" class="text-center">Mahasiswa</th>
-                                    <th colspan="2" class="text-center">Statistik</th>
                                     <th rowspan="2" class="text-center">Pencapaian JKEM<br>(1.0 - 3.0)</th>
                                     <th rowspan="2" class="text-center">Sholat<br>(1.0 - 3.0)</th>
                                     <th rowspan="2" class="text-center">Form 1<br>(1.0 - 3.0)</th>
@@ -54,61 +53,41 @@
                                     <th rowspan="2" class="text-center">Form 4<br>(1.0 - 3.0)</th>
                                     <th rowspan="2" class="text-center">Status</th>
                                 </tr>
-                                <tr>
-                                    <th class="text-center">JKEM</th>
-                                    <th class="text-center">Sholat</th>
-                                </tr>
                             </thead>
 
                             <tbody>
                                 @foreach($mahasiswa as $mhs)
-
-                                    @php
-                                        $nilai = $mappedNilai[$mhs->id] ?? [];
-
-                                        $statJkem   = $nilai['stat_jkem']   ?? '0%';
-                                        $statSholat = $nilai['stat_sholat'] ?? '0%';
-
-                                        $n_jkem   = $nilai['jkem']   ?? '';
-                                        $n_sholat = $nilai['sholat'] ?? '';
-                                        $f1       = $nilai['form1']  ?? '';
-                                        $f2       = $nilai['form2']  ?? '';
-                                        $f3       = $nilai['form3']  ?? '';
-                                        $f4       = $nilai['form4']  ?? '';
-
-                                        $statusNilai = ($n_jkem || $n_sholat || $f1 || $f2 || $f3 || $f4);
-                                    @endphp
-
                                     <tr>
-                                        {{-- Nama + Identitas --}}
+                                        {{-- 1. Nama + Identitas --}}
                                         <td>
                                             <strong>{{ $mhs->userRole->user->nama ?? '-' }}</strong><br>
                                             <small>{{ $mhs->nim }}</small><br>
                                             <small>{{ $mhs->no_hp ?? '' }}</small>
                                         </td>
 
-                                        {{-- Statistik JKEM & Sholat --}}
-                                        <td class="text-center">{{ $statJkem }}</td>
-                                        <td class="text-center">{{ $statSholat }}</td>
+                                        {{-- 3. Nilai (LOOPING DINAMIS SESUAI CONTROLLER) --}}
+                                        {{-- Kita ambil nilai berdasarkan ID Kriteria, bukan nama manual --}}
+                                        @foreach($kriteriaList as $kriteria)
+                                            @php
+                                                // Ambil nilai dari array mappedNilai menggunakan ID Mahasiswa & ID Kriteria
+                                                $skor = $mappedNilai[$mhs->id][$kriteria->id] ?? '-';
+                                            @endphp
+                                            <td class="text-center">{{ $skor }}</td>
+                                        @endforeach
 
-                                        {{-- Nilai 1.0 - 3.0 --}}
-                                        <td class="text-center">{{ $n_jkem ?: '-' }}</td>
-                                        <td class="text-center">{{ $n_sholat ?: '-' }}</td>
-                                        <td class="text-center">{{ $f1 ?: '-' }}</td>
-                                        <td class="text-center">{{ $f2 ?: '-' }}</td>
-                                        <td class="text-center">{{ $f3 ?: '-' }}</td>
-                                        <td class="text-center">{{ $f4 ?: '-' }}</td>
-
-                                        {{-- Status --}}
+                                        {{-- 4. Status (Cek apakah ada data nilai untuk mahasiswa ini) --}}
+                                        @php
+                                            // Cek apakah mahasiswa ini punya entry di array mappedNilai
+                                            $sudahDinilai = isset($mappedNilai[$mhs->id]) && count($mappedNilai[$mhs->id]) > 0;
+                                        @endphp
                                         <td class="text-center">
-                                            @if($statusNilai)
+                                            @if($sudahDinilai)
                                                 <span class="badge bg-success">Sudah Dinilai</span>
                                             @else
                                                 <span class="badge bg-warning">Belum Dinilai</span>
                                             @endif
                                         </td>
                                     </tr>
-
                                 @endforeach
                             </tbody>
 

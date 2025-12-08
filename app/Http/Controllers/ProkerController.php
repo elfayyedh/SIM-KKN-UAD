@@ -788,7 +788,7 @@ class ProkerController extends Controller
     {
         set_time_limit(300); // Set timeout 5 menit
         ini_set('memory_limit', '512M'); // Increase memory limit
-        
+
         $unit = Unit::with(['lokasi', 'dpl.dosen.user', 'kkn'])->where('id', $id)->first();
         $prokers = BidangProker::with([
             'proker' => function ($query) use ($id) {
@@ -813,10 +813,51 @@ class ProkerController extends Controller
                 $proker->total_jkem = $proker->kegiatan->sum('total_jkem');
             }
         }
-        
+
         $pdf = PDF::loadView('mahasiswa.manajemen proker.export-pdf-proker', compact('unit', 'prokers'))
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('isRemoteEnabled', false);
         return $pdf->download('Program Kerja Unit ' . $unit->nama . '.pdf');
+    }
+
+    public function exportProkerMahasiswaPDF($id_mahasiswa, $id_kkn, $id_unit)
+    {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+
+        $mahasiswa = \App\Models\Mahasiswa::with(['userRole.user', 'unit.lokasi.kecamatan.kabupaten', 'prodi'])->findOrFail($id_mahasiswa);
+
+        // Ambil hanya program kerja individu yang diikuti mahasiswa
+        $prokers = \App\Models\BidangProker::where('id_kkn', $id_kkn)
+            ->where('tipe', 'individu') // Hanya tipe individu
+            ->with([
+                'proker' => function ($query) use ($id_unit, $id_mahasiswa) {
+                    $query->where('id_unit', $id_unit)
+                        ->whereHas('kegiatan', function ($query) use ($id_mahasiswa) {
+                            $query->where('id_mahasiswa', $id_mahasiswa);
+                        });
+                },
+                'proker.kegiatan' => function ($query) use ($id_mahasiswa) {
+                    $query->where('id_mahasiswa', $id_mahasiswa);
+                },
+                'proker.kegiatan.mahasiswa.userRole.user',
+                'proker.kegiatan.tanggalRencanaProker',
+                'proker.kegiatan.logbookKegiatan.logbookHarian',
+                'proker.organizer',
+                'proker.tempatDanSasaran',
+            ])
+            ->get();
+
+        foreach ($prokers as $bidangProker) {
+            foreach ($bidangProker->proker as $proker) {
+                // Hitung total_jkem untuk setiap Proker
+                $proker->total_jkem = $proker->kegiatan->sum('total_jkem');
+            }
+        }
+
+        $pdf = PDF::loadView('mahasiswa.manajemen proker.export-pdf-proker-mahasiswa', compact('mahasiswa', 'prokers'))
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Program Kerja ' . $mahasiswa->userRole->user->nama . '.pdf');
     }
 }
