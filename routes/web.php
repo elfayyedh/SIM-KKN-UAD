@@ -261,7 +261,9 @@ Route::middleware([Authenticate::class])->get('/kalender', [UnitController::clas
 //! Mahasiswa
 Route::middleware([Authenticate::class])->get('/mahasiswa/detail/{id}', [MahasiswaController::class, 'show'])->name('mahasiswa.show');
 Route::middleware([Authenticate::class])->get('/mahasiswa/proker/{id}/{id_kkn}/{id_unit}', [MahasiswaController::class, 'getProkerMahasiswa'])->name('mahasiswa.getProkerMahasiswa');
-
+Route::middleware([Authenticate::class])->get('/mahasiswa/export-proker-pdf/{id_mahasiswa}/{id_kkn}/{id_unit}', [ProkerController::class, 'exportProkerMahasiswaPDF'])->name('proker.exportProkerMahasiswaPDF');
+Route::middleware([Authenticate::class])->get('/mahasiswa/export-logbook-harian-pdf/{id_mahasiswa}/{tanggal_penerjunan}/{tanggal_penarikan}', [LogbookHarianController::class, 'exportLogbookHarianPDF'])->name('logbook.harian.exportPDF');
+Route::middleware([Authenticate::class])->get('/mahasiswa/export-logbook-sholat-pdf/{id}/{tanggal_penerjunan}/{tanggal_penarikan}', [LogbookHarianController::class, 'exportPDF'])->name('logbook.sholat.exportPDF');
 //! End Mahasiswa
 
 //! Comment
