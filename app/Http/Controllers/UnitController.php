@@ -584,13 +584,14 @@ class UnitController extends Controller
             'proker' => function ($query) use ($id) {
                 $query->where('id_unit', $id)
                     ->with([
-                        'tempatDanSasaran:id,id_proker,tempat,sasaran',
+                        'tempatDanSasaran',
                         'kegiatan' => function ($q) {
-                            $q->select('id', 'id_proker', 'nama', 'total_jkem')
-                              ->with([
-                                  'logbookKegiatan.logbookHarian:id,id_logbook_kegiatan,tanggal,jkem',
-                                  'logbookKegiatan.dana'
-                              ]);
+                            $q->with([
+                                // Load LogbookKegiatan beserta Dananya
+                                'logbookKegiatan' => function($lk) {
+                                    $lk->with(['dana', 'logbookHarian']);
+                                }
+                            ]);
                         }
                     ]);
             }

@@ -27,7 +27,7 @@
                         </td>
                         <td>{{ $item->dosen->user->no_telp ?? 'N/A' }}</td>
                         <td>
-                            <a href="{{ route('user.edit', $item->dosen->user->id) }}"><i
+                            <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->dosen->user->id) }}"><i
                                     class="bx bx-edit me-1">Edit</i></a>
                         </td>
                     </tr>

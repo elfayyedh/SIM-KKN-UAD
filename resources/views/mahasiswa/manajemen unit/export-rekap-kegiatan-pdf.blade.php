@@ -135,51 +135,56 @@
                     <tbody>
                         @foreach ($bidang->proker as $proker)
                             @php
-                                $totalJkem = $proker->kegiatan->sum('total_jkem');
-                                $frekuensiTotal = 0;
-                                $jkemTotal = 0;
                                 $danaMhs = 0;
                                 $danaMas = 0;
                                 $danaPem = 0;
                                 $danaPT = 0;
                                 
+                                $frekuensiRealisasi = 0;
+                                $jkemRealisasi = 0;
+                                
+                                $totalJkemRencana = 0;
+                                $frekuensiRencana = 0;
+                                
                                 $tempatList = [];
                                 $sasaranList = [];
                                 
-                                // Ambil tempat dan sasaran dari relasi proker
-                                if (isset($proker->tempatDanSasaran) && is_iterable($proker->tempatDanSasaran)) {
-                                    foreach ($proker->tempatDanSasaran as $ts) {
-                                        if ($ts->tempat) {
-                                            $tempatList[] = $ts->tempat;
-                                        }
-                                        if ($ts->sasaran) {
-                                            $sasaranList[] = $ts->sasaran;
+                                if ($proker->kegiatan) {
+                                    foreach ($proker->kegiatan as $kegiatan) {
+                                        // Hitung Data Rencana (Sesuai JS: total_jkem_proker & frekuensi_kegiatan)
+                                        $totalJkemRencana += $kegiatan->total_jkem;
+                                        $frekuensiRencana += $kegiatan->frekuensi; 
+
+                                        if ($kegiatan->logbookKegiatan) {
+                                            foreach ($kegiatan->logbookKegiatan as $logbook) {
+                                                
+                                                $frekuensiRealisasi++; 
+                                                $jkemRealisasi += $logbook->total_jkem ?? 0;
+                                                if ($logbook->dana) {
+                                                    foreach ($logbook->dana as $d) {
+                                                        $sumber = strtolower($d->sumber); 
+                                                        $jumlah = $d->jumlah ?? 0;
+
+                                                        if (str_contains($sumber, 'mhs') || str_contains($sumber, 'mahasiswa') || str_contains($sumber, 'mandiri')) {
+                                                            $danaMhs += $jumlah;
+                                                        } elseif (str_contains($sumber, 'mas') || str_contains($sumber, 'masyarakat') || str_contains($sumber, 'warga')) {
+                                                            $danaMas += $jumlah;
+                                                        } elseif (str_contains($sumber, 'pem') || str_contains($sumber, 'pemerintah') || str_contains($sumber, 'desa')) {
+                                                            $danaPem += $jumlah;
+                                                        } elseif (str_contains($sumber, 'pt') || str_contains($sumber, 'perguruan') || str_contains($sumber, 'kampus') || str_contains($sumber, 'uad')) {
+                                                            $danaPT += $jumlah;
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
                                 
-                                if ($proker->kegiatan && is_iterable($proker->kegiatan)) {
-                                    foreach ($proker->kegiatan as $keg) {
-                                        if ($keg->logbookKegiatan && is_iterable($keg->logbookKegiatan)) {
-                                            foreach ($keg->logbookKegiatan as $logbook) {
-                                                if ($logbook->logbookHarian) {
-                                                    $frekuensiTotal += is_countable($logbook->logbookHarian) ? count($logbook->logbookHarian) : 1;
-                                                    
-                                                    if (is_object($logbook->logbookHarian) && method_exists($logbook->logbookHarian, 'sum')) {
-                                                        $jkemTotal += $logbook->logbookHarian->sum('jkem');
-                                                    } elseif (isset($logbook->logbookHarian->jkem)) {
-                                                        $jkemTotal += $logbook->logbookHarian->jkem;
-                                                    }
-                                                }
-                                                
-                                                if ($logbook->dana) {
-                                                    $danaMhs += $logbook->dana->dana_mahasiswa ?? 0;
-                                                    $danaMas += $logbook->dana->dana_masyarakat ?? 0;
-                                                    $danaPem += $logbook->dana->dana_pemerintah ?? 0;
-                                                    $danaPT += $logbook->dana->dana_pt ?? 0;
-                                                }
-                                            }
-                                        }
+                                if ($proker->tempatDanSasaran) {
+                                    foreach ($proker->tempatDanSasaran as $ts) {
+                                        if ($ts->tempat && $ts->tempat != "-") $tempatList[] = $ts->tempat;
+                                        if ($ts->sasaran && $ts->sasaran != "-") $sasaranList[] = $ts->sasaran;
                                     }
                                 }
                                 
@@ -189,60 +194,40 @@
                             @endphp
                             <tr>
                                 <td>{{ $proker->nama ?? '-' }}</td>
-                                <td style="text-align: center;">{{ $totalJkem }}</td>
-                                <td style="text-align: center;">{{ $proker->kegiatan ? (is_countable($proker->kegiatan) ? count($proker->kegiatan) : 0) : 0 }}</td>
+                                <td style="text-align: center;">{{ $totalJkemRencana }}</td>
+                                <td style="text-align: center;">{{ $frekuensiRencana }}</td>
                                 <td>{{ $tempat }}</td>
                                 <td>{{ $sasaran }}</td>
-                                <td style="text-align: center;">{{ $frekuensiTotal }}</td>
-                                <td style="text-align: center;">{{ $jkemTotal }}</td>
-                                <td style="text-align: right;">{{ number_format($danaMhs, 0, ',', '.') }}</td>
-                                <td style="text-align: right;">{{ number_format($danaMas, 0, ',', '.') }}</td>
-                                <td style="text-align: right;">{{ number_format($danaPem, 0, ',', '.') }}</td>
-                                <td style="text-align: right;">{{ number_format($danaPT, 0, ',', '.') }}</td>
-                                <td style="text-align: right;">{{ number_format($totalDana, 0, ',', '.') }}</td>
+                                <td style="text-align: center;">{{ $frekuensiRealisasi }}</td> <td style="text-align: center;">{{ $jkemRealisasi }}</td>
+                                <td style="text-align: right;">Rp {{ number_format($danaMhs, 0, ',', '.') }}</td>
+                                <td style="text-align: right;">Rp {{ number_format($danaMas, 0, ',', '.') }}</td>
+                                <td style="text-align: right;">Rp {{ number_format($danaPem, 0, ',', '.') }}</td>
+                                <td style="text-align: right;">Rp {{ number_format($danaPT, 0, ',', '.') }}</td>
+                                <td style="text-align: right;">Rp {{ number_format($totalDana, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
-                        
+
                         @php
-                            $grandTotalJkem = 0;
-                            if ($bidang->proker && is_iterable($bidang->proker)) {
-                                foreach ($bidang->proker as $p) {
-                                    if ($p->kegiatan && is_iterable($p->kegiatan)) {
-                                        foreach ($p->kegiatan as $k) {
-                                            $grandTotalJkem += $k->total_jkem ?? 0;
-                                        }
-                                    }
-                                }
-                            }
-                            
                             $grandFrekuensi = 0;
                             $grandJkem = 0;
-                            $grandDanaMhs = 0;
-                            $grandDanaMas = 0;
-                            $grandDanaPem = 0;
-                            $grandDanaPT = 0;
-                            
-                            if ($bidang->proker && is_iterable($bidang->proker)) {
-                                foreach ($bidang->proker as $p) {
-                                    if ($p->kegiatan && is_iterable($p->kegiatan)) {
-                                        foreach ($p->kegiatan as $k) {
-                                            if ($k->logbookKegiatan && is_iterable($k->logbookKegiatan)) {
-                                                foreach ($k->logbookKegiatan as $l) {
-                                                    if ($l->logbookHarian) {
-                                                        $grandFrekuensi += is_countable($l->logbookHarian) ? count($l->logbookHarian) : 1;
-                                                        
-                                                        if (is_object($l->logbookHarian) && method_exists($l->logbookHarian, 'sum')) {
-                                                            $grandJkem += $l->logbookHarian->sum('jkem');
-                                                        } elseif (isset($l->logbookHarian->jkem)) {
-                                                            $grandJkem += $l->logbookHarian->jkem;
-                                                        }
-                                                    }
-                                                    
-                                                    if ($l->dana) {
-                                                        $grandDanaMhs += $l->dana->dana_mahasiswa ?? 0;
-                                                        $grandDanaMas += $l->dana->dana_masyarakat ?? 0;
-                                                        $grandDanaPem += $l->dana->dana_pemerintah ?? 0;
-                                                        $grandDanaPT += $l->dana->dana_pt ?? 0;
+                            $grandDanaMhs = 0; $grandDanaMas = 0; $grandDanaPem = 0; $grandDanaPT = 0;
+
+                            foreach ($bidang->proker as $p) {
+                                if ($p->kegiatan) {
+                                    foreach ($p->kegiatan as $k) {
+                                        if ($k->logbookKegiatan) {
+                                            foreach ($k->logbookKegiatan as $l) {
+                                                $grandFrekuensi++; // Sama dengan logic JS: count logbook
+                                                $grandJkem += $l->total_jkem ?? 0;
+                                                
+                                                if ($l->dana) {
+                                                    foreach ($l->dana as $d) {
+                                                        $sumber = strtolower($d->sumber);
+                                                        $jumlah = $d->jumlah ?? 0;
+                                                        if (str_contains($sumber, 'mhs') || str_contains($sumber, 'mahasiswa')) $grandDanaMhs += $jumlah;
+                                                        elseif (str_contains($sumber, 'mas') || str_contains($sumber, 'masyarakat')) $grandDanaMas += $jumlah;
+                                                        elseif (str_contains($sumber, 'pem') || str_contains($sumber, 'pemerintah')) $grandDanaPem += $jumlah;
+                                                        elseif (str_contains($sumber, 'pt') || str_contains($sumber, 'uad')) $grandDanaPT += $jumlah;
                                                     }
                                                 }
                                             }
@@ -250,20 +235,19 @@
                                     }
                                 }
                             }
-                            
                             $grandTotalDana = $grandDanaMhs + $grandDanaMas + $grandDanaPem + $grandDanaPT;
                         @endphp
-                        
+
                         <tr style="background-color: #f0f0f0; font-weight: bold;">
                             <td colspan="3" style="text-align: center;">TOTAL BIDANG {{ strtoupper($bidang->nama) }}</td>
                             <td colspan="2"></td>
                             <td style="text-align: center;">{{ $grandFrekuensi }}</td>
                             <td style="text-align: center;">{{ $grandJkem }}</td>
-                            <td style="text-align: right;">{{ number_format($grandDanaMhs, 0, ',', '.') }}</td>
-                            <td style="text-align: right;">{{ number_format($grandDanaMas, 0, ',', '.') }}</td>
-                            <td style="text-align: right;">{{ number_format($grandDanaPem, 0, ',', '.') }}</td>
-                            <td style="text-align: right;">{{ number_format($grandDanaPT, 0, ',', '.') }}</td>
-                            <td style="text-align: right;">{{ number_format($grandTotalDana, 0, ',', '.') }}</td>
+                            <td style="text-align: right;">Rp {{ number_format($grandDanaMhs, 0, ',', '.') }}</td>
+                            <td style="text-align: right;">Rp {{ number_format($grandDanaMas, 0, ',', '.') }}</td>
+                            <td style="text-align: right;">Rp {{ number_format($grandDanaPem, 0, ',', '.') }}</td>
+                            <td style="text-align: right;">Rp {{ number_format($grandDanaPT, 0, ',', '.') }}</td>
+                            <td style="text-align: right;">Rp {{ number_format($grandTotalDana, 0, ',', '.') }}</td>
                         </tr>
                     </tbody>
                 </table>

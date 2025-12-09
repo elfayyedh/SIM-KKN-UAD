@@ -136,11 +136,7 @@ Route::prefix('/tim-monev')->middleware([Authenticate::class, AdminMiddleware::c
     Route::get('/edit/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'edit'])->name('tim-monev.edit');
     Route::put('/update/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'update'])->name('tim-monev.update');
     Route::delete('/destroy/{id}', [App\Http\Controllers\Admin\TimMonevController::class, 'destroy'])->name('tim-monev.destroy');
-
-
     Route::get('/get-units/{id_kkn}', [App\Http\Controllers\Admin\TimMonevController::class, 'getUnitsByKkn'])->name('tim-monev.get-units');
-
-    
     // Route AJAX
     Route::get('/get-all-active-units', [App\Http\Controllers\Admin\TimMonevController::class, 'getAllActiveUnits'])
         ->name('tim-monev.get-all-active-units');
