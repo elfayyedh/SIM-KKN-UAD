@@ -147,7 +147,25 @@ class DplController extends Controller
             return view('not-found');
         }
 
-        $dpl = Dpl::findOrFail($id);
+        $dpl = Dpl::with(['units', 'dosen.user'])->findOrFail($id);
+        
+        // Cek apakah DPL masih membimbing unit
+        $unitCount = $dpl->units()->count();
+        
+        if ($unitCount > 0) {
+            // Ambil nama-nama unit yang masih dibimbing
+            $unitNames = $dpl->units()->pluck('nama')->toArray();
+            $unitList = implode(', ', $unitNames);
+            
+            $dosenName = $dpl->dosen->user->nama ?? 'DPL';
+            
+            return redirect()->route('dpl.index')->with('error', 
+                "DPL {$dosenName} tidak dapat dihapus karena masih membimbing {$unitCount} unit: {$unitList}. " .
+                "Silakan hapus atau pindahkan unit tersebut terlebih dahulu."
+            );
+        }
+        
+        // Jika tidak ada unit yang terkait, baru bisa dihapus
         $dpl->delete();
 
         return redirect()->route('dpl.index')->with('success', 'DPL berhasil dihapus.');
