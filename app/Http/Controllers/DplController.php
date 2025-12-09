@@ -185,11 +185,20 @@ class DplController extends Controller
         try {
             DB::beginTransaction();
             $dpl = Dpl::findOrFail($id);
+            $affectedUnits = Unit::where('id_dpl', $dpl->id)->get();
+            $unitCount = $affectedUnits->count();
+            $unitNames = $affectedUnits->pluck('nama')->implode(', ');
+
             Unit::where('id_dpl', $dpl->id)->update(['id_dpl' => null]);
             $dpl->delete();
-            DB::commit();
-            return redirect()->route('dpl.index')->with('success', 'DPL berhasil dihapus dan unit bimbingannya telah direset.');
 
+            DB::commit();
+            if ($unitCount > 0) {
+                return redirect()->route('dpl.index')->with('success', 
+                    "DPL berhasil dihapus. PERHATIAN: DPL ini memiliki {$unitCount} unit bimbingan ({$unitNames}) yang kini statusnya telah di-RESET (Tanpa Pembimbing). Harap segera tetapkan DPL baru."
+                );
+            }
+            return redirect()->route('dpl.index')->with('success', 'DPL berhasil dihapus.');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menghapus DPL: ' . $e->getMessage());
