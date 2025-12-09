@@ -44,22 +44,16 @@
                                     <table id="datatable-dosen" class="table table-bordered dt-responsive nowrap w-100">
                                         <thead class="table-light">
                                             <tr>
-                                                <th width="5%">No</th>
+                                                <th width="10%" class="text-center bg-primary text-white">Pilih</th>
                                                 <th>Nama Dosen</th>
                                                 <th>NIP</th>
                                                 <th>Email</th>
                                                 <th>Jenis Kelamin</th>
-                                                <th width="10%" class="text-center bg-primary text-white">Pilih</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             @foreach ($dosen as $item)
                                                 <tr class="{{ $timMonev->id_dosen == $item->id ? 'table-success' : '' }}">
-                                                    <td>{{ $loop->iteration }}</td>
-                                                    <td>{{ $item->user->nama ?? 'N/A' }}</td>
-                                                    <td>{{ $item->nip ?? 'N/A' }}</td>
-                                                    <td>{{ $item->user->email ?? 'N/A' }}</td>
-                                                    <td>{{ $item->user->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                                                     <td class="text-center">
                                                         <div class="form-check d-flex justify-content-center">
                                                             <input class="form-check-input dosen-selector" 
@@ -71,6 +65,10 @@
                                                                    {{ $timMonev->id_dosen == $item->id ? 'checked' : '' }}>
                                                         </div>
                                                     </td>
+                                                    <td>{{ $item->user->nama ?? 'N/A' }}</td>
+                                                    <td>{{ $item->nip ?? 'N/A' }}</td>
+                                                    <td>{{ $item->user->email ?? 'N/A' }}</td>
+                                                    <td>{{ $item->user->jenis_kelamin == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
