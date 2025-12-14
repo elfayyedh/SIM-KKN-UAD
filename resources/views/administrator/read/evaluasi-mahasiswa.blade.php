@@ -25,78 +25,129 @@
         {{-- Card --}}
         <div class="row mb-3">
             <div class="col-12">
-                <div class="card shadow">
+                <form action="{{ route('admin.evaluasi.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="kkn_id" value="{{ $kkn->id ?? '' }}">
+                    
+                    <div class="card shadow">
 
-                    {{-- Header --}}
-                    <div class="card-header align-items-center d-flex">
-                        <h4 class="card-title flex-grow-1 mb-0">Evaluasi Mahasiswa</h4>
-                        <div class="flex-shrink-0">
-                            <a href="{{ route('admin.evaluasi.export', $kkn->id ?? '') }}"
-                               class="btn btn-outline-primary btn-sm">
-                                <i class="bx bx-download me-1"></i>Export Excel
-                            </a>
+                        {{-- Header --}}
+                        <div class="card-header align-items-center d-flex">
+                            <h4 class="card-title flex-grow-1 mb-0">Evaluasi Mahasiswa</h4>
+                            <div class="flex-shrink-0">
+                                <a href="{{ route('admin.evaluasi.export', $kkn->id ?? '') }}"
+                                   class="btn btn-outline-primary btn-sm me-2">
+                                    <i class="bx bx-download me-1"></i>Export Excel
+                                </a>
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="bx bx-save me-1"></i>Simpan Perubahan
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    {{-- Tabel --}}
-                    <div class="card-body table-responsive p-0" data-simplebar style="max-height: 500px;">
+                        {{-- Tabel --}}
+                        <div class="card-body table-responsive p-0" data-simplebar style="max-height: 500px;">
 
-                        <table class="table table-bordered align-middle">
-                            <thead class="table-light">
-                                <tr>
-                                    <th rowspan="2" class="text-center">Mahasiswa</th>
-                                    <th rowspan="2" class="text-center">Pencapaian JKEM<br>(1.0 - 3.0)</th>
-                                    <th rowspan="2" class="text-center">Sholat<br>(1.0 - 3.0)</th>
-                                    <th rowspan="2" class="text-center">Form 1<br>(1.0 - 3.0)</th>
-                                    <th rowspan="2" class="text-center">Form 2<br>(1.0 - 3.0)</th>
-                                    <th rowspan="2" class="text-center">Form 3<br>(1.0 - 3.0)</th>
-                                    <th rowspan="2" class="text-center">Form 4<br>(1.0 - 3.0)</th>
-                                    <th rowspan="2" class="text-center">Status</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                @foreach($mahasiswa as $mhs)
+                            <table class="table table-bordered align-middle">
+                                <thead class="table-light">
                                     <tr>
-                                        {{-- 1. Nama + Identitas --}}
-                                        <td>
-                                            <strong>{{ $mhs->userRole->user->nama ?? '-' }}</strong><br>
-                                            <small>{{ $mhs->nim }}</small><br>
-                                            <small>{{ $mhs->no_hp ?? '' }}</small>
-                                        </td>
-
-                                        {{-- 3. Nilai (LOOPING DINAMIS SESUAI CONTROLLER) --}}
-                                        {{-- Kita ambil nilai berdasarkan ID Kriteria, bukan nama manual --}}
+                                        <th rowspan="2" class="text-center" style="min-width: 180px;">Mahasiswa</th>
                                         @foreach($kriteriaList as $kriteria)
-                                            @php
-                                                // Ambil nilai dari array mappedNilai menggunakan ID Mahasiswa & ID Kriteria
-                                                $skor = $mappedNilai[$mhs->id][$kriteria->id] ?? '-';
-                                            @endphp
-                                            <td class="text-center">{{ $skor }}</td>
+                                            <th rowspan="2" class="text-center" style="min-width: 100px;">
+                                                {{ $kriteria->judul }}<br>
+                                                <small class="text-muted">(1.0 - 3.0)</small>
+                                            </th>
                                         @endforeach
-
-                                        {{-- 4. Status (Cek apakah ada data nilai untuk mahasiswa ini) --}}
-                                        @php
-                                            // Cek apakah mahasiswa ini punya entry di array mappedNilai
-                                            $sudahDinilai = isset($mappedNilai[$mhs->id]) && count($mappedNilai[$mhs->id]) > 0;
-                                        @endphp
-                                        <td class="text-center">
-                                            @if($sudahDinilai)
-                                                <span class="badge bg-success">Sudah Dinilai</span>
-                                            @else
-                                                <span class="badge bg-warning">Belum Dinilai</span>
-                                            @endif
-                                        </td>
+                                        <th rowspan="2" class="text-center" style="min-width: 100px;">Nilai Akhir</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
+                                </thead>
 
-                        </table>
+                                <tbody>
+                                    @foreach($mahasiswa as $mhs)
+                                        <tr>
+                                            {{-- 1. Nama + Identitas --}}
+                                            <td>
+                                                <strong>{{ $mhs->userRole->user->nama ?? '-' }}</strong><br>
+                                                <small class="text-muted">{{ $mhs->nim }}</small><br>
+                                                <small class="text-muted">{{ $mhs->no_hp ?? '' }}</small>
+                                            </td>
+
+                                            {{-- 2. Input Nilai per Kriteria --}}
+                                            @php
+                                                $totalNilai = 0;
+                                                $jumlahKriteria = 0;
+                                            @endphp
+                                            @foreach($kriteriaList as $kriteria)
+                                                @php
+                                                    // Ambil nilai dari array mappedNilai (nilai dari Tim Monev)
+                                                    $nilaiDefault = $mappedNilai[$mhs->id][$kriteria->id] ?? '';
+                                                    
+                                                    // Hitung untuk nilai akhir
+                                                    if ($nilaiDefault !== '' && is_numeric($nilaiDefault)) {
+                                                        $totalNilai += (float)$nilaiDefault;
+                                                        $jumlahKriteria++;
+                                                    }
+                                                @endphp
+                                                <td class="text-center">
+                                                    <input 
+                                                        type="number" 
+                                                        name="evaluasi[{{ $mhs->id }}][{{ $kriteria->id }}]" 
+                                                        class="form-control form-control-sm text-center nilai-input" 
+                                                        data-mahasiswa="{{ $mhs->id }}"
+                                                        value="{{ $nilaiDefault }}" 
+                                                        min="1" 
+                                                        max="3" 
+                                                        step="0.1"
+                                                        style="width: 80px; margin: 0 auto;"
+                                                        placeholder="-">
+                                                </td>
+                                            @endforeach
+
+                                            {{-- 3. Nilai Akhir (Auto Calculate) --}}
+                                            @php
+                                                $nilaiAkhir = $jumlahKriteria > 0 ? round($totalNilai / $jumlahKriteria, 2) : 0;
+                                            @endphp
+                                            <td class="text-center">
+                                                <strong class="nilai-akhir" data-mahasiswa="{{ $mhs->id }}">
+                                                    {{ $nilaiAkhir > 0 ? number_format($nilaiAkhir, 2) : '-' }}
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+
+                            </table>
+                        </div>
+
                     </div>
-
-                </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Auto-calculate Nilai Akhir when input changes
+    $(document).on('input', '.nilai-input', function() {
+        const mahasiswaId = $(this).data('mahasiswa');
+        const inputs = $(`.nilai-input[data-mahasiswa="${mahasiswaId}"]`);
+        
+        let total = 0;
+        let count = 0;
+        
+        inputs.each(function() {
+            const value = parseFloat($(this).val());
+            if (!isNaN(value) && value > 0) {
+                total += value;
+                count++;
+            }
+        });
+        
+        const nilaiAkhir = count > 0 ? (total / count).toFixed(2) : '-';
+        $(`.nilai-akhir[data-mahasiswa="${mahasiswaId}"]`).text(nilaiAkhir);
+    });
+</script>
+@endpush
+
 @endsection
