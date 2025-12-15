@@ -97,14 +97,14 @@ class MonevController extends Controller
             $kriteriaList = KriteriaMonev::where('id_kkn', $unit->id_kkn)->orderBy('urutan', 'asc')->get();
             
             $mhsIds = $unit->mahasiswa->pluck('id');
-            $existingEvaluations = EvaluasiMahasiswa::with('details')
+            $existingEvaluations = EvaluasiMahasiswa::with('evaluasiMahasiswaDetail')
                 ->where('id_tim_monev', $monevAssignment->id)
                 ->whereIn('id_mahasiswa', $mhsIds)
                 ->get();
 
             $mappedNilai = [];
             foreach ($existingEvaluations as $eval) {
-                foreach ($eval->details as $detail) {
+                foreach ($eval->evaluasiMahasiswaDetail as $detail) {
                     $mappedNilai[$eval->id_mahasiswa][$detail->id_kriteria_monev] = $detail->nilai;
                 }
             }
@@ -186,7 +186,15 @@ class MonevController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            return redirect()->route('monev.evaluasi.index')->with('error', $e->getMessage());
+            // return redirect()->route('monev.evaluasi.index')->with('error', $e->getMessage());
+            dd([
+                'JENIS ERROR' => 'Terjadi error saat membuka halaman mahasiswa',
+                'PESAN ERROR' => $e->getMessage(), // <--- Ini yang paling penting
+                'FILE' => $e->getFile(),
+                'BARIS KE' => $e->getLine(),
+                'ID UNIT YG DIKLIK' => $id_unit,
+                'STACK TRACE' => $e->getTraceAsString()
+            ]);
         }
     }
 
