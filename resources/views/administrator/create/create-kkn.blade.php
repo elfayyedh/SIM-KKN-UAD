@@ -141,7 +141,7 @@
                                                         <div class="card-body">
                                                             <h6>Silahkan upload file excel data KKN sesuai format. Untuk
                                                                 melihat format file excel data KKN <a
-                                                                    href="{{ route('file.download', ['filename' => 'example.xlsx']) }}">klik
+                                                                    href="{{ route('file.download', ['filename' => 'example_kkn.xlsx']) }}">klik
                                                                     disini</a></h6>
                                                         </div>
                                                     </div>
