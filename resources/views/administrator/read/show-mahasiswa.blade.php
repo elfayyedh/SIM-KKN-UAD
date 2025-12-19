@@ -50,6 +50,7 @@
                                 <th>Jenis Kelamin</th>
                                 <th>No HP</th>
                                 <th>KKN</th>
+                                <th>Status</th>
                                 <th>Aksi</th>
                             </tr>
                         </thead>
@@ -63,6 +64,19 @@
                                     <td><a target="_blank"
                                             href="https://wa.me/{{ $item->userRole->user->no_telp }}">{{ $item->userRole->user->no_telp ?? '-' }}</a></td>
                                     <td>{{ $item->kkn->nama_kkn ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-flex justify-content-center">
+                                            <input class="form-check-input status-toggle" 
+                                                   type="checkbox" 
+                                                   data-id="{{ $item->id }}"
+                                                   {{ $item->status ? 'checked' : '' }}>
+                                        </div>
+                                        <small class="status-label-{{ $item->id }}">
+                                            <span class="badge {{ $item->status ? 'bg-success' : 'bg-danger' }}">
+                                                {{ $item->status ? 'Aktif' : 'Tidak Aktif' }}
+                                            </span>
+                                        </small>
+                                    </td>
                                     <td>
                                         <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->userRole->user->id) }}"><i
                                                 class="bx bx-edit me-1">Edit</i></a>
@@ -84,6 +98,50 @@
     <script>
         $(document).ready(function() {
             $("#datatable").DataTable();
+
+            // Handle status toggle
+            $('.status-toggle').on('change', function() {
+                const checkbox = $(this);
+                const mahasiswaId = checkbox.data('id');
+                const isActive = checkbox.is(':checked');
+
+                $.ajax({
+                    url: `/mahasiswa/${mahasiswaId}/toggle-status`,
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}'
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Update badge
+                            const badgeClass = response.status ? 'bg-success' : 'bg-danger';
+                            const badgeText = response.status ? 'Aktif' : 'Tidak Aktif';
+                            $(`.status-label-${mahasiswaId}`).html(
+                                `<span class="badge ${badgeClass}">${badgeText}</span>`
+                            );
+
+                            // Show success message
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: response.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        // Revert checkbox
+                        checkbox.prop('checked', !isActive);
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: 'Terjadi kesalahan saat mengubah status'
+                        });
+                    }
+                });
+            });
         });
     </script>
 @endsection
