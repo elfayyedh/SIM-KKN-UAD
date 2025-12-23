@@ -26,9 +26,16 @@ class AuthController extends Controller
         if (is_numeric($loginInput)) {
             $mahasiswa = Mahasiswa::where('nim', $loginInput)->with('userRole.user')->first();
             
-            if ($mahasiswa && $mahasiswa->userRole && $mahasiswa->userRole->user) {
-                $emailAsli = $mahasiswa->userRole->user->email;
-                $credentials = ['email' => $emailAsli, 'password' => $password];
+            if ($mahasiswa) {
+                // Cek status mahasiswa
+                if ($mahasiswa->status == 0) {
+                    return redirect()->back()->with(['error' => 'Akun Anda tidak aktif. Silakan hubungi administrator.']);
+                }
+                
+                if ($mahasiswa->userRole && $mahasiswa->userRole->user) {
+                    $emailAsli = $mahasiswa->userRole->user->email;
+                    $credentials = ['email' => $emailAsli, 'password' => $password];
+                }
             }
         } else {
             $credentials = ['email' => $loginInput, 'password' => $password];
