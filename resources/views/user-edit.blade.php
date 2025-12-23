@@ -75,6 +75,28 @@
                                                 </div>
                                             @endif
                                         </div>
+                                        
+                                        @if(isset($mahasiswa) && $mahasiswa)
+                                        <div class="form-group mb-3">
+                                            <label for="status" class="form-label">Status Mahasiswa <span
+                                                    class="text-danger">*</span></label>
+                                            <select
+                                                class="form-select {{ $errors->has('status') ? 'is-invalid' : '' }}"
+                                                required name="status" id="status">
+                                                <option value="1" {{ $mahasiswa->status == 1 ? 'selected' : '' }}>
+                                                    Aktif</option>
+                                                <option value="0" {{ $mahasiswa->status == 0 ? 'selected' : '' }}>
+                                                    Tidak Aktif</option>
+                                            </select>
+                                            <small class="text-muted">Mahasiswa yang tidak aktif tidak dapat login ke sistem</small>
+                                            @if ($errors->has('status'))
+                                                <div class="invalid-feedback">
+                                                    {{ $errors->first('status') }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                        @endif
+                                        
                                         <div class="mb-3">
                                             <button type="submit" class="btn btn-primary w-md"><i
                                                     class="bx bx-save me-1"></i>Simpan</button>

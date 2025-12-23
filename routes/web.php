@@ -109,6 +109,7 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
 });
 // Manajemen Mahasiswa
 Route::middleware([Authenticate::class, AdminMiddleware::class])->get('/mahasiswa', [UserController::class, 'mahasiswaIndex'])->name('mahasiswa.index');
+Route::middleware([Authenticate::class, AdminMiddleware::class])->post('/mahasiswa/{id}/toggle-status', [UserController::class, 'toggleMahasiswaStatus'])->name('mahasiswa.toggle-status');
 // Manajemen Dosen
 Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');

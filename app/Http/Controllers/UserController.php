@@ -232,7 +232,13 @@ class UserController extends Controller
         if ($loggedInUser->id != $user->id && $role != "Admin") {
             return view('not-found');
         }
-        return view('user-edit', compact('user'));
+        
+        // Check if user is mahasiswa
+        $mahasiswa = Mahasiswa::whereHas('userRole', function($q) use ($id) {
+            $q->where('id_user', $id);
+        })->first();
+        
+        return view('user-edit', compact('user', 'mahasiswa'));
     }
 
     public function adminShow()
@@ -261,6 +267,31 @@ class UserController extends Controller
     }
 
     /**
+     * Toggle status mahasiswa (aktif/tidak aktif)
+     */
+    public function toggleMahasiswaStatus($id)
+    {
+        if ($this->getActiveRoleName() != "Admin") {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        try {
+            $mahasiswa = Mahasiswa::findOrFail($id);
+            $mahasiswa->status = !$mahasiswa->status;
+            $mahasiswa->save();
+
+            $statusText = $mahasiswa->status ? 'Aktif' : 'Tidak Aktif';
+            return response()->json([
+                'success' => true,
+                'status' => $mahasiswa->status,
+                'message' => "Status mahasiswa berhasil diubah menjadi {$statusText}"
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, string $id)
@@ -286,6 +317,19 @@ class UserController extends Controller
         ]);
         
         $user->update($request->all());
+        
+        // Update mahasiswa status if exists
+        if ($request->has('status')) {
+            $mahasiswa = Mahasiswa::whereHas('userRole', function($q) use ($id) {
+                $q->where('id_user', $id);
+            })->first();
+            
+            if ($mahasiswa) {
+                $mahasiswa->status = $request->status;
+                $mahasiswa->save();
+            }
+        }
+        
         return redirect()->back()->with('success_user', 'Data user berhasil diubah');
     }
 
