@@ -1,3 +1,4 @@
+
 <?php
 
 namespace App\Http\Controllers;
@@ -55,21 +56,49 @@ class UnitController extends Controller
                     throw new \Exception('Penugasan DPL tidak ditemukan.');
                 }
 
+                // Get active KKN periods (status = 1 and current date between start and end)
+                $currentDate = now()->toDateString();
+                $activeKknIds = KKN::where('status', 1)
+                    ->where('tanggal_mulai', '<=', $currentDate)
+                    ->where('tanggal_selesai', '>=', $currentDate)
+                    ->pluck('id');
+
+                if ($activeKknIds->isEmpty()) {
+                    throw new \Exception('Tidak ada periode KKN yang sedang aktif.');
+                }
+
+                // Filter DPL assignments to only those with active KKN periods
+                $activeDplAssignments = $dplAssignments->filter(function ($assignment) use ($activeKknIds) {
+                    return $activeKknIds->contains($assignment->id_kkn);
+                });
+
+                if ($activeDplAssignments->isEmpty()) {
+                    throw new \Exception('DPL tidak ditugaskan pada periode KKN yang sedang aktif.');
+                }
+
                 $units = collect();
-                foreach ($dplAssignments as $assignment) {
+                foreach ($activeDplAssignments as $assignment) {
                     // Query Unit
                     $unitsFromThisAssignment = $assignment->units()
                         ->with(['lokasi.kecamatan.kabupaten', 'prokers.kegiatan'])
                         ->withCount('mahasiswa')
                         ->get();
 
-                    // Inject Nama KKN 
+                    // Inject Nama KKN
                     $unitsFromThisAssignment->each(function ($unit) use ($assignment) {
                         $unit->setAttribute('kkn_nama', $assignment->kkn ? $assignment->kkn->nama : 'KKN Tanpa Nama');
                     });
 
                     $units = $units->merge($unitsFromThisAssignment);
                 }
+
+                // Calculate total JKEM for each unit
+                $units->each(function ($unit) {
+                    $total_jkem_unit = $unit->prokers->sum(function ($proker) {
+                        return $proker->kegiatan->sum('total_jkem');
+                    });
+                    $unit->total_jkem_all_prokers = $total_jkem_unit;
+                });
 
                 return view('dpl.manajemen unit.unit', compact('units'));
             }
@@ -263,15 +292,37 @@ class UnitController extends Controller
                 if (!$dosen) {
                     throw new \Exception('Profil Dosen tidak ditemukan.');
                 }
-                $dplAssignments = Dpl::where('id_dosen', $dosen->id)->get();
+                $dplAssignments = Dpl::where('id_dosen', $dosen->id)->with('kkn')->get();
                 if ($dplAssignments->isEmpty()) {
                     throw new \Exception('Penugasan DPL tidak ditemukan.');
                 }
-                $dplAssignment = $dplAssignments->first();
-                $units = $dplAssignment->units()->pluck('id')->toArray();
-                // Pass the first unit or handle multiple units as needed
-                $unit = $units[0] ?? null;
-                return view('dpl.kalender', compact('unit'));
+
+                // Get active KKN periods (status = 1 and current date between start and end)
+                $currentDate = now()->toDateString();
+                $activeKknIds = KKN::where('status', 1)
+                    ->where('tanggal_mulai', '<=', $currentDate)
+                    ->where('tanggal_selesai', '>=', $currentDate)
+                    ->pluck('id');
+
+                if ($activeKknIds->isEmpty()) {
+                    throw new \Exception('Tidak ada periode KKN yang sedang aktif.');
+                }
+
+                // Get units for active KKN periods that the DPL is assigned to
+                $assignedKknIds = $dplAssignments->pluck('id_kkn');
+                $relevantKknIds = $activeKknIds->intersect($assignedKknIds);
+
+                if ($relevantKknIds->isEmpty()) {
+                    throw new \Exception('DPL tidak ditugaskan pada periode KKN yang sedang aktif.');
+                }
+
+                $units = Unit::whereIn('id_kkn', $relevantKknIds)
+                    ->whereIn('id', $dplAssignments->pluck('units.*.id')->flatten())
+                    ->get();
+
+                // Pass units and active unit (first one)
+                $unit = $units->first();
+                return view('dpl.kalender', compact('units', 'unit'));
             } else {
                 return view('not-found');
             }
@@ -315,6 +366,81 @@ class UnitController extends Controller
         }
 
         return response()->json(['status' => 'success', 'data' => $data]);
+    }
+
+    public function getKegiatanByDpl()
+    {
+        try {
+            ['roleName' => $roleName, 'userRole' => $userRole] = $this->getActiveRoleInfo();
+
+            if ($roleName != 'dpl') {
+                return response()->json(['status' => 'error', 'message' => 'Hanya DPL yang bisa mengakses data ini.'], 403);
+            }
+
+            $dosen = Auth::user()->dosen;
+            if (!$dosen) {
+                return response()->json(['status' => 'error', 'message' => 'Profil Dosen tidak ditemukan.'], 404);
+            }
+
+            $dplAssignments = Dpl::where('id_dosen', $dosen->id)->with('units')->get();
+            if ($dplAssignments->isEmpty()) {
+                return response()->json(['status' => 'error', 'message' => 'Penugasan DPL tidak ditemukan.'], 404);
+            }
+
+            // Get all units assigned to this DPL (not just active KKN periods)
+            $unitIds = $dplAssignments->pluck('units.*.id')->flatten();
+
+            \Log::info('DPL Units for calendar:', ['unitIds' => $unitIds, 'dplAssignments' => $dplAssignments->toArray()]);
+
+            if ($unitIds->isEmpty()) {
+                return response()->json(['status' => 'error', 'message' => 'DPL tidak ditugaskan pada unit manapun.'], 404);
+            }
+
+            // Ambil data proker dari semua unit yang diawasi DPL
+            $proker = Proker::whereIn('id_unit', $unitIds)
+                ->with(['kegiatan.tanggalRencanaProker', 'kegiatan.logbookKegiatan.logbookHarian', 'unit'])
+                ->get();
+
+            \Log::info('Proker data for DPL calendar:', ['proker_count' => $proker->count(), 'proker' => $proker->toArray()]);
+
+            $data = [];
+            foreach ($proker as $p) {
+                \Log::info('Processing proker:', ['proker_id' => $p->id, 'unit_name' => $p->unit->nama, 'kegiatan_count' => $p->kegiatan->count()]);
+                foreach ($p->kegiatan as $k) {
+                    \Log::info('Processing kegiatan:', ['kegiatan_id' => $k->id, 'nama' => $k->nama, 'tanggal_rencana_count' => $k->tanggalRencanaProker->count(), 'logbook_count' => $k->logbookKegiatan->count()]);
+
+                    // Menangani tanggal rencana proker
+                    foreach ($k->tanggalRencanaProker as $t) {
+                        \Log::info('Adding tanggal rencana:', ['tanggal' => $t->tanggal]);
+                        $data[] = [
+                            'tanggal' => $t->tanggal,
+                            'nama_kegiatan' => $k->nama . ' (' . $p->unit->nama . ')',
+                            'className' => 'bg-warning',
+                            'id' => $k->id
+                        ];
+                    }
+
+                    // Menangani logbook kegiatan
+                    foreach ($k->logbookKegiatan as $l) {
+                        if ($l->logbookHarian) { // Pastikan logbookHarian ada
+                            \Log::info('Adding logbook entry:', ['tanggal' => $l->logbookHarian->tanggal]);
+                            $data[] = [
+                                'tanggal' => $l->logbookHarian->tanggal,
+                                'nama_kegiatan' => $k->nama . ' (' . $p->unit->nama . ')',
+                                'className' => 'bg-primary',
+                                'id' => $k->id
+                            ];
+                        }
+                    }
+                }
+            }
+
+            \Log::info('Final calendar data count:', ['count' => count($data)]);
+
+            return response()->json(['status' => 'success', 'data' => $data]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function getKegiatanInfo(string $id)

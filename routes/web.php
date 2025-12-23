@@ -192,6 +192,7 @@ Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/getMatriks/{id}/{id_kkn}', [UnitController::class, 'getMatriks'])->name('unit.getMatriks');
     Route::get('/getAnggota/{id}', [UnitController::class, 'getAnggota'])->name('unit.getAnggota');
     Route::get('/getKegiatanByUnit/{id}', [UnitController::class, 'getKegiatanByUnit'])->name('unit.getKegiatanByUnit');
+    Route::get('/getKegiatanByDpl', [UnitController::class, 'getKegiatanByDpl'])->name('unit.getKegiatanByDpl');
     Route::get('/getKegiatanInfo/{id}', [UnitController::class, 'getKegiatanInfo'])->name('unit.getKegiatanInfo');
     Route::get('/getRekapKegiatan', [UnitController::class, 'getRekapKegiatan'])->name('unit.getRekapKegiatan');
     Route::get('/generateProkerUnitPdf/{id_unit}/{id_kkn}', [UnitController::class, 'generateProkerUnitPdf'])->name('unit.generateProkerUnitPdf');
