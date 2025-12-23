@@ -322,7 +322,11 @@ class UnitController extends Controller
 
                 // Pass units and active unit (first one)
                 $unit = $units->first();
-                return view('dpl.kalender', compact('units', 'unit'));
+               // Get active period name
+                $activeKkn = KKN::whereIn('id', $relevantKknIds)->first();
+                $activePeriodName = $activeKkn ? $activeKkn->nama : 'Tidak ada periode aktif';
+
+                return view('dpl.kalender', compact('units', 'unit', 'activePeriodName'));
             } else {
                 return view('not-found');
             }
