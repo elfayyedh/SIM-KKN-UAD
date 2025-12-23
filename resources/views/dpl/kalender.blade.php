@@ -22,6 +22,30 @@
             </div>
             <!-- end page title -->
 
+            <div class="row mb-3">
+                <div class="col-12 col-md-6">
+                    <p class="fw-bold mb-1">Halo, User DPL</p>
+                    <p>Selamat datang di Kalender Kegiatan</p>
+                </div>
+                <div class="col-12 col-md-6 d-flex justify-content-md-end align-items-end">
+                    <div class="form-group w-75 me-2">
+                        <label for="unit" class="form-label">Pilih Unit</label>
+                        <select name="unit" id="unit" class="form-select">
+                            @foreach ($units as $item)
+                                <option value="{{ $item->id }}" {{ $item->id == $unit->id ? 'selected' : '' }}>
+                                    {{ $item->nama }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <button type="button" id="refreshCalendar" class="btn btn-primary" title="Refresh Kalender">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+
 
             <div class="row">
                 <div class="col-12">
@@ -85,9 +109,28 @@
         </div>
     </div>
 
-    <input type="hidden" id="id_unit" value="{{ $unit }}">
+    <input type="hidden" id="id_unit" value="{{ $unit->id }}">
 @endsection
 @section('pageScript')
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     <script src="{{ asset('assets/js/init/dpl/unit/kalender.init.js') }}"></script>
+    <script>
+        $(document).ready(function() {
+            // Reload calendar when unit changes
+            $('#unit').on('change', function() {
+                loadCalendarData();
+            });
+        });
+
+        function loadCalendarData() {
+            const unitId = $('#unit').val();
+            // Update the hidden input with selected unit
+            $('#id_unit').val(unitId);
+
+            // Reload calendar events
+            if (typeof calendar !== 'undefined') {
+                calendar.refetchEvents();
+            }
+        }
+    </script>
 @endsection
