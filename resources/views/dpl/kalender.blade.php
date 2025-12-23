@@ -24,8 +24,7 @@
 
             <div class="row mb-3">
                 <div class="col-12 col-md-6">
-                    <p class="fw-bold mb-1">Halo, User DPL</p>
-                    <p>Selamat datang di Kalender Kegiatan</p>
+                     <p class="fw-bold mb-1">Periode: {{ $activePeriodName }}</p>
                 </div>
                 <div class="col-12 col-md-6 d-flex justify-content-md-end align-items-end">
                     <div class="form-group w-75 me-2">
