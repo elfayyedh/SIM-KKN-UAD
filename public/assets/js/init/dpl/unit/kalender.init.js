@@ -22,9 +22,12 @@ $(document).ready(function () {
             calendar.changeView(newView);
         },
         events: function (fetchInfo, successCallback, failureCallback) {
-            var id_unit = $("#id_unit").val(); // Ambil id_unit dari input atau variabel lain
+            // Get the selected unit ID from the hidden input
+            var selectedUnitId = $('#id_unit').val();
+
+            // Use the unit-specific endpoint to show activities for the selected unit
             $.ajax({
-                url: "/unit/getKegiatanByUnit/" + id_unit, // Endpoint untuk mengambil data
+                url: "/unit/getKegiatanByUnit/" + selectedUnitId, // Endpoint untuk mengambil data unit yang dipilih
                 type: "GET",
                 dataType: "json",
                 success: function (response) {
@@ -56,6 +59,11 @@ $(document).ready(function () {
     setTimeout(() => {
         calendar.render();
     }, 0);
+
+    // Handle refresh button click
+    $('#refreshCalendar').on('click', function() {
+        calendar.refetchEvents();
+    });
 });
 
 function getInitialView() {
