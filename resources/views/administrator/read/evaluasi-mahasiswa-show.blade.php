@@ -43,10 +43,10 @@
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>Evaluator</th>
+                                        <th>Penilai</th>
                                         <th>Tanggal</th>
                                         @foreach($kriteriaList as $k)
-                                            <th>{{ \\Illuminate\\Support\\Str::limit($k->judul,20) }}</th>
+                                            <th>{{ \Illuminate\Support\Str::limit($k->judul,20) }}</th>
                                         @endforeach
                                     </tr>
                                 </thead>

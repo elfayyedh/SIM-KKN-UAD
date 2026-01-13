@@ -33,11 +33,8 @@
             <!-- end page title -->
 
             <div class="row mb-3">
-                <div class="col-12 col-md-6">
-                    <p class="fw-bold">Total DPL <span class="text-muted">({{ $dpl->count() }})</span></p>
-                </div>
-                <div class="col-12 col-md-6 d-flex justify-content-md-end">
-                    <a href="{{ route('dpl.create') }}" class="btn btn-light btn-lg"><i
+                <div class="col-12 col-md-6 d-flex justify-content-md-start">
+                    <a href="{{ route('dpl.create') }}" class="btn btn-primary"><i
                             class="bx bx-plus me-1"></i>Tambah DPL</a>
                 </div>
             </div>

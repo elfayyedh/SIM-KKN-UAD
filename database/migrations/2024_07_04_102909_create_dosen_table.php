@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('dosen', function (Blueprint $table) { 
             $table->uuid('id')->primary();
             $table->uuid('id_user');
-            $table->string('nip', 20);
+            $table->string('nip', 40);
             $table->timestamps();
 
             $table->foreign('id_user')->references('id')->on('users');
