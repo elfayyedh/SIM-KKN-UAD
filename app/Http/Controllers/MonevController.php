@@ -79,23 +79,30 @@ class MonevController extends Controller
         try {
             $dosen = Auth::user()->dosen;
             $monevData = $this->getActiveMonevAssignment($dosen);
-            $monevAssignment = $monevData['active'];
+            $monevAssignment = $monevData['active']; 
 
-            // Ambil Unit & Data Mahasiswa
             $unit = Unit::with([
                 'kkn', 
                 'mahasiswa.userRole.user', 
                 'dpl.dosen.user',
-                'mahasiswa.kegiatan.logbookKegiatan', 
+                'mahasiswa.kegiatan',
                 'mahasiswa.logbookSholat',
-            ])
-            ->where('id', $id_unit)
-            ->where('id_tim_monev', $monevAssignment->id) 
-            ->firstOrFail();
+            ])->find($id_unit);
 
-            // Data Pendukung (Kriteria & Nilai Existing)
+            // Validasi Unit & Akses
+            if (!$unit) return redirect()->back()->with('error', 'Unit tidak ditemukan.');
+
+            if ($unit->id_tim_monev != $monevAssignment->id) {
+                $isMyAssignment = $monevData['all']->contains('id', $unit->id_tim_monev);
+                if ($isMyAssignment) {
+                    session(['active_monev_assignment_id' => $unit->id_tim_monev]);
+                    $monevAssignment = $monevData['all']->find($unit->id_tim_monev);
+                } else {
+                    return redirect()->back()->with('error', 'Akses Ditolak.');
+                }
+            }
+
             $kriteriaList = KriteriaMonev::where('id_kkn', $unit->id_kkn)->orderBy('urutan', 'asc')->get();
-            
             $mhsIds = $unit->mahasiswa->pluck('id');
             $existingEvaluations = EvaluasiMahasiswa::with('evaluasiMahasiswaDetail')
                 ->where('id_tim_monev', $monevAssignment->id)
@@ -109,66 +116,42 @@ class MonevController extends Controller
                 }
             }
 
-            // HITUNG BERDASARKAN TANGGAL CUT OFF
             $kknData = $unit->kkn;
             $rawTglSelesai = $kknData->tanggal_cutoff_penilaian ?? $unit->tanggal_penarikan ?? $kknData->tanggal_selesai;
-            $tglMulai   = Carbon::parse($unit->tanggal_penerjunan ?? $kknData->tanggal_mulai);
-            $tglSelesai = Carbon::parse($rawTglSelesai);
+            $rawTglMulai   = $unit->tanggal_penerjunan ?? $kknData->tanggal_mulai;
 
-            // HITUNG STATISTIK (LOGIC UTAMA)
+            $tglMulai   = Carbon::parse($rawTglMulai)->startOfDay();
+            $tglSelesai = Carbon::parse($rawTglSelesai)->endOfDay(); 
+
             foreach ($unit->mahasiswa as $mhs) {
-                $mhs->hitung_jkem = $mhs->kegiatan
-                    ->filter(function ($kegiatan) use ($tglSelesai) {
-                        return Carbon::parse($kegiatan->tanggal)->lte($tglSelesai);
-                    })
-                    ->pluck('logbookKegiatan')
-                    ->flatten()
-                    ->sum('total_jkem');
-
+                $mhs->hitung_jkem = $mhs->kegiatan->sum('total_jkem');
                 $persenSholat = 0;
                 if ($tglMulai && $tglSelesai) {
-                    
-                    // Hitung total hari (Penerjunan s.d Cutoff)
-                    $totalHari = abs($tglSelesai->diffInDays($tglMulai)) + 1;
-                    
+                    $totalHari = intval($tglMulai->diffInDays($tglSelesai)) + 1;
                     $isAlternatif = stripos($unit->kkn->nama ?? '', 'alternatif') !== false;
                     $targetPerHari = $isAlternatif ? 3 : 5;
                     $validPrayers = ['subuh', 'dzuhur', 'ashar', 'maghrib', 'isya'];
-                    
-                    // Total Sholat Wajib selama periode tsb
                     $totalWajib = $totalHari * $targetPerHari;
                     
-                    // Hanya ambil yang tanggalnya <= Cutoff
-                    $logbookSholatFiltered = $mhs->logbookSholat->filter(function($log) use ($tglSelesai) {
-                         return Carbon::parse($log->tanggal)->lte($tglSelesai);
+                    $logbookSholatFiltered = $mhs->logbookSholat->filter(function($log) use ($tglMulai, $tglSelesai) {
+                          if (empty($log->tanggal)) return false;
+                          return Carbon::parse($log->tanggal)->between($tglMulai, $tglSelesai);
                     });
 
                     if ($isAlternatif) {
-                        // Logic KKN Alternatif (Max 3 sholat/hari yg dihitung)
                         $logbookGrouped = $logbookSholatFiltered
                             ->whereIn('waktu', $validPrayers)
-                            ->groupBy('tanggal');
+                            ->groupBy(function($item) { return Carbon::parse($item->tanggal)->format('Y-m-d'); });
 
                         $totalBerjamaah = $logbookGrouped->map(function ($items) use ($targetPerHari) {
-                             $countAsli = $items->where('status', 'sholat berjamaah')->count();
-                             return min($countAsli, $targetPerHari);
+                             return min($items->where('status', 'sholat berjamaah')->count(), $targetPerHari);
                         })->sum();
-
                         $totalHalangan = $logbookGrouped->map(function ($items) use ($targetPerHari) {
-                             $countAsli = $items->where('status', 'sedang halangan')->count();
-                             return min($countAsli, $targetPerHari);
+                             return min($items->where('status', 'sedang halangan')->count(), $targetPerHari);
                         })->sum();
                     } else {
-                        // Logic KKN Reguler
-                        $totalBerjamaah = $logbookSholatFiltered
-                                            ->where('status', 'sholat berjamaah')
-                                            ->whereIn('waktu', $validPrayers)
-                                            ->count();
-                                            
-                        $totalHalangan = $logbookSholatFiltered
-                                            ->where('status', 'sedang halangan')
-                                            ->whereIn('waktu', $validPrayers)
-                                            ->count();
+                        $totalBerjamaah = $logbookSholatFiltered->where('status', 'sholat berjamaah')->whereIn('waktu', $validPrayers)->count();
+                        $totalHalangan = $logbookSholatFiltered->where('status', 'sedang halangan')->whereIn('waktu', $validPrayers)->count();
                     }
 
                     $penyebut = $totalWajib - $totalHalangan;
@@ -186,15 +169,7 @@ class MonevController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            // return redirect()->route('monev.evaluasi.index')->with('error', $e->getMessage());
-            dd([
-                'JENIS ERROR' => 'Terjadi error saat membuka halaman mahasiswa',
-                'PESAN ERROR' => $e->getMessage(), // <--- Ini yang paling penting
-                'FILE' => $e->getFile(),
-                'BARIS KE' => $e->getLine(),
-                'ID UNIT YG DIKLIK' => $id_unit,
-                'STACK TRACE' => $e->getTraceAsString()
-            ]);
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
 
