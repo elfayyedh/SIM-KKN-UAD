@@ -91,9 +91,7 @@
                                     <p class="mb-0">©
                                         <script>
                                             document.write(new Date().getFullYear())
-                                        </script> LPPM UAD . Develop with <i
-                                            class="mdi mdi-heart text-danger"></i> by
-                                        <a href="https://rosyamdani.netlify.app">Rosyamdani</a>
+                                        </script> LPPM UAD
                                     </p>
                                 </div>
                             </div>

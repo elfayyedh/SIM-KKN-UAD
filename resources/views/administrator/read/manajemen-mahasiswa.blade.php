@@ -62,18 +62,19 @@
                                 <td>{{ $item->kkn->nama ?? 'N/A' }}</td>
                                 <td>{{ $item->total_jkem ?? 0 }}</td>
                                 <td class="text-center">
-                                    <div class="form-check form-switch d-inline-block">
-                                        <input class="form-check-input status-toggle" 
-                                               type="checkbox" 
-                                               data-id="{{ $item->id }}"
-                                               {{ $item->status ? 'checked' : '' }}>
+                                    <div class="d-flex align-items-center justify-content-center">
+                                        <small class="status-label-{{ $item->id }} me-2 d-flex align-items-center">
+                                            <span class="badge {{ $item->status ? 'bg-success' : 'bg-danger' }}">
+                                                {{ $item->status ? 'Aktif' : 'Tidak Aktif' }}
+                                            </span>
+                                        </small>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input status-toggle" 
+                                                   type="checkbox" 
+                                                   data-id="{{ $item->id }}"
+                                                   {{ $item->status ? 'checked' : '' }}>
+                                        </div>
                                     </div>
-                                    <br>
-                                    <small class="status-label-{{ $item->id }}">
-                                        <span class="badge {{ $item->status ? 'bg-success' : 'bg-danger' }}">
-                                            {{ $item->status ? 'Aktif' : 'Tidak Aktif' }}
-                                        </span>
-                                    </small>
                                 </td>
                                 <td>
                                     <a href="{{ route('user.edit', $item->userRole->user->id) }}" class="btn btn-sm btn-primary">Edit</a>
