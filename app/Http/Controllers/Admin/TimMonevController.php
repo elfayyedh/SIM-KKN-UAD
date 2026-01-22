@@ -8,6 +8,8 @@ use App\Models\TimMonev;
 use App\Models\Dosen;
 use App\Models\KKN;
 use App\Models\Unit;
+use App\Models\EvaluasiMahasiswa;
+use App\Models\Mahasiswa;        
 use Illuminate\Support\Facades\DB;
 
 class TimMonevController extends Controller
@@ -46,9 +48,7 @@ class TimMonevController extends Controller
         DB::beginTransaction();
         try {
             $dosenId = $request->id_dosen;
-            
             $selectedUnits = Unit::whereIn('id', $request->units)->get();
-
             $unitsGroupedByKkn = $selectedUnits->groupBy('id_kkn');
 
             foreach ($unitsGroupedByKkn as $kknId => $units) {
@@ -56,16 +56,17 @@ class TimMonevController extends Controller
                     'id_dosen' => $dosenId,
                     'id_kkn'   => $kknId
                 ]);
-
                 $unitIdsInGroup = $units->pluck('id')->toArray();
-                
+                $mahasiswaIds = Mahasiswa::whereIn('id_unit', $unitIdsInGroup)->pluck('id');
+                EvaluasiMahasiswa::whereIn('id_mahasiswa', $mahasiswaIds)
+                    ->update(['id_tim_monev' => null]);
                 Unit::whereIn('id', $unitIdsInGroup)->update([
                     'id_tim_monev' => $timMonev->id
                 ]);
             }
 
             DB::commit();
-            return redirect()->route('tim-monev.index')->with('success', 'Penugasan Tim Monev berhasil disimpan (Multi-KKN Supported).');
+            return redirect()->route('tim-monev.index')->with('success', 'Penugasan Tim Monev berhasil disimpan.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -111,13 +112,20 @@ class TimMonevController extends Controller
                 'id_dosen' => $request->id_dosen,
                 'id_kkn'   => $request->id_kkn,
             ]);
+            $oldUnitIds = Unit::where('id_tim_monev', $timMonev->id)->pluck('id');
+            $mahasiswaIds = Mahasiswa::whereIn('id_unit', $oldUnitIds)->pluck('id');
 
-            // Reset Plotting Lama
+            EvaluasiMahasiswa::whereIn('id_mahasiswa', $mahasiswaIds)
+                ->where('id_tim_monev', $timMonev->id)
+                ->update(['id_tim_monev' => null]);
+
             Unit::where('id_tim_monev', $timMonev->id)->update(['id_tim_monev' => null]);
 
-            // Set Plotting Baru
             if ($request->has('units')) {
-                Unit::whereIn('id', $request->units)->update(['id_tim_monev' => $timMonev->id]);
+                $newUnitIds = $request->units;
+                $newMhsIds = Mahasiswa::whereIn('id_unit', $newUnitIds)->pluck('id');
+                EvaluasiMahasiswa::whereIn('id_mahasiswa', $newMhsIds)->update(['id_tim_monev' => null]);
+                Unit::whereIn('id', $newUnitIds)->update(['id_tim_monev' => $timMonev->id]);
             }
 
             DB::commit();
@@ -130,19 +138,22 @@ class TimMonevController extends Controller
     }
 
     /**
-     * Hapus Data (Destroy)
+     * Destroy: Saat menghapus Tim Monev sepenuhnya
      */
     public function destroy($id)
     {
         try {
             $timMonev = TimMonev::findOrFail($id);
+            EvaluasiMahasiswa::where('id_tim_monev', $timMonev->id)
+                ->update(['id_tim_monev' => null]);
+            Unit::where('id_tim_monev', $timMonev->id)
+                ->update(['id_tim_monev' => null]);
             $timMonev->delete();
             return redirect()->route('tim-monev.index')->with('success', 'Tim Monev berhasil dihapus.');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus: ' . $e->getMessage());
         }
     }
-
     /**
      * API AJAX Get Units
      */

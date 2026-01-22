@@ -43,13 +43,12 @@ class EvaluasiExport implements FromCollection, WithHeadings, WithMapping, WithS
             'Nama Mahasiswa',
             'NIM',
             'Unit',
-            'Lokasi',
         ];
 
         foreach ($this->kriteriaList as $kriteria) {
             $headers[] = $kriteria->judul ?? $kriteria->nama_kriteria;
         }
-        $headers[] = 'Jumlah Nilai';
+        $headers[] = 'Nilai Akhir';
         return $headers;
     }
 
@@ -63,11 +62,6 @@ class EvaluasiExport implements FromCollection, WithHeadings, WithMapping, WithS
         $nama = $mhs->userRole->user->nama ?? '';
         $nim  = $mhs->nim ?? '';
         $unit = $mhs->unit->nama ?? '';
-
-        $lokasi = '-';
-        if ($mhs->unit && $mhs->unit->lokasi && $mhs->unit->lokasi->kecamatan && $mhs->unit->lokasi->kecamatan->kabupaten) {
-            $lokasi = $mhs->unit->lokasi->nama . ', ' . $mhs->unit->lokasi->kecamatan->kabupaten->nama;
-        }
 
         $nilaiMap = [];
         
@@ -88,28 +82,33 @@ class EvaluasiExport implements FromCollection, WithHeadings, WithMapping, WithS
             $nama,
             $nim,
             $unit,
-            $lokasi
         ];
 
         $totalScore = 0;
+        $countScore = 0;
 
         // Loop sesuai urutan header Kriteria
         foreach ($this->kriteriaList as $kriteria) {
             $val = $nilaiMap[$kriteria->id] ?? '';
             $row[] = $val;
 
-            // --- LOGIKA PENJUMLAHAN ---
+            // Hitung untuk rata-rata
             if ($val !== '' && is_numeric($val)) {
                 $totalScore += $val;
+                $countScore++;
             }
         }
-        $row[] = $totalScore;
+        
+        // Nilai Akhir = rata-rata
+        $nilaiAkhir = $countScore > 0 ? round($totalScore / $countScore, 2) : '';
+        $row[] = $nilaiAkhir;
+        
         return $row;
     }
 
     public function styles(Worksheet $sheet)
     {
-        $totalColumns = 4 + $this->kriteriaList->count() + 1;
+        $totalColumns = 3 + $this->kriteriaList->count() + 1;
         
         // Konversi angka ke huruf kolom Excel
         $lastColumnLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($totalColumns);

@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use Carbon\Carbon;
 
 class MatrikExport implements FromArray, WithStyles, WithColumnWidths
@@ -52,20 +53,22 @@ class MatrikExport implements FromArray, WithStyles, WithColumnWidths
 
         $data = [];
         
-        // Header Row 1: PROGRAM dan Hari
+        // Header Row 1: PROGRAM, Hari, dan setiap hari memiliki 2 kolom (R dan P)
         $headerRow1 = ['PROGRAM', 'Hari'];
         for ($i = 0; $i < $numDays; $i++) {
             $day = $i + 1;
-            $headerRow1[] = $day;
+            $headerRow1[] = $day; // Hari
+            $headerRow1[] = '';   // Merge dengan kolom sebelah
         }
         $data[] = $headerRow1;
 
-        // Header Row 2: (kosong) dan Tanggal/Bulan
+        // Header Row 2: (kosong), Tanggal/Bulan, dan setiap tanggal di-merge
         $headerRow2 = ['', 'Tanggal/Bulan'];
         for ($i = 0; $i < $numDays; $i++) {
             $currentDate = $startDate->copy()->addDays($i);
             $date = $currentDate->format('d/m');
-            $headerRow2[] = $date;
+            $headerRow2[] = $date; // Tanggal
+            $headerRow2[] = '';    // Merge dengan kolom sebelah
         }
         $data[] = $headerRow2;
 
@@ -73,7 +76,7 @@ class MatrikExport implements FromArray, WithStyles, WithColumnWidths
         foreach ($bidangProkers as $bidang) {
             // Baris Bidang - tampilkan semua bidang
             $bidangRow = ['Bidang ' . $bidang->nama];
-            for ($i = 0; $i < $numDays + 1; $i++) {
+            for ($i = 0; $i < ($numDays * 2) + 1; $i++) {
                 $bidangRow[] = '';
             }
             $data[] = $bidangRow;
@@ -104,22 +107,17 @@ class MatrikExport implements FromArray, WithStyles, WithColumnWidths
                         }
                     }
 
-                    // Isi kolom untuk setiap hari
+                    // Isi kolom untuk setiap hari (2 kolom per hari: R dan P)
                     for ($i = 0; $i < $numDays; $i++) {
                         $currentDate = $startDate->copy()->addDays($i)->format('Y-m-d');
                         $isPlanned = in_array($currentDate, $planDates);
                         $isRealized = in_array($currentDate, $realisasiDates);
 
-                        $content = '';
-                        if ($isPlanned && $isRealized) {
-                            $content = 'R+P'; // Rencana + Realisasi
-                        } elseif ($isPlanned) {
-                            $content = 'R'; // Rencana
-                        } elseif ($isRealized) {
-                            $content = 'P'; // Realisasi (Pelaksanaan)
-                        }
-
-                        $prokerRow[] = $content;
+                        // Kolom R (Rencana) - hanya tandai dengan value untuk warna
+                        $prokerRow[] = $isPlanned ? 'PLANNED' : '';
+                        
+                        // Kolom P (Pelaksanaan) - hanya tandai dengan value untuk warna
+                        $prokerRow[] = $isRealized ? 'REALIZED' : '';
                     }
                     $data[] = $prokerRow;
                 }
@@ -141,6 +139,7 @@ class MatrikExport implements FromArray, WithStyles, WithColumnWidths
     {
         $highestRow = $sheet->getHighestRow();
         $highestColumn = $sheet->getHighestColumn();
+        $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
 
         // Style untuk semua sel - border
         $sheet->getStyle('A1:' . $highestColumn . $highestRow)->applyFromArray([
@@ -152,8 +151,23 @@ class MatrikExport implements FromArray, WithStyles, WithColumnWidths
             ],
         ]);
 
-        // Merge cell untuk header row 1 kolom PROGRAM
+        // Merge cell untuk header row 1 kolom PROGRAM (A1:A2)
         $sheet->mergeCells('A1:A2');
+        
+        // Merge cell untuk header row 1 kolom Hari (B1:B2)
+        $sheet->mergeCells('B1:B2');
+        
+        // Merge cells untuk setiap hari di row 1 dan row 2 (gabungkan R dan P)
+        $colIndex = 3; // Mulai dari kolom C
+        while ($colIndex <= $highestColumnIndex) {
+            $col1 = Coordinate::stringFromColumnIndex($colIndex);
+            $col2 = Coordinate::stringFromColumnIndex($colIndex + 1);
+            // Merge hari (row 1)
+            $sheet->mergeCells($col1 . '1:' . $col2 . '1');
+            // Merge tanggal (row 2)
+            $sheet->mergeCells($col1 . '2:' . $col2 . '2');
+            $colIndex += 2;
+        }
         
         // Style untuk header rows (row 1 dan 2)
         $sheet->getStyle('A1:' . $highestColumn . '2')->applyFromArray([
@@ -170,6 +184,52 @@ class MatrikExport implements FromArray, WithStyles, WithColumnWidths
                 'startColor' => ['argb' => 'FFD9D9D9'],
             ],
         ]);
+
+        // Warna KUNING untuk kolom R (Rencana) - kolom ganjil mulai dari C
+        $colIndex = 3;
+        while ($colIndex <= $highestColumnIndex) {
+            $col = Coordinate::stringFromColumnIndex($colIndex);
+            
+            // Warna kuning untuk semua cell yang ada rencana
+            for ($row = 3; $row <= $highestRow; $row++) {
+                $cellValue = $sheet->getCell($col . $row)->getValue();
+                if ($cellValue === 'PLANNED') {
+                    // Hapus tulisan, hanya warna
+                    $sheet->setCellValue($col . $row, '');
+                    $sheet->getStyle($col . $row)->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FFFFFF00'], // Kuning
+                        ],
+                    ]);
+                }
+            }
+            
+            $colIndex += 2; // Loncat 2 kolom (skip P)
+        }
+
+        // Warna BIRU untuk kolom P (Pelaksanaan) - kolom genap mulai dari D
+        $colIndex = 4;
+        while ($colIndex <= $highestColumnIndex) {
+            $col = Coordinate::stringFromColumnIndex($colIndex);
+            
+            // Warna biru untuk semua cell yang ada pelaksanaan
+            for ($row = 3; $row <= $highestRow; $row++) {
+                $cellValue = $sheet->getCell($col . $row)->getValue();
+                if ($cellValue === 'REALIZED') {
+                    // Hapus tulisan, hanya warna
+                    $sheet->setCellValue($col . $row, '');
+                    $sheet->getStyle($col . $row)->applyFromArray([
+                        'fill' => [
+                            'fillType' => Fill::FILL_SOLID,
+                            'startColor' => ['argb' => 'FF0000FF'], // Biru
+                        ],
+                    ]);
+                }
+            }
+            
+            $colIndex += 2; // Loncat 2 kolom (skip R)
+        }
 
         // Style untuk baris bidang
         for ($row = 3; $row <= $highestRow; $row++) {

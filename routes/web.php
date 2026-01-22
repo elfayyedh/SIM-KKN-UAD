@@ -109,6 +109,7 @@ Route::middleware(Authenticate::class)->prefix('/user')->group(function () {
 });
 // Manajemen Mahasiswa
 Route::middleware([Authenticate::class, AdminMiddleware::class])->get('/mahasiswa', [UserController::class, 'mahasiswaIndex'])->name('mahasiswa.index');
+Route::middleware([Authenticate::class, AdminMiddleware::class])->post('/mahasiswa/{id}/toggle-status', [UserController::class, 'toggleMahasiswaStatus'])->name('mahasiswa.toggle-status');
 // Manajemen Dosen
 Route::prefix('/dosen')->middleware([Authenticate::class, AdminMiddleware::class])->group(function () {
     Route::get('/', [App\Http\Controllers\DosenController::class, 'index'])->name('dosen.index');
@@ -191,6 +192,7 @@ Route::middleware([Authenticate::class])->prefix('/unit')->group(function () {
     Route::get('/getMatriks/{id}/{id_kkn}', [UnitController::class, 'getMatriks'])->name('unit.getMatriks');
     Route::get('/getAnggota/{id}', [UnitController::class, 'getAnggota'])->name('unit.getAnggota');
     Route::get('/getKegiatanByUnit/{id}', [UnitController::class, 'getKegiatanByUnit'])->name('unit.getKegiatanByUnit');
+    Route::get('/getKegiatanByDpl', [UnitController::class, 'getKegiatanByDpl'])->name('unit.getKegiatanByDpl');
     Route::get('/getKegiatanInfo/{id}', [UnitController::class, 'getKegiatanInfo'])->name('unit.getKegiatanInfo');
     Route::get('/getRekapKegiatan', [UnitController::class, 'getRekapKegiatan'])->name('unit.getRekapKegiatan');
     Route::get('/generateProkerUnitPdf/{id_unit}/{id_kkn}', [UnitController::class, 'generateProkerUnitPdf'])->name('unit.generateProkerUnitPdf');

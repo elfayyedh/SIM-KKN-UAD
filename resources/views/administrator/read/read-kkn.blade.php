@@ -73,11 +73,11 @@
                                                     Mahasiswa</a>
                                             </td>
                                             <td>
-                                                <a class="btn btn-warning text-decoration-none"
+                                                <a class="btn btn-warning btn-sm text-decoration-none"
                                                     href="/kkn/edit/{{ $k->id }}"><i
                                                         class="bx bx-pencil me-1"></i>Edit
                                                     KKN</a>
-                                                <a class="btn btn-primary text-decoration-none"
+                                                <a class="btn btn-primary btn-sm text-decoration-none"
                                                     href="/kkn/detail/{{ $k->id }}"><i
                                                         class="bx bx-detail me-1"></i>Detail
                                                     KKN</a>

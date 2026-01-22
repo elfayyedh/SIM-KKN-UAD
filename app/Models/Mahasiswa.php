@@ -44,7 +44,11 @@ class Mahasiswa extends Model
     }
 
     protected $table = 'mahasiswa';
-    protected $fillable = ['id_user_role', 'id_unit', 'id_kkn', 'id_prodi', 'jabatan', 'nim'];
+    protected $fillable = ['id_user_role', 'id_unit', 'id_kkn', 'id_prodi', 'jabatan', 'nim', 'status'];
+
+    protected $casts = [
+        'status' => 'boolean',
+    ];
 
     public function userRole()
     {

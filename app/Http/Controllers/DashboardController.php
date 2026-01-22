@@ -59,8 +59,17 @@ class DashboardController extends Controller
 
                 $email = Auth::user()->email;
                 $id_kkn = $dplAssignments->first() ? $dplAssignments->first()->id_kkn : null;
-                // Hanya ambil KKN yang DPL ini ditugaskan
-                $kkn = $dosen ? KKN::whereIn('id', $dosen->dplAssignments()->pluck('id_kkn'))->get() : collect();
+
+                // Get active KKN periods (status = 1 and current date between start and end)
+                $currentDate = now()->toDateString();
+                $activeKknIds = KKN::where('status', 1)
+                    ->where('tanggal_mulai', '<=', $currentDate)
+                    ->where('tanggal_selesai', '>=', $currentDate)
+                    ->pluck('id');
+
+                // Hanya ambil KKN yang DPL ini ditugaskan dan sedang aktif
+                $assignedKknIds = $dosen ? $dosen->dplAssignments()->pluck('id_kkn') : collect();
+                $kkn = KKN::whereIn('id', $assignedKknIds->intersect($activeKknIds))->get();
                 return view('dpl.dashboard', compact('email', 'id_kkn', 'kkn', 'units'));
 
             } elseif ($activeRole == 'monev') {

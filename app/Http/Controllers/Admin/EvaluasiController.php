@@ -157,18 +157,25 @@ class EvaluasiController extends Controller
 
                 if (empty($filledScores)) continue;
 
-                // Create or update header evaluasi (admin evaluation)
-                $evalHeader = EvaluasiMahasiswa::updateOrCreate(
-                    [
-                        'id_mahasiswa' => $idMahasiswa
-                    ],
-                    [
-                        'id_tim_monev' => null, // Admin evaluation, no specific tim monev
-                        'updated_at' => now()
-                    ]
-                );
+                // Cari evaluasi existing dari Tim Monev untuk mahasiswa ini
+                $existingEval = EvaluasiMahasiswa::where('id_mahasiswa', $idMahasiswa)
+                    ->whereNotNull('id_tim_monev')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
 
-                // Simpan Detail Nilai
+                if ($existingEval) {
+                    // Update evaluasi yang sudah ada dari Tim Monev
+                    $evalHeader = $existingEval;
+                    $evalHeader->touch(); // Update timestamp
+                } else {
+                    // Jika belum ada evaluasi dari Tim Monev, buat baru dengan admin
+                    $evalHeader = EvaluasiMahasiswa::create([
+                        'id_mahasiswa' => $idMahasiswa,
+                        'id_tim_monev' => null, // Admin evaluation
+                    ]);
+                }
+
+                // Update/Create Detail Nilai
                 foreach ($filledScores as $idKriteria => $nilai) {
                     // Pastikan nilai dalam range 1-3
                     if ($nilai < 1 || $nilai > 3) continue;
