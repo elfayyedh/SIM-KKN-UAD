@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Mahasiswa;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -21,6 +23,12 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        $throttleKey = 'login_bruteforce_' . $request->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return redirect()->back()->with(['error' => "Terlalu banyak percobaan gagal. Akun dikunci sementara. Silakan coba lagi dalam $seconds detik."]);
+        }
+
         $loginInput = $request->input('email'); 
         $password = $request->input('password');
         
@@ -48,6 +56,7 @@ class AuthController extends Controller
                         Auth::login($user); // Login Paksa
                         $loginBerhasil = true;
                     } else {
+                        RateLimiter::hit($throttleKey, 60);
                         return redirect()->back()->with(['error' => 'Login Portal Sukses, tapi akun Anda belum terdaftar di database SIM KKN.']);
                     }
                 }
@@ -72,9 +81,11 @@ class AuthController extends Controller
         }
 
         if (!$loginBerhasil) {
+            RateLimiter::hit($throttleKey, 60);
             return redirect()->back()->with(['error' => 'Login Gagal! Username atau Password salah.']);
         }
 
+        RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
         $user = Auth::user(); 
         $dosen = $user->dosen; 
