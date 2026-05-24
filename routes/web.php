@@ -32,6 +32,13 @@ Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middl
 Route::get('/get-belum-dinilai-data', [DashboardController::class, 'getBelumDinilaiData'])->middleware([Authenticate::class])->name('belum-dinilai-data');
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
+
+// OTP via Email
+Route::get('/login/otp', [AuthController::class, 'showOtpForm'])->middleware([AuthenticatedUser::class])->name('login.otp.show');
+Route::post('/login/otp/verify', [AuthController::class, 'verifyOtp'])->middleware([AuthenticatedUser::class])->name('login.otp.verify');
+
+
+
 Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->middleware([Authenticate::class])->name('choose.role');
 Route::middleware([Authenticate::class])->get('/logout', [AuthController::class, 'logout'])->name('logout');
 
