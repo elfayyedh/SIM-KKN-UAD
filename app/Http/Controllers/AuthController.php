@@ -21,7 +21,7 @@ class AuthController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
         $throttleKey = 'login_bruteforce_' . $request->ip();
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
@@ -31,6 +31,19 @@ class AuthController extends Controller
 
         $loginInput = $request->input('email'); 
         $password = $request->input('password');
+
+        // ==== VERIFIKASI GOOGLE RECAPTCHA ====
+        $recaptchaResponse = $request->input('g-recaptcha-response');
+        $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => env('RECAPTCHA_SECRET_KEY'),
+            'response' => $recaptchaResponse,
+            'remoteip' => $request->ip()
+        ]);
+        
+        if (!$verifyResponse->json('success')) {
+            RateLimiter::hit($throttleKey, 60); 
+            return redirect()->back()->with(['error' => 'Validasi CAPTCHA gagal. Pastikan Anda mencentang reCAPTCHA.']);
+        }
         
         $loginBerhasil = false;
 
