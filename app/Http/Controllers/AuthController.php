@@ -10,6 +10,10 @@ use App\Models\Mahasiswa;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Models\LoginHistory;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\NewDeviceLoginAlert;
+use App\Mail\OtpMail;
 
 class AuthController extends Controller
 {
@@ -101,6 +105,44 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
         $request->session()->regenerate();
         $user = Auth::user(); 
+
+        // ===== 1. MONITORING & ALERTING =====
+        $ip_address = $request->ip();
+        $user_agent = $request->userAgent();
+
+        // Cek login dari perangkakt ini sebelumnya
+        $isFamiliarDevice = LoginHistory::where('user_id', $user->id)
+            ->where('ip_address', $ip_address)
+            ->where('user_agent', $user_agent)
+            ->exists();
+
+        $history = LoginHistory::create([
+            'user_id' => $user->id,
+            'ip_address' => $ip_address,
+            'user_agent' => $user_agent,
+            'is_abnormal' => !$isFamiliarDevice,
+        ]);
+
+        if (!$isFamiliarDevice && $user->email) {
+            // Kirim alert email karena abnormal
+            // Cek try catch agar tidak error bila mail belum tersetting diserver
+            try {
+                Mail::to($user->email)->send(new NewDeviceLoginAlert($history, $user));
+            } catch (\Exception $e) {}
+        }
+
+        // ===== 2. MULTI-FACTOR AUTHENTICATION (OTP EMAIL) =====
+        $otp = rand(100000, 999999);
+        $user->otp_code = $otp;
+        $user->otp_expires_at = now()->addMinutes(10); // Berlaku 10 menit
+        $user->save();
+        
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp, $user));
+        } catch (\Exception $e) {}
+
+        session(['mfa_verified' => false]);
+        
         $dosen = $user->dosen; 
 
         if ($dosen) {
@@ -144,7 +186,7 @@ class AuthController extends Controller
         $user = Auth::user();
 
         // 1. TEMBAK API LOGOUT (TAMBAHAN)
-        if ($user) {
+        if ($user && env('PORTAL_LOGOUT_URL')) {
             try {
                 Http::asForm()->withHeaders([
                     'apikey' => env('PORTAL_API_KEY'),
