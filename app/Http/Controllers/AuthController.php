@@ -90,8 +90,20 @@ class AuthController extends Controller
             );
 
             if ($loginAttempt->locked) {
-                return redirect()->back()->with(['error' => 'Akun Anda terkunci karena terlalu banyak percobaan login gagal.']);
+                $lockedUntil = $loginAttempt->locked_at?->copy()->addHour();
+
+                if ($lockedUntil && now()->lt($lockedUntil)) {
+                    $remainingSeconds = now()->diffInSeconds($lockedUntil, false);
+                    return redirect()->back()->with(['error' => "Akun Anda terkunci sementara. Coba lagi dalam {$remainingSeconds} detik."]);
+                }
+
+                // lock sementara sudah lewat, reset status
+                $loginAttempt->locked = false;
+                $loginAttempt->failed_attempts = 0;
+                $loginAttempt->locked_at = null;
+                $loginAttempt->save();
             }
+
 
             $emailUntukCekLokal = $loginInput;
 
@@ -125,8 +137,11 @@ class AuthController extends Controller
 
                 if ($loginAttempt->failed_attempts >= 15) {
                     $loginAttempt->locked = true;
-                    $loginAttempt->locked_at = now();
+                    $loginAttempt->locked_at = now(); // lock aktif selama 1 jam
+                    $loginAttempt->failed_attempts = 15; // jaga konsistensi
                 }
+
+
 
                 $loginAttempt->save();
 
