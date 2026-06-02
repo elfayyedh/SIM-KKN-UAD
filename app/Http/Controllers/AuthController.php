@@ -131,17 +131,31 @@ class AuthController extends Controller
             } catch (\Exception $e) {}
         }
 
-        // ===== 2. MULTI-FACTOR AUTHENTICATION (OTP EMAIL) =====
-        $otp = rand(100000, 999999);
-        $user->otp_code = $otp;
-        $user->otp_expires_at = now()->addMinutes(10); // Berlaku 10 menit
-        $user->save();
-        
-        try {
-            Mail::to($user->email)->send(new OtpMail($otp, $user));
-        } catch (\Exception $e) {}
+        // Cek apakah user memiliki peran Admin
+        $isAdmin = false;
+        foreach ($user->userRoles as $userRole) {
+            if ($userRole->role && $userRole->role->nama_role == 'Admin') {
+                $isAdmin = true;
+                break;
+            }
+        }
 
-        session(['mfa_verified' => false]);
+        // ===== 2. MULTI-FACTOR AUTHENTICATION (OTP EMAIL) =====
+        // Hanya wajib untuk Admin
+        if ($isAdmin) {
+            $otp = rand(100000, 999999);
+            $user->otp_code = $otp;
+            $user->otp_expires_at = now()->addMinutes(10); // Berlaku 10 menit
+            $user->save();
+            
+            try {
+                Mail::to($user->email)->send(new OtpMail($otp, $user));
+            } catch (\Exception $e) {}
+
+            session(['mfa_verified' => false]);
+        } else {
+            session(['mfa_verified' => true]);
+        }
         
         $dosen = $user->dosen; 
 
@@ -164,6 +178,11 @@ class AuthController extends Controller
                 $request->session()->regenerateToken();
                 return redirect()->back()->with('error', 'Anda terdaftar sebagai Dosen, namun belum memiliki penugasan DPL atau Tim Monev.');
             }
+
+            if (session('mfa_verified') === false) {
+                return redirect()->route('mfa.index');
+            }
+
             return redirect()->route('dashboard');
         } else {
             session()->forget(['user_is_dosen', 'user_has_role_dpl', 'user_has_role_monev', 'active_role']);
@@ -176,6 +195,11 @@ class AuthController extends Controller
             }
             $defaultRole = $roles->first();
             session(['selected_role' => $defaultRole->id]);
+            
+            if (session('mfa_verified') === false) {
+                return redirect()->route('mfa.index');
+            }
+            
             return redirect()->route('dashboard');
         }
     }
