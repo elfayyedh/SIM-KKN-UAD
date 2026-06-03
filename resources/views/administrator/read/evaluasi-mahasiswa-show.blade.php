@@ -43,10 +43,10 @@
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>Evaluator</th>
+                                        <th>Penilai</th>
                                         <th>Tanggal</th>
                                         @foreach($kriteriaList as $k)
-                                            <th>{{ \\Illuminate\\Support\\Str::limit($k->judul,20) }}</th>
+                                            <th>{{ \Illuminate\Support\Str::limit($k->judul,20) }}</th>
                                         @endforeach
                                     </tr>
                                 </thead>
@@ -72,6 +72,14 @@
                                     @endforelse
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- Catatan Tim Monev (Dari Unit) -->
+                        <div class="mt-4">
+                            <h5 class="font-size-15 mb-2">Catatan Tim Monev untuk Unit ({{ $mahasiswa->unit->nama ?? '-' }})</h5>
+                            <div class="p-3 bg-light rounded" style="border: 1px solid #e9ebec;">
+                                {{ $mahasiswa->unit->catatan_monev ?? 'Belum ada catatan tim monev untuk unit ini.' }}
+                            </div>
                         </div>
 
                     </div>

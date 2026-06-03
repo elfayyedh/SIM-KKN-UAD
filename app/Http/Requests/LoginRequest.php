@@ -24,6 +24,7 @@ class LoginRequest extends FormRequest
         return [
             'email' => 'required|string',
             'password' => 'required|string',
+            'g-recaptcha-response' => 'required',
         ];
     }
 
@@ -32,6 +33,7 @@ class LoginRequest extends FormRequest
         return [
             'email.required' => 'Email harus diisi',
             'password.required' => 'Password harus diisi',
+            'g-recaptcha-response.required' => 'Mohon centang kotak CAPTCHA untuk verifikasi keamanan.',
         ];
     }
 

@@ -21,6 +21,10 @@ class Authenticate
         }
 
         if (Auth::check()) {
+            if (session('mfa_verified') === false && !$request->routeIs('mfa.*') && !$request->routeIs('logout')) {
+                return redirect()->route('mfa.index');
+            }
+
             if (session('user_is_dosen', false)) {
                 return $next($request); 
             }

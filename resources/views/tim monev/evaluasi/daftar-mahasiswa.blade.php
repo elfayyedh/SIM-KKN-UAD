@@ -139,6 +139,13 @@
                                 </table>
                             </div>
 
+                            <!-- CATATAN TIM MONEV -->
+                            <div class="mt-4 mb-3">
+                                <h5 class="card-title mb-2">Catatan Tim Monev</h5>
+                                <input type="hidden" name="id_unit" value="{{ $unit->id }}">
+                                <textarea class="form-control" name="catatan_monev" rows="4" placeholder="Masukkan catatan atau evaluasi umum untuk unit ini...">{{ old('catatan_monev', $unit->catatan_monev) }}</textarea>
+                            </div>
+
                             <!-- TABEL MATRIKS / PEDOMAN PENILAIAN -->
                             <div class="mt-5 mb-3">
                                 <h5 class="card-title mb-1"> Pedoman Penilaian</h5>

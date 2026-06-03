@@ -70,7 +70,6 @@
                                                 <small class="text-muted" style="font-weight: normal;">(1.0 - 3.0)</small>
                                             </th>
                                         @endforeach
-                                        
                                         <th style="min-width: 100px;" class="text-center">Nilai Akhir</th>
                                     </tr>
                                 </thead>
@@ -128,6 +127,54 @@
                 </form>
             </div>
         </div>
+        
+        {{-- SECTION CATATAN TIM MONEV PER UNIT --}}
+        @if($kkn)
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header align-items-center d-flex">
+                        <h4 class="card-title flex-grow-1 mb-0">Catatan Tim Monev (Per Unit)</h4>
+                    </div>
+                    <div class="card-body">
+                        @php
+                            // Ambil semua unit di KKN ini yang punya catatan
+                            $unitsWithCatatan = \App\Models\Unit::where('id_kkn', $kkn->id)->orderBy('nama', 'asc')->get();
+                        @endphp
+                        
+                        <div class="accordion" id="accordionCatatanMonev">
+                            @forelse($unitsWithCatatan as $idx => $u)
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header" id="headingCatatan{{ $idx }}">
+                                        <button class="accordion-button {{ $idx == 0 ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCatatan{{ $idx }}" aria-expanded="{{ $idx == 0 ? 'true' : 'false' }}" aria-controls="collapseCatatan{{ $idx }}">
+                                            Unit {{ $u->nama }}
+                                            @if(empty($u->catatan_monev))
+                                                <span class="badge bg-warning ms-2">Belum Ada Catatan</span>
+                                            @else
+                                                <span class="badge bg-success ms-2">Ada Catatan</span>
+                                            @endif
+                                        </button>
+                                    </h2>
+                                    <div id="collapseCatatan{{ $idx }}" class="accordion-collapse collapse {{ $idx == 0 ? 'show' : '' }}" aria-labelledby="headingCatatan{{ $idx }}" data-bs-parent="#accordionCatatanMonev">
+                                        <div class="accordion-body bg-light">
+                                            @if(!empty($u->catatan_monev))
+                                                {!! nl2br(e($u->catatan_monev)) !!}
+                                            @else
+                                                <em class="text-muted">Tim Monev belum memberikan catatan untuk unit ini.</em>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <p class="text-center text-muted mb-0">Belum ada unit pada KKN ini.</p>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
     </div>
 </div>
 @endsection

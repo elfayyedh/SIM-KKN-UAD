@@ -32,6 +32,11 @@ Route::get('/get-unit-data', [DashboardController::class, 'getUnitData'])->middl
 Route::get('/get-belum-dinilai-data', [DashboardController::class, 'getBelumDinilaiData'])->middleware([Authenticate::class])->name('belum-dinilai-data');
 Route::get('/login', [AuthController::class, 'index'])->middleware([AuthenticatedUser::class])->name('login.index');
 Route::post('/login/request', [AuthController::class, 'login'])->middleware([AuthenticatedUser::class])->name('login');
+
+// MFA Routes
+Route::get('/mfa', [\App\Http\Controllers\MfaController::class, 'index'])->middleware([Authenticate::class])->name('mfa.index');
+Route::post('/mfa/verify', [\App\Http\Controllers\MfaController::class, 'verify'])->middleware([Authenticate::class])->name('mfa.verify');
+
 Route::get('/choose-role', [RoleSelectionController::class, 'chooseRole'])->middleware([Authenticate::class])->name('choose.role');
 Route::middleware([Authenticate::class])->get('/logout', [AuthController::class, 'logout'])->name('logout');
 
