@@ -6,8 +6,7 @@
     @include('layouts.head')
     @include('layouts.head-style')
     <title>Login | SIM KKN UAD</title>
-    <!-- Google reCAPTCHA v2 -->
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
 </head>
 
 <body>
@@ -78,18 +77,8 @@
                                                     </label>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <!-- Google reCAPTCHA v2 -->
-                                        <div class="mb-3">
-                                            <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY', '') }}"></div>
-                                            @error('g-recaptcha-response')
-                                                <span class="text-danger mt-2 d-block">
-                                                    {{ $message }}
-                                                </span>
-                                            @enderror
                                         </div>
-
                                         <div class="mb-3">
                                             <button class="btn btn-primary w-100 waves-effect waves-light"
                                                 type="submit">Log In</button>
@@ -102,7 +91,9 @@
                                     <p class="mb-0">©
                                         <script>
                                             document.write(new Date().getFullYear())
-                                        </script> LPPM UAD
+                                        </script> LPPM UAD . Develop with <i
+                                            class="mdi mdi-heart text-danger"></i> by
+                                        <a href="https://rosyamdani.netlify.app">Rosyamdani</a>
                                     </p>
                                 </div>
                             </div>
