@@ -270,6 +270,20 @@
                         $allRoles = Auth::user()->userRoles()->with('role')->get();
                         $currentRoleId = session('selected_role');
                     @endphp
+
+                    @if ($allRoles->count() > 1)
+                        <li class="menu-title" data-key="t-ganti-peran">Ganti Peran</li>
+                        @foreach ($allRoles as $availableRole)
+                            @if ($availableRole->id != $currentRoleId)
+                                <li>
+                                    <a href="{{ route('set.role', $availableRole->id) }}">
+                                        <i class="mdi mdi-account-switch-outline"></i>
+                                        <span>{{ $availableRole->role->nama_role }}</span>
+                                    </a>
+                                </li>
+                            @endif
+                        @endforeach
+                    @endif
                 @endif
                 <li class="menu-title" data-key="t-menu">Informasi</li>
                 <li>

@@ -4,9 +4,6 @@
     </IfModule>
 
     RewriteEngine On
-    php_value max_input_vars 25000
-    php_value post_max_size 100M
-    php_value upload_max_filesize 100M
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
