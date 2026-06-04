@@ -22,26 +22,37 @@
             </div>
             <!-- end page title -->
 
-            <div class="row mb-3">
-                <div class="col-12 col-md-6">
-                     <p class="fw-bold mb-1">Periode: {{ $activePeriodName }}</p>
-                </div>
-                <div class="col-12 col-md-6 d-flex justify-content-md-end align-items-end">
-                    <div class="form-group w-75 me-2">
-                        <label for="unit" class="form-label">Pilih Unit</label>
-                        <select name="unit" id="unit" class="form-select">
-                            @foreach ($units as $item)
-                                <option value="{{ $item->id }}" {{ $item->id == $unit->id ? 'selected' : '' }}>
-                                    {{ $item->nama }}
+            <div class="row mb-4 p-3">
+                <div class="col-12 col-md-5 mb-2 mb-md-0">
+                    <div class="form-group">
+                        <label for="periode_kkn" class="form-label fw-bold">Pilih Periode KKN</label>
+                        <select id="periode_kkn" class="form-select border-primary">
+                            <option value="">-- Pilih Periode KKN --</option>
+                            @foreach($units->unique('id_kkn') as $unitItem)
+                                <option value="{{ $unitItem->id_kkn }}">
+                                    {{ $unitItem->kkn->nama }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
+                </div>
+
+                <div class="col-12 col-md-5 mb-2 mb-md-0">
                     <div class="form-group">
-                        <button type="button" id="refreshCalendar" class="btn btn-primary" title="Refresh Kalender">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
+                        <label for="unit" class="form-label fw-bold">Pilih Unit Bimbingan</label>
+                        <select name="unit" id="unit" class="form-select">
+                            <option value="">-- Semua Unit Bimbingan --</option>
+                            @foreach($units as $item)
+                                <option value="{{ $item->id }}">{{ $item->nama }}</option>
+                            @endforeach
+                        </select>
                     </div>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex align-items-end justify-content-md-end">
+                    <button type="button" id="refreshCalendar" class="btn btn-primary w-100" title="Refresh Kalender">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
                 </div>
             </div>
 
@@ -108,28 +119,74 @@
         </div>
     </div>
 
-    <input type="hidden" id="id_unit" value="{{ $unit->id }}">
+    <input type="hidden" id="id_unit" value="">
 @endsection
 @section('pageScript')
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
     <script src="{{ asset('assets/js/init/dpl/unit/kalender.init.js') }}"></script>
     <script>
         $(document).ready(function() {
-            // Reload calendar when unit changes
+            
+            // 1. Amankan daftar asli semua unit bawaan controller ke memori browser
+            const originalUnitOptions = $('#unit').html();
+
+            // 2. Logika ketika Dropdown Periode KKN Diubah
+            $('#periode_kkn').on('change', function() {
+                const kknId = $(this).val();
+                const unitSelect = $('#unit');
+
+                $('#id_unit').val('');
+                
+                try {
+                    if (typeof calendar !== 'undefined' && typeof calendar.getEvents === 'function') { 
+                        calendar.getEvents().forEach(event => event.remove()); 
+                    }
+                } catch (err) {
+                    console.warn("FullCalendar belum siap atau method remove berbeda:", err);
+                }
+
+                if (kknId) {
+                    unitSelect.empty().append('<option value="">-- Sedang memuat... --</option>');
+                    $.ajax({
+                        url: "{{ route('dpl.units.by.kkn', '') }}/" + kknId,
+                        type: 'GET',
+                        dataType: 'json',
+                        success: function(data) {
+                            unitSelect.empty().append('<option value="">-- Pilih Unit Bimbingan --</option>');
+                            
+                            if (data.length > 0) {
+                                $.each(data, function(key, value) {
+                                    unitSelect.append(`<option value="${value.id}">${value.nama}</option>`);
+                                });
+                            } else {
+                                unitSelect.append('<option value="">Tidak ada unit di periode ini</option>');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Detail kegagalan AJAX:", xhr.responseText);
+                            unitSelect.empty().append('<option value="">Gagal memuat data unit</option>');
+                            alert('Terjadi kendala koneksi saat mengambil data unit.');
+                        }
+                    });
+                } else {
+                    unitSelect.html(originalUnitOptions);
+                }
+            });
+
             $('#unit').on('change', function() {
-                loadCalendarData();
+                const unitId = $(this).val();
+                $('#id_unit').val(unitId);
+
+                if (typeof calendar !== 'undefined' && unitId) {
+                    calendar.refetchEvents();
+                }
+            });
+
+            $('#refreshCalendar').on('click', function() {
+                if (typeof calendar !== 'undefined' && $('#id_unit').val()) {
+                    calendar.refetchEvents();
+                }
             });
         });
-
-        function loadCalendarData() {
-            const unitId = $('#unit').val();
-            // Update the hidden input with selected unit
-            $('#id_unit').val(unitId);
-
-            // Reload calendar events
-            if (typeof calendar !== 'undefined') {
-                calendar.refetchEvents();
-            }
-        }
     </script>
 @endsection

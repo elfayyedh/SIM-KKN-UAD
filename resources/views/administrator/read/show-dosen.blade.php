@@ -75,8 +75,8 @@
                                     <td>
                                         <a class="btn btn-secondary btn-sm" href="{{ route('user.edit', $item->user->id) }}"><i
                                                 class="bx bx-edit me-1"></i>Edit</a>
-                                        <button type="button" class="btn btn-danger btn-sm delete-btn" data-id="{{ $item->id }}">
-                                            <i class="bx bx-trash me-1"></i>Hapus
+                                        <button type="button" class="btn btn-danger btn-sm" data-id="{{ route('dosen.destroy', $item->id) }}" onclick="hapusDosen(this)">
+                                            Hapus
                                         </button>
                                     </td>
                                 </tr>
@@ -102,54 +102,53 @@
     <script>
         $(document).ready(function() {
             $('#datatable').DataTable();
-
-            // Delete handler
-            $('.delete-btn').on('click', function() {
-                const dosenId = $(this).data('id');
-                
-                Swal.fire({
-                    title: 'Apakah Anda yakin?',
-                    text: "Data dosen akan dihapus permanen!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Ya, hapus!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $.ajax({
-                            url: `/dosen/${dosenId}`,
-                            type: 'DELETE',
-                            data: {
-                                _token: '{{ csrf_token() }}'
-                            },
-                            success: function(response) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Berhasil!',
-                                    text: response.success,
-                                    showConfirmButton: false,
-                                    timer: 1500
-                                }).then(() => {
-                                    location.reload();
-                                });
-                            },
-                            error: function(xhr) {
-                                let errorMsg = 'Terjadi kesalahan saat menghapus data.';
-                                if (xhr.responseJSON && xhr.responseJSON.error) {
-                                    errorMsg = xhr.responseJSON.error;
-                                }
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Gagal!',
-                                    text: errorMsg
-                                });
-                            }
-                        });
-                    }
-                });
-            });
         });
+
+        function hapusDosen(button) {
+            const deleteUrl = $(button).data('id'); 
+            
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Data dosen akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: deleteUrl,
+                        type: 'DELETE',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: response.success,
+                                showConfirmButton: false,
+                                timer: 1500
+                            }).then(() => {
+                                location.reload(); 
+                            });
+                        },
+                        error: function(xhr) {
+                            let errorMsg = 'Terjadi kesalahan saat menghapus data.';
+                            if (xhr.responseJSON && xhr.responseJSON.error) {
+                                errorMsg = xhr.responseJSON.error;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: errorMsg
+                            });
+                        }
+                    });
+                }
+            });
+        }
     </script>
 @endsection

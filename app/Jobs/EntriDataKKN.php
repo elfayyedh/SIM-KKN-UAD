@@ -19,6 +19,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class EntriDataKKN implements ShouldQueue
 {
@@ -27,12 +28,14 @@ class EntriDataKKN implements ShouldQueue
     protected $jsonData;
     protected $id_kkn;
     protected $progress;
+    protected $namaKkn;
 
-    public function __construct($jsonData, $id_kkn, $progress)
+    public function __construct($jsonData, $id_kkn, $progress, $namaKkn)
     {
         $this->jsonData = $jsonData;
         $this->id_kkn = $id_kkn;
         $this->progress = $progress;
+        $this->namaKkn = $namaKkn;
     }
 
     public function handle()
@@ -79,12 +82,23 @@ class EntriDataKKN implements ShouldQueue
                     $kecamatan = Kecamatan::firstOrCreate(['nama' => $unitData['kecamatan'], 'id_kabupaten' => $kabupaten->id]);
                     $lokasi = Lokasi::firstOrCreate(['nama' => $unitData['lokasi'], 'id_kecamatan' => $kecamatan->id]);
 
+                    $namaKknLower = strtolower($this->namaKkn);
+                    $tanggalPenerjunanRaw = $unitData['tanggal_penerjunan'] ?? now()->format('Y-m-d');
+                    $carbonPenerjunan = \Carbon\Carbon::parse($tanggalPenerjunanRaw);
+
+                    if (str_contains($namaKknLower, 'alternatif')) {
+                        $tanggalPenarikan = $carbonPenerjunan->copy()->addDays(59)->format('Y-m-d');
+                    } else {
+                        $tanggalPenarikan = $carbonPenerjunan->copy()->addDays(29)->format('Y-m-d');
+                    }
+
                     // Simpan Unit 
                     $unit = Unit::firstOrCreate([
                         'nama' => $unitData['nama'],
                         'id_kkn' => $this->id_kkn,
                     ], [
                         'tanggal_penerjunan' => $unitData['tanggal_penerjunan'] ?? now(),
+                        'tanggal_penarikan'  => $tanggalPenarikan,
                         'id_lokasi' => $lokasi->id,
                         'id_dpl' => null,
                     ]);

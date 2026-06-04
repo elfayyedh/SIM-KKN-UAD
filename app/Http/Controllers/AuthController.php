@@ -34,7 +34,9 @@ class AuthController extends Controller
 
         // ==== VERIFIKASI GOOGLE RECAPTCHA ====
         $recaptchaResponse = $request->input('g-recaptcha-response');
-        $verifyResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+        $verifyResponse = Http::withOptions(['verify' => false])
+        ->asForm()
+        ->post('https://www.google.com/recaptcha/api/siteverify', [
             'secret' => env('RECAPTCHA_SECRET_KEY'),
             'response' => $recaptchaResponse,
             'remoteip' => $request->ip()

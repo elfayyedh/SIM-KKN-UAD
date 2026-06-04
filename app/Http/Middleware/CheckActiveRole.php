@@ -17,11 +17,21 @@ class CheckActiveRole
     public function handle(Request $request, Closure $next, $role): Response
     {
         if (!session('user_is_dosen', false)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => 'error', 'message' => 'Akses ditolak.'], 403);
+            }
             abort(403, 'Akses ditolak.');
         }
 
         if (session('active_role') != $role) {
             
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Sesi peran Anda tidak valid untuk aksi ini. Silakan refresh halaman.'
+                ], 403);
+            }
+
             $correctDashboard = session('active_role', 'dashboard'); 
             
             if ($request->routeIs('dashboard')) {

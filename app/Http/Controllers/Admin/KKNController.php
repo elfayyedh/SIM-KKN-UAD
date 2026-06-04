@@ -119,7 +119,7 @@ class KKNController extends Controller
 
             DB::commit();
 
-            \App\Jobs\EntriDataKKN::dispatch($validated['file_excel'], $kkn->id, $progress->id);
+            \App\Jobs\EntriDataKKN::dispatch($validated['file_excel'], $kkn->id, $progress->id, $kkn->nama);
 
             return response()->json(['id_progress' => $progress->id]);
 
