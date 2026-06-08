@@ -105,6 +105,7 @@
                                     </form>
                                 </div>
                             </div>
+                               <!-- end  card body -->
                             <!-- end row -->
                         </div>
                         <!-- end  card body -->
@@ -119,6 +120,7 @@
                         <div class="card-header">
                             <h4 class="card-title">Ganti Password</h4>
                         </div>
+                        
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12">

@@ -178,12 +178,23 @@ class MonevController extends Controller
         // Validasi input: Array harus ada
         $request->validate([
             'evaluasi' => 'required|array',
+            'id_unit' => 'required',
+            'catatan_monev' => 'nullable|string',
         ]);
 
         try {
             $dosen = Auth::user()->dosen;
             $monevData = $this->getActiveMonevAssignment($dosen);
             $monevAssignment = $monevData['active'];
+
+            // Update catatan unit
+            $unit = Unit::findOrFail($request->id_unit);
+            // Cek apakah unit ini milik tim monev ini, jika iya update catatannya
+            if ($unit->id_tim_monev == $monevAssignment->id) {
+                $unit->update([
+                    'catatan_monev' => $request->catatan_monev
+                ]);
+            }
 
             // Loop setiap mahasiswa yang dikirim dari form
             // Format: $request->evaluasi[ID_MAHASISWA][ID_KRITERIA] = NILAI
