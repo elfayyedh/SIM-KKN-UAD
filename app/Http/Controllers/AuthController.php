@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use App\Models\LoginAttempt;
+use App\Models\LoginHistory;
+use App\Mail\NewDeviceLoginAlert;
+use App\Mail\OtpMail;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -154,6 +158,58 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         $user = Auth::user();
+
+        // ===== 1. MONITORING & ALERTING =====
+        $ip_address = $request->ip();
+        $user_agent = $request->userAgent();
+
+        // Cek login dari perangkakt ini sebelumnya
+        $isFamiliarDevice = LoginHistory::where('user_id', $user->id)
+            ->where('ip_address', $ip_address)
+            ->where('user_agent', $user_agent)
+            ->exists();
+
+        $history = LoginHistory::create([
+            'user_id' => $user->id,
+            'ip_address' => $ip_address,
+            'user_agent' => $user_agent,
+            'is_abnormal' => !$isFamiliarDevice,
+        ]);
+
+        if (!$isFamiliarDevice && $user->email) {
+            // Kirim alert email karena abnormal
+            // Cek try catch agar tidak error bila mail belum tersetting diserver
+            try {
+                Mail::to($user->email)->send(new NewDeviceLoginAlert($history, $user));
+            } catch (\Exception $e) {}
+        }
+
+        // Cek apakah user memiliki peran Admin
+        $isAdmin = false;
+        foreach ($user->userRoles as $userRole) {
+            if ($userRole->role && $userRole->role->nama_role == 'Admin') {
+                $isAdmin = true;
+                break;
+            }
+        }
+
+        // ===== 2. MULTI-FACTOR AUTHENTICATION (OTP EMAIL) =====
+        // Hanya wajib untuk Admin
+        if ($isAdmin) {
+            $otp = rand(100000, 999999);
+            $user->otp_code = $otp;
+            $user->otp_expires_at = now()->addMinutes(10); // Berlaku 10 menit
+            $user->save();
+            
+            try {
+                Mail::to($user->email)->send(new OtpMail($otp, $user));
+            } catch (\Exception $e) {}
+
+            session(['mfa_verified' => false]);
+        } else {
+            session(['mfa_verified' => true]);
+        }
+
         $dosen = $user->dosen;
 
         if ($dosen) {
@@ -182,6 +238,10 @@ class AuthController extends Controller
                 return redirect()->back()->with('error', 'Anda belum memiliki role.');
             }
 
+            if (session('mfa_verified') === false) {
+                return redirect()->route('mfa.index');
+            }
+
             return redirect()->route('dashboard');
         }
 
@@ -203,6 +263,10 @@ class AuthController extends Controller
 
         session(['selected_role' => $roles->first()->id]);
 
+        if (session('mfa_verified') === false) {
+            return redirect()->route('mfa.index');
+        }
+
         return redirect()->route('dashboard');
     }
 
@@ -210,7 +274,7 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        if ($user) {
+        if ($user && env('PORTAL_LOGOUT_URL')) {
             try {
                 Http::asForm()->withHeaders([
                     'apikey' => env('PORTAL_API_KEY'),
@@ -218,7 +282,7 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'password' => '',
                 ]);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 // silent
             }
         }
