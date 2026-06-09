@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rules\Password;
 
 class UserController extends Controller
 {
@@ -89,12 +88,15 @@ class UserController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => ['required', 'string', Password::defaults()],
+            'password' => [
+                'required', 'string', 'min:8', 'regex:/[a-z]/', 'regex:/[A-Z]/', 
+                'regex:/[0-9]/', 'regex:/[@$!%*?&-_]/'
+            ],
             'jenis_kelamin' => 'required|in:L,P',
             'no_telp' => 'required|numeric|digits_between:10,13',
         ], [
             'email.unique' => 'Email sudah terdaftar',
-            'password.required' => 'Password harus diisi',
+            'password.regex' => 'Password harus mengandung minimal 1 huruf kapital, 1 huruf kecil, 1 angka, dan 1 karakter khusus',
             'no_telp.numeric' => 'No Telpon harus berupa angka',
             'no_telp.digits_between' => 'No Telpon harus memiliki minimal 10 sampai 13 digit',
         ]);
@@ -343,11 +345,19 @@ class UserController extends Controller
 
         $validator = Validator::make($request->all(), [
             'old-password' => 'required',
-            'new_password' => ['required', Password::defaults()],
+            'new_password' => [
+                'required', 'min:8',
+                'regex:/[a-z]/', 
+                'regex:/[A-Z]/', 
+                'regex:/[0-9]/', 
+                'regex:/[\W_]/', 
+            ],
             'confirm_password' => 'required|same:new_password',
         ], [
             'old-password.required' => 'Password sebelumnya harus diisi.',
             'new_password.required' => 'Password baru harus diisi.',
+            'new_password.min' => 'Password baru harus minimal 8 karakter.',
+            'new_password.regex' => 'Password baru harus mengandung huruf kecil, huruf besar, angka, dan karakter khusus.',
             'confirm_password.required' => 'Konfirmasi password harus diisi.',
             'confirm_password.same' => 'Konfirmasi password tidak cocok dengan password baru.',
         ]);

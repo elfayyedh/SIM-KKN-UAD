@@ -51,7 +51,7 @@ class Dpl extends Model
 
     public function kkn()
     {
-        return $this->belongsTo(KKN::class, 'id_kkn');
+        return $this->belongsTo(Kkn::class, 'id_kkn');
     }
 
     public function units()

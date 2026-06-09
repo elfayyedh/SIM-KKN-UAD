@@ -42,7 +42,7 @@ class Unit extends Model
         return 'string';
     }
     protected $table = 'unit';
-    protected $fillable = ['id_kkn', 'tanggal_penerjunan', 'tanggal_penarikan', 'id_dpl', 'id_lokasi', 'nama', 'catatan_monev'];
+    protected $fillable = ['id_kkn', 'tanggal_penerjunan', 'tanggal_penarikan', 'id_dpl', 'id_lokasi', 'nama'];
 
     public function kkn()
     {

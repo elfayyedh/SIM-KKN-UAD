@@ -7,7 +7,6 @@ use App\Models\LogbookKegiatan;
 use App\Observers\KegiatanObserver;
 use App\Observers\LogbookKegiatanObserver;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -26,15 +25,5 @@ class AppServiceProvider extends ServiceProvider
     {
         Kegiatan::observe(KegiatanObserver::class);
         LogbookKegiatan::observe(LogbookKegiatanObserver::class);
-
-        // Aturan default untuk Password Kuat
-        Password::defaults(function () {
-            $rule = Password::min(8)
-                        ->mixedCase()
-                        ->numbers()
-                        ->symbols();
-
-            return app()->isProduction() ? $rule->uncompromised() : $rule;
-        });
     }
 }

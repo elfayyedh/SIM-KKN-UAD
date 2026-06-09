@@ -6,6 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     * Kita akan ubah tabel pivot ini agar sesuai standar 'attach()' Laravel
+     */
     public function up(): void
     {
         Schema::table('evaluasi_monev', function (Blueprint $table) {
