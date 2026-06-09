@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('thn_ajaran', 20);
             $table->date('tanggal_mulai');
             $table->date('tanggal_selesai');
+            $table->date('tanggal_cutoff_penilaian');
             $table->boolean('status')->default(1);
             $table->timestamps();
         });

@@ -25,39 +25,56 @@
             {{-- End Page title --}}
 
             <x-alert-component />
-            @if (auth()->user()->userRoles->find(session('selected_role'))->role->nama_role == 'DPL' &&
-                    auth()->user()->userRoles->find(session('selected_role'))->dpl->id == $unit->id_dpl)
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <div class="text-primary fw-bold mb-3">#Profil unit</div>
-                                <form action="{{ route('unit.updateProfilUnit') }}" method="POST">
-                                    @csrf
-                                    @method('PUT')
-                                    <div class="form-group mb-3">
-                                        <input type="hidden" name="id" value="{{ $unit->id }}">
-                                        <label for="tanggal_penerjunan" class="form-label">Tanggal penerjunan</label>
-                                        <input type="date" class="form-control datepicker-basic"
-                                            name="tanggal_penerjunan" value="{{ $unit->tanggal_penerjunan }}">
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label for="tanggal_penarikan" class="form-label">Tanggal penarikan</label>
-                                        <input type="date" class="form-control datepicker-basic" name="tanggal_penarikan"
-                                            value="{{ $unit->tanggal_penarikan != null ? $unit->tanggal_penarikan : '-' }}">
-                                    </div>
-                                    <button type="submit" class="btn btn-primary">Simpan</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endif
+
             <div class="row">
                 <div class="col-12">
                     <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">#Data Lokasi Unit</h5>
+                        </div>
                         <div class="card-body">
-                            <div class="text-primary fw-bold mb-3">#Jabatan anggota</div>
+                            <form action="{{ route('unit.updateLinkLokasi') }}" method="POST">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="id_unit" value="{{ $unit->id }}">
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <div class="form-group mb-3">
+                                            <label class="form-label">Link Google Maps</label>
+                                            <input type="text" 
+                                                   class="form-control @error('link_lokasi') is-invalid @enderror" 
+                                                   name="link_lokasi"
+                                                   {{-- Pakai Null Coalescing Operator (??) biar gak error kalau lokasi belum diset admin --}}
+                                                   value="{{ old('link_lokasi', $unit->lokasi->link_lokasi ?? '') }}" 
+                                                   placeholder="https://goo.gl/maps/..." required>
+                                            @error('link_lokasi')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                            <small class="text-muted d-block mt-1">
+                                                *Pastikan link diawali dengan <b>http://</b> atau <b>https://</b>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="mdi mdi-content-save"></i> Simpan Lokasi
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">#Jabatan Anggota</h5>
+                        </div>
+                        <div class="card-body">
                             <form action="{{ route('unit.updateJabatanAnggota') }}" method="POST">
                                 @csrf
                                 @method('PUT')
@@ -79,7 +96,9 @@
                                     @endif
                                     @endforeach
                                 </div>
-                                <button type="submit" class="btn btn-primary">Simpan</button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="mdi mdi-content-save"></i> Simpan Jabatan
+                                </button>
                             </form>
                         </div>
                     </div>

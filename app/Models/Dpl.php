@@ -42,16 +42,16 @@ class Dpl extends Model
     }
 
     protected $table = 'dpl';
-    protected $fillable = ['id_user_role', 'id_kkn', 'nip'];
+    protected $fillable = ['id_dosen', 'id_kkn'];
 
-    public function userRole()
+    public function dosen()
     {
-        return $this->belongsTo(UserRole::class, 'id_user_role');
+        return $this->belongsTo(Dosen::class, 'id_dosen');
     }
 
     public function kkn()
     {
-        return $this->belongsTo(Kkn::class, 'id_kkn');
+        return $this->belongsTo(KKN::class, 'id_kkn');
     }
 
     public function units()

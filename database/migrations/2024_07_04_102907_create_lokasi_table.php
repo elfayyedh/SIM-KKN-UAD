@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('id_kecamatan');
             $table->string('nama', 100);
+            $table->string('link_lokasi', 100)->nullable();
             $table->timestamps();
 
             $table->foreign('id_kecamatan')->references('id')->on('kecamatan')->onDelete('cascade');

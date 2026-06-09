@@ -52,4 +52,9 @@ class BidangProker extends Model
     {
         return $this->hasMany(Proker::class, 'id_bidang');
     }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'id_bidang_proker');
+    }
 }

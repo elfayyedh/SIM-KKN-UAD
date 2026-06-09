@@ -10,97 +10,130 @@
 </head>
 
 <style>
-    @media print {
-
-        /* Menyembunyikan elemen header dan footer */
-        .header,
-        .footer {
-            display: none;
-        }
-
-        /* Jika Anda ingin mengatur margin dan padding */
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Mengatur ukuran halaman jika perlu */
-        @page {
-            size: auto;
-            /* Ukuran otomatis */
-            margin: 30px;
-            padding: 30px 0;
-            /* Menghapus margin default */
-        }
+    body {
+        font-family: Arial, sans-serif;
+        font-size: 11px;
+    }
+    
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+    
+    table, th, td {
+        border: 1px solid #000;
+    }
+    
+    th {
+        background-color: #f0f0f0;
+        font-weight: bold;
+        padding: 6px;
+        text-align: center;
+    }
+    
+    td {
+        padding: 5px;
+    }
+    
+    .text-center {
+        text-align: center;
+    }
+    
+    h3 {
+        text-align: center;
+        margin-bottom: 5px;
+        font-size: 16px;
+    }
+    
+    h4 {
+        text-align: center;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+    
+    .fw-bold {
+        font-weight: bold;
+    }
+    
+    .profil-table td {
+        border: 1px solid #ccc;
+        padding: 5px;
+    }
+    
+    .bidang-title {
+        font-weight: bold;
+        margin: 15px 0 8px 0;
+        font-size: 12px;
+    }
+    
+    .proker-title {
+        background-color: #f8f8f8;
+        font-weight: bold;
+        padding: 6px;
     }
 </style>
 
 
 <body>
-    <div style="page-break-after: always">
-        <div class="d-flex flex-column justify-content-between align-items-center text-center"
-            style="height: 100vh; padding: 120px 0">
-            <div style="margin-bottom: 130px;">
-                <img src="{{ url('assets/images/logo UAD hitam.jpg') }}" class="mb-3" height="250" alt="Logo">
-                <h3 class="fw-bold">PROGRAM KERJA UNIT</h3>
-                <h4 class="fw-bold">KULIAH KERJA NYATA</h4>
-                <h4 class="fw-bold">UNIVERSITAS AHMAD DAHLAN</h4> <!-- Perbaiki dari </h5> menjadi </h4> -->
-            </div>
+    <h3 class="fw-bold">PROGRAM KERJA UNIT</h3>
+    <h4>KULIAH KERJA NYATA UNIVERSITAS AHMAD DAHLAN</h4>
+    
+    <table class="profil-table" style="margin-bottom: 20px;">
+        <tr>
+            <td width="80"><strong>Unit</strong></td>
+            <td>: {{ $unit->nama }}</td>
+        </tr>
+        <tr>
+            <td><strong>DPL</strong></td>
+            <td>: {{ $unit->dpl->dosen->user->nama ?? 'Nama DPL Tidak Ditemukan' }}</td>
+        </tr>
+        <tr>
+            <td><strong>Lokasi</strong></td>
+            <td>: {{ $unit->lokasi->nama }}, {{ $unit->lokasi->kecamatan->kabupaten->nama ?? '' }}</td>
+        </tr>
+        <tr>
+            <td><strong>KKN</strong></td>
+            <td>: {{ $unit->kkn->nama ?? '' }}</td>
+        </tr>
+    </table>
 
-            <div class="border text-start border-dark rounded py-3 px-5 mb-5" style="max-width: fit-content;">
-                <h5>Unit : {{ $unit->nama }}</h5>
-                <h5>DPL : {{ $unit->dpl->userRole->user->nama }}</h5>
-                <h5>Lokasi : {{ $unit->lokasi->nama }}</h5>
-            </div>
-
-            <div class="mt-auto">
-                <h5 class="mb-1">Bidang Pengabdian kepada Masyarakat dan Kuliah Kerja Nyata</h5>
-                <h5 class="mb-1">Lembaga Penelitian dan Pengabdian kepada Masyarakat</h5>
-                <h5 class="mb-1">Universitas Ahmad Dahlan</h5>
-            </div>
-        </div>
-    </div>
-
-    <div class="container mx-auto">
-        @foreach ($prokers as $bidang)
-            <p>{{ $loop->iteration }}. {{ $bidang->nama }}</p>
-            @foreach ($bidang->proker as $proker)
-                <table class="table table-bordered nowrap w-100 mb-3">
+    @foreach ($prokers as $bidang)
+        <p class="bidang-title">{{ $loop->iteration }}. {{ $bidang->nama }}</p>
+        @foreach ($bidang->proker as $proker)
+            <table>
+                <tr>
+                    <td colspan="7" class="proker-title">{{ $proker->nama }}</td>
+                </tr>
+                <tr>
+                    <th width="5%">No</th>
+                    <th width="30%">Kegiatan</th>
+                    <th width="10%">Frekuensi</th>
+                    <th width="8%">JKEM</th>
+                    <th width="10%">Total JKEM</th>
+                    <th width="17%">Tanggal Rencana</th>
+                    <th width="20%">Penanggung Jawab</th>
+                </tr>
+                @foreach ($proker->kegiatan as $kegiatan)
                     <tr>
-                        <td colspan="7">{{ $proker->nama }}</td>
+                        <td style="text-align: center;">{{ $loop->iteration }}</td>
+                        <td>{{ $kegiatan->nama }}</td>
+                        <td style="text-align: center;">{{ $kegiatan->frekuensi }}</td>
+                        <td style="text-align: center;">{{ $kegiatan->jkem }}</td>
+                        <td style="text-align: center;">{{ $kegiatan->total_jkem }}</td>
+                        <td>
+                            @foreach ($kegiatan->tanggalRencanaProker as $date)
+                                {{ $date->tanggal }}@if(!$loop->last), @endif
+                            @endforeach
+                        </td>
+                        <td>
+                            {{ $kegiatan->mahasiswa->userRole->user->nama ?? '-' }}
+                        </td>
                     </tr>
-                    <tr>
-                        <th>No</th>
-                        <th>Kegiatan</th>
-                        <th>Frekuensi</th>
-                        <th>JKEM</th>
-                        <th>Total JKEM</th>
-                        <th>Tanggal Rencana</th>
-                        <th>Penanggung Jawab</th>
-                    </tr>
-                    @foreach ($proker->kegiatan as $kegiatan)
-                        <tr>
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ $kegiatan->nama }}</td>
-                            <td>{{ $kegiatan->frekuensi }}</td>
-                            <td>{{ $kegiatan->jkem }}</td>
-                            <td>{{ $kegiatan->total_jkem }}</td>
-                            <td>
-                                <ul class="list-unstyled text-nowrap">
-                                    @foreach ($kegiatan->tanggalRencanaProker as $date)
-                                        <li>{{ $date->tanggal }}</li>
-                                    @endforeach
-                                </ul>
-                            </td>
-                            <td>
-                                {{ $kegiatan->mahasiswa->userRole->user->nama }}
-                            </td>
-                        </tr>
-                    @endforeach
-                </table>
-            @endforeach
+                @endforeach
+            </table>
         @endforeach
-    </div>
+    @endforeach
 
 </body>
 

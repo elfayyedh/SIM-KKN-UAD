@@ -17,7 +17,7 @@ class AdminSeeder extends Seeder
     {
         // Mencari atau membuat user dengan email admin@gmail.test
         $user = User::firstOrCreate(
-            ['email' => 'gemilangtirto2002@gmail.com'],
+            ['email' => 'elfayyedh17@gmail.com'],
             [
                 'nama' => 'User Admin',
                 'password' => bcrypt('12341234'),

@@ -12,126 +12,131 @@
 @endphp
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Document</title>
-    @include('layouts.head-style')
-</head>
-
-<style>
-    @media print {
-
-        /* Menyembunyikan elemen header dan footer */
-        .header,
-        .footer {
-            display: none;
-        }
-
-        /* Jika Anda ingin mengatur margin dan padding */
+    <title>Logbook Sholat Mahasiswa - {{ $mahasiswa->userRole->user->nama }}</title>
+    <style>
         body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
             margin: 0;
-            padding: 0;
+            font-size: 24px;
         }
-
-        /* Mengatur ukuran halaman jika perlu */
-        @page {
-            size: auto;
-            /* Ukuran otomatis */
-            margin: 30px;
-            padding: 30px 0;
-            /* Menghapus margin default */
+        .header p {
+            margin: 5px 0;
+            font-size: 14px;
         }
-    }
-</style>
-
-
+        .info-section {
+            margin-bottom: 20px;
+        }
+        .info-section table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-section th, .info-section td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+        }
+        .logbook-section {
+            margin-bottom: 30px;
+        }
+        .logbook-section h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .logbook-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .logbook-table th, .logbook-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            font-size: 12px;
+        }
+        .logbook-table th {
+            background-color: #f0f0f0;
+        }
+        .date-header {
+            background-color: #e0e0e0;
+            font-weight: bold;
+        }
+    </style>
+</head>
 <body>
-    <div style="page-break-after: always">
-        <div class="d-flex flex-column justify-content-between align-items-center text-center"
-            style="height: 100vh; padding: 120px 0">
-            <div style="margin-bottom: 130px;">
-                <img src="{{ url('assets/images/logo UAD hitam.jpg') }}" class="mb-3" height="250" alt="Logo">
-                <h3 class="fw-bold">BUKU FORM SHOLAT BERJAMA’AH</h3>
-                <h4 class="fw-bold">KULIAH KERJA NYATA</h4>
-                <h4 class="fw-bold">UNIVERSITAS AHMAD DAHLAN</h4> <!-- Perbaiki dari </h5> menjadi </h4> -->
-            </div>
-
-            <div class="border text-start border-dark rounded py-3 px-5 mb-5" style="max-width: fit-content;">
-                <h5>Nama : {{ $mahasiswa->userRole->user->nama }}</h5>
-                <h5>NIM : {{ $mahasiswa->nim }}</h5>
-                <h5>UNIT : {{ $mahasiswa->unit->nama }}</h5>
-            </div>
-
-            <div class="mt-auto">
-                <h5 class="mb-1">Bidang Pengabdian kepada Masyarakat dan Kuliah Kerja Nyata</h5>
-                <h5 class="mb-1">Lembaga Penelitian dan Pengabdian kepada Masyarakat</h5>
-                <h5 class="mb-1">Universitas Ahmad Dahlan</h5>
-            </div>
-        </div>
+    <div class="header">
+        <h1>LOGBOOK SHOLAT MAHASISWA</h1>
+        <p>KULIAH KERJA NYATA (KKN)</p>
+        <p>Periode: {{ \Carbon\Carbon::parse($tanggal_penerjunan)->format('d-m-Y') }} s/d {{ \Carbon\Carbon::parse($tanggal_penarikan)->format('d-m-Y') }}</p>
     </div>
 
-    <section class="m-5">
-
-        <table class="table table-borderless mb-3">
-            <tr class="border-bottom">
-                <td class="p-0">Nama</td>
-                <td class="p-0">:</td>
-                <td class="p-0">{{ $mahasiswa->userRole->user->nama }}</td>
+    <div class="info-section">
+        <table>
+            <tr>
+                <th width="20%">Nama Mahasiswa</th>
+                <td>{{ $mahasiswa->userRole->user->nama }}</td>
             </tr>
-            <tr class="border-bottom">
-                <td class="p-0">NIM</td>
-                <td class="p-0">:</td>
-                <td class="p-0">{{ $mahasiswa->nim }}</td>
+            <tr>
+                <th>NIM</th>
+                <td>{{ $mahasiswa->nim }}</td>
             </tr>
-            <tr class="border-bottom">
-                <td class="p-0">PRODI</td>
-                <td class="p-0">:</td>
-                <td class="p-0">{{ $mahasiswa->prodi->nama_prodi }}</td>
+            <tr>
+                <th>Program Studi</th>
+                <td>{{ $mahasiswa->prodi->nama_prodi }}</td>
             </tr>
-            <tr class="border-bottom">
-                <td class="p-0">Lokasi</td>
-                <td class="p-0">:</td>
-                <td class="p-0">{{ $mahasiswa->unit->lokasi->nama }}</td>
+            <tr>
+                <th>Unit</th>
+                <td>{{ $mahasiswa->unit->nama }}</td>
             </tr>
-            <tr class="border-bottom">
-                <td class="p-0">Unit</td>
-                <td class="p-0">:</td>
-                <td class="p-0">{{ $mahasiswa->unit->nama }}</td>
-            </tr>
-            <tr class="border-bottom">
-                <td class="p-0">DPL</td>
-                <td class="p-0">:</td>
-                <td class="p-0">{{ $mahasiswa->unit->dpl->userRole->user->nama }}</td>
+            <tr>
+                <th>Lokasi</th>
+                <td>{{ $mahasiswa->unit->lokasi->nama }}, {{ $mahasiswa->unit->lokasi->kecamatan->kabupaten->nama }}</td>
             </tr>
         </table>
+    </div>
 
-        <table class="table table-bordered">
-            <thead>
-                <tr>
-                    <th>Waktu</th>
-                    <th>Keterangan</th>
-                    <th>Jumlah Jamaah</th>
-                    <th>Nama Imam</th>
-                </tr>
-            </thead>
-            <tbody id="logbook-sholat-container">
+    <div class="logbook-section">
+        <h3>Riwayat Sholat Berjamaah</h3>
 
-            </tbody>
-        </table>
-    </section>
+        @if($data && $data->count() > 0)
+            <table class="logbook-table">
+                <thead>
+                    <tr>
+                        <th width="5%">No</th>
+                        <th width="15%">Tanggal</th>
+                        <th width="15%">Waktu</th>
+                        <th width="25%">Keterangan</th>
+                        <th width="15%">Jumlah Jamaah</th>
+                        <th width="25%">Nama Imam</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $no = 1; @endphp
+                    @foreach($data as $entry)
+                        <tr>
+                            <td style="text-align: center;">{{ $no++ }}</td>
+                            <td>{{ \Carbon\Carbon::parse($entry->tanggal)->format('d-m-Y') }}</td>
+                            <td>{{ ucfirst($entry->waktu) }}</td>
+                            <td>{{ ucwords($entry->status) }}</td>
+                            <td style="text-align: center;">{{ $entry->jumlah_jamaah ? $entry->jumlah_jamaah . ' jamaah' : '-' }}</td>
+                            <td>{{ $entry->imam ?: '-' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p>Tidak ada data logbook sholat untuk periode ini.</p>
+        @endif
+    </div>
 
-    <input type="hidden" id="id_mahasiswa" value="{{ $mahasiswa->id }}">
-    <input type="hidden" id="id_unit" value="{{ $mahasiswa->id_unit }}">
-    <input type="hidden" id="id_kkn" value="{{ $mahasiswa->id_kkn }}">
-    <input type="hidden" id="tanggal_penerjunan" value="{{ $mahasiswa->unit->tanggal_penerjunan }}">
-    <input type="hidden" id="tanggal_penarikan"
-        value="{{ $mahasiswa->unit->tanggal_penarikan != null ? $mahasiswa->unit->tanggal_penarikan : $mahasiswa->kkn->tanggal_selesai }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="{{ asset('assets/js/init/mahasiswa/profil-mahasiswa/read-logbook-sholat.init.js') }}"></script>
+
 </body>
-
-
 </html>

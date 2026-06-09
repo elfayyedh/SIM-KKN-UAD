@@ -2,27 +2,35 @@
 
 namespace App\View\Components;
 
-use Closure;
-use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
+use Illuminate\Contracts\View\View;
 
 class UnitTable extends Component
 {
     /**
-     * Create a new component instance.
+     * Data unit yang akan ditampilkan.
+     *
+     * @var \Illuminate\Database\Eloquent\Collection
      */
+    public $units;
 
-    public $unit;
-
-    public function __construct($unit)
+    /**
+     * Buat instance komponen baru.
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection  $units
+     * @return void
+     */
+    public function __construct($units)
     {
-        $this->unit = $unit;
+        $this->units = $units;
     }
 
     /**
-     * Get the view / contents that represent the component.
+     * Dapatkan view / konten yang mewakili komponen.
+     *
+     * @return \Illuminate\Contracts\View\View
      */
-    public function render(): View|Closure|string
+    public function render(): View
     {
         return view('components.unit-table');
     }

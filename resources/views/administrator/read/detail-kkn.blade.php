@@ -118,7 +118,7 @@
                         <div class="tab-pane" id="unit" role="tabpanel">
                             <div class="card">
                                 <div class="card-body" style="overflow-x: auto;">
-                                    <x-unit-table :unit="$kkn->unit" />
+                                    <x-unit-table :units="$kkn->units" />
                                 </div>
                                 <!-- end card body -->
                             </div>
@@ -131,9 +131,7 @@
                                 <div class="card-body" style="overflow-x: auto;">
                                     <x-tim-monev-table :timMonev="$kkn->timMonev" />
                                 </div>
-                                <!-- end card body -->
                             </div>
-                            <!-- end card -->
                         </div>
                         <!-- end tab pane -->
 
@@ -171,5 +169,4 @@
     {{-- Init --}}
     <script src="{{ asset('assets/js/init/administrator/detail-kkn.init.js') }}"></script>
 
-@endsection
 @endsection

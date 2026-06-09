@@ -101,10 +101,24 @@
                                     <div class="d-flex align-items-start">
                                         <div class="gap-0">
                                             <h5 class="font-size-22 mb-1">Unit {{ $unit->nama }}</h5>
-                                            <p class="text-muted fd-flexont-size-13">{{ $unit->dpl->userRole->user->nama }}
+                                            <p class="text-muted fd-flexont-size-13">
+                                                {{ $unit->dpl->dosen->user->nama ?? 'Nama DPL Tidak Ditemukan' }}
                                             </p>
-                                            <p class="text-muted mb-1"> <i class="mdi mdi-map-marker"></i>
+                                            <p class="text-muted mb-1">
+                                                <i class="mdi mdi-map-marker me-1"></i>
                                                 {{ $unit->lokasi->nama }}, {{ $unit->lokasi->kecamatan->kabupaten->nama }}
+
+                                                <span class="mx-1">|</span>
+
+                                                @if($unit->lokasi?->link_lokasi)
+                                                    <a href="{{ $unit->lokasi->link_lokasi }}" target="_blank" class="text-primary text-decoration-none fw-bold">
+                                                        <i class="mdi mdi-google-maps"></i> Buka Peta
+                                                    </a>
+                                                @else
+                                                    <a href="{{ route('unit.edit', $unit->id) }}" class="text-secondary text-decoration-none fst-italic" style="border-bottom: 1px dashed #74788d;">
+                                                        <i class="mdi mdi-map-marker-plus"></i> Tambah Link Maps
+                                                    </a>
+                                                @endif
                                             </p>
                                             <p class="text-muted mb-1"> <i class="mdi mdi-marker"></i>
                                                 {{ $unit->kkn->nama }}
@@ -160,9 +174,6 @@
                         <div class="tab-pane active" id="program_kerja" role="tabpanel">
                             <div class="card">
                                 <div class="card-header">
-                                    <a class="btn btn-dark"
-                                        href="{{ route('proker.exportProker', ['id' => $unit->id]) }}"><i
-                                            class="bx bxs-file-export"></i>Export Excel</a>
                                     <a class="btn btn-dark"
                                         href="{{ route('proker.exportProkerPDF', ['id' => $unit->id]) }}"><i
                                             class="mdi mdi-file-export"></i>Export PDF</a>
@@ -221,7 +232,11 @@
 
                         <div class="tab-pane" id="anggota" role="tabpanel">
                             <div class="card">
-
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.exportAnggotaPDF', ['id' => $unit->id]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-anggota" style="overflow-x: auto">
 
                                 </div>
@@ -232,9 +247,9 @@
                         <div class="tab-pane" id="matriks" role="tabpanel">
                             <div class="card">
                                 <div class="card-header">
-                                    {{-- <a class="btn btn-dark"
+                                    <a class="btn btn-dark"
                                         href="{{ route('unit.export-matriks', ['id_unit' => $unit->id, 'id_kkn' => $unit->id_kkn]) }}"><i
-                                            class="bx bxs-file-export"></i>Export Excel</a> --}}
+                                            class="bx bxs-file-export"></i>Export Excel</a>
                                 </div>
                                 <div class="card-body" style="overflow-x: auto;">
                                     <table class="table-content-border" style="width: 100%;">
@@ -261,6 +276,11 @@
 
                         <div class="tab-pane" id="rekap" role="tabpanel">
                             <div class="card">
+                                <div class="card-header">
+                                    <a class="btn btn-dark"
+                                        href="{{ route('unit.exportRekapKegiatanPDF', ['id' => $unit->id]) }}"><i
+                                            class="mdi mdi-file-export"></i>Export PDF</a>
+                                </div>
                                 <div class="card-body table-responsive" id="rekap_kegiatan">
                                     @for ($i = 0; $i < 5; $i++)
                                         <table

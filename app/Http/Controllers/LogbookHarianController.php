@@ -8,14 +8,11 @@ use App\Models\LogbookHarian;
 use App\Models\LogbookKegiatan;
 use App\Models\LogbookSholat;
 use App\Models\Mahasiswa;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
-use Dompdf\Dompdf;
-use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\View;
-use Mpdf\Mpdf;
 
 class LogbookHarianController extends Controller
 {
@@ -369,31 +366,59 @@ class LogbookHarianController extends Controller
     }
 
     // Get logbook sholat PDF
-    public function getPDF(string $id, string $tanggal_penerjunan, string $tanggal_penarikan)
+    public function exportLogbookHarianPDF($id_mahasiswa, $tanggal_penerjunan, $tanggal_penarikan)
     {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+
         $tanggal_penerjunan = Carbon::parse($tanggal_penerjunan)->format('Y-m-d');
         $tanggal_penarikan = Carbon::parse($tanggal_penarikan)->format('Y-m-d');
 
-        $data = LogbookHarian::where('id_mahasiswa', $id)
+        $mahasiswa = Mahasiswa::with(['userRole.user', 'unit.lokasi.kecamatan.kabupaten', 'prodi'])->findOrFail($id_mahasiswa);
+
+        // Ambil data logbook harian dengan relasi
+        $logbookHarian = LogbookHarian::with([
+            'logbookKegiatan.kegiatan.proker.bidang',
+            'logbookKegiatan.dana'
+        ])
+        ->where('id_mahasiswa', $id_mahasiswa)
+        ->whereBetween('tanggal', [$tanggal_penerjunan, $tanggal_penarikan])
+        ->orderBy('tanggal')
+        ->get();
+
+        $pdf = PDF::loadView('mahasiswa.manajemen-logbook.export-pdf-logbook-harian-mahasiswa', [
+            'mahasiswa' => $mahasiswa,
+            'logbookData' => $logbookHarian,
+            'tanggal_penerjunan' => $tanggal_penerjunan,
+            'tanggal_penarikan' => $tanggal_penarikan
+        ])
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Logbook Harian ' . $mahasiswa->userRole->user->nama . '.pdf');
+    }
+
+    public function exportPDF(string $id, string $tanggal_penerjunan, string $tanggal_penarikan)
+    {
+        return $this->getPDF($id, $tanggal_penerjunan, $tanggal_penarikan);
+    }
+
+    public function getPDF(string $id, string $tanggal_penerjunan, string $tanggal_penarikan)
+    {
+        set_time_limit(300); // Set timeout 5 menit
+        ini_set('memory_limit', '512M'); // Increase memory limit
+
+        $tanggal_penerjunan = Carbon::parse($tanggal_penerjunan)->format('Y-m-d');
+        $tanggal_penarikan = Carbon::parse($tanggal_penarikan)->format('Y-m-d');
+
+        $data = LogbookSholat::where('id_mahasiswa', $id)
             ->whereBetween('tanggal', [$tanggal_penerjunan, $tanggal_penarikan])
             ->get();
-        $mahasiswa = Mahasiswa::with(['unit.dpl', 'unit.lokasi', 'prodi'])->where('id', $id)->first();
-        return view('mahasiswa.pdf_sholat', compact('data', 'mahasiswa', 'tanggal_penerjunan', 'tanggal_penarikan'));
-        $options = new Options();
-        $options->set('defaultFont', 'DejaVu Sans');
-        $dompdf = new Dompdf($options);
+        $mahasiswa = Mahasiswa::with(['unit.dpl.dosen.user', 'unit.lokasi.kecamatan.kabupaten', 'prodi'])->where('id', $id)->first();
 
-        // Memuat HTML yang sudah dirender ke Dompdf
-        $dompdf->loadHtml();
-
-        // (Optional) Set ukuran kertas dan orientasi
-        $dompdf->setPaper('A4', 'portrait');
-
-        // Render PDF
-        $dompdf->render();
-
-        // Menghasilkan output ke browser (stream) atau download
-        return $dompdf->stream('logbook_sholat.pdf'); // Untuk melihat langsung di browser
+        $pdf = PDF::loadView('mahasiswa.pdf_sholat', compact('data', 'mahasiswa', 'tanggal_penerjunan', 'tanggal_penarikan'))
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+        return $pdf->download('Logbook Sholat ' . $mahasiswa->userRole->user->nama . '.pdf');
     }
 
     public function halanganFullDay(Request $request)
@@ -518,7 +543,6 @@ class LogbookHarianController extends Controller
 
     public function saveLogbookKegiatan(Request $request)
     {
-
         $data = $request->validate([
             'id_mahasiswa' => 'required|string|exists:mahasiswa,id',
             'id_kegiatan' => 'required|string|exists:kegiatan,id',
@@ -526,5 +550,53 @@ class LogbookHarianController extends Controller
             'jam_selesai' => 'required|string',
             'tanggal' => 'required|date',
         ]);
+
+        try {
+            // Get mahasiswa to get id_unit
+            $mahasiswa = Mahasiswa::find($data['id_mahasiswa']);
+            $id_unit = $mahasiswa->id_unit;
+
+            // Create or get LogbookHarian
+            $logbookHarian = LogbookHarian::firstOrCreate([
+                'id_mahasiswa' => $data['id_mahasiswa'],
+                'tanggal' => $data['tanggal'],
+                'id_unit' => $id_unit
+            ], [
+                'total_jkem' => 0,
+                'status' => 'belum diisi'
+            ]);
+
+            // Calculate total_jkem
+            $jamMulai = Carbon::parse($data['jam_mulai']);
+            $jamSelesai = Carbon::parse($data['jam_selesai']);
+            $totalJkem = $jamSelesai->diffInMinutes($jamMulai);
+
+            // Determine jenis
+            $kegiatan = Kegiatan::with('proker.bidang')->find($data['id_kegiatan']);
+            $jenis = 'individu'; // default
+            if ($kegiatan && $kegiatan->proker && $kegiatan->proker->bidang) {
+                if ($kegiatan->proker->bidang->tipe == 'unit') {
+                    $jenis = 'bersama';
+                } elseif ($kegiatan->id_mahasiswa != $data['id_mahasiswa']) {
+                    $jenis = 'bantu';
+                }
+            }
+
+            // Create LogbookKegiatan
+            LogbookKegiatan::create([
+                'id_mahasiswa' => $data['id_mahasiswa'],
+                'id_logbook_harian' => $logbookHarian->id,
+                'id_kegiatan' => $data['id_kegiatan'],
+                'jam_mulai' => $data['jam_mulai'],
+                'jam_selesai' => $data['jam_selesai'],
+                'total_jkem' => $totalJkem,
+                'jenis' => $jenis,
+                'id_unit' => $id_unit
+            ]);
+
+            return response()->json(['status' => 'success', 'message' => 'Logbook kegiatan berhasil disimpan']);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => 'Gagal menyimpan: ' . $e->getMessage()]);
+        }
     }
 }

@@ -59,11 +59,6 @@ class UserRole extends Model
         return $this->hasOne(Mahasiswa::class, 'id_user_role');
     }
 
-    public function dpl()
-    {
-        return $this->hasOne(Dpl::class, 'id_user_role');
-    }
-
     public function kkn()
     {
         return $this->belongsTo(KKN::class, 'id_kkn');

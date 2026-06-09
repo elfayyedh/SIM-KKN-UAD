@@ -33,68 +33,68 @@ self.onmessage = function (event) {
 };
 
 function transformData(jsonData) {
-    const transformedData = [];
-    jsonData.forEach((row) => {
-        let existingDPL = transformedData.find((dpl) => dpl.DPL === row.DPL);
-        if (existingDPL) {
-            let existingUnit = existingDPL.unit.find(
-                (unit) => unit.nama === row.UNIT
-            );
-            if (existingUnit) {
-                existingUnit.anggota.push(...getAnggota(row));
-            } else {
-                existingDPL.unit.push({
-                    nama: row.UNIT,
-                    lokasi: row.lokasi,
-                    kabupaten: row.Kabupaten,
-                    kecamatan: row.Kecamatan,
-                    tanggal_penerjunan: formatTanggall(
-                        row[`TANGGAL PENERJUNAN KKN`]
-                    ),
-                    anggota: getAnggota(row),
-                });
+    const transformedData = jsonData.map((row) => {
+        // Normalisasi keys
+        const normalizedRow = {};
+        Object.keys(row).forEach((key) => {
+            if (key) {
+                const cleanKey = key
+                    .toString()
+                    .toLowerCase()
+                    .replace(/\s/g, "")
+                    .replace(/[^a-z0-9]/g, "");
+                normalizedRow[cleanKey] = row[key];
             }
-        } else {
-            transformedData.push({
-                DPL: row.DPL,
-                email: row["Email DPL"],
-                password: row["NIP"],
-                unit: [
-                    {
-                        nama: row.UNIT,
-                        lokasi: row.lokasi,
-                        kabupaten: row.Kabupaten,
-                        kecamatan: row.Kecamatan,
-                        tanggal_penerjunan: formatTanggall(
-                            row[`TANGGAL PENERJUNAN KKN`]
-                        ),
-                        anggota: getAnggota(row),
-                    },
-                ],
-            });
-        }
+        });
+
+        // Ambil data Unit
+        const unitName = normalizedRow["unit"];
+        const lokasi = normalizedRow["lokasi"];
+        const kabupaten = normalizedRow["kabupaten"];
+        const kecamatan = normalizedRow["kecamatan"];
+        const tglPenerjunanRaw = normalizedRow["tanggalpenerjunankkn"];
+
+        return {
+            nama: unitName,
+            lokasi: lokasi,
+            kabupaten: kabupaten,
+            kecamatan: kecamatan,
+            tanggal_penerjunan: formatTanggall(tglPenerjunanRaw),
+            anggota: getAnggotaRobust(normalizedRow),
+        };
     });
-    return transformedData;
+
+    // Filter baris yang tidak ada nama unitnya
+    return transformedData.filter((item) => item.nama);
 }
 
-function getAnggota(row) {
+function getAnggotaRobust(normalizedRow) {
     const anggota = [];
-    for (let i = 1; i <= 12; i++) {
-        const nama = row[`Nama${i}`];
-        const nim = row[`NIM${i}`];
-        const email = row[`Email ${i}`];
-        const prodi = row[`Prodi${i}`];
-        const jenisKelamin = row[`L/P ${i}`];
-        const nomorHP = row[`HP ${i}`];
 
-        if (nama && nim && email && prodi && jenisKelamin && nomorHP) {
+    // Loop cari kolom anggota
+    for (let i = 1; i <= 15; i++) {
+        const nama = normalizedRow[`nama${i}`];
+        const nim = normalizedRow[`nim${i}`];
+        const email = normalizedRow[`email${i}`];
+        const prodi = normalizedRow[`prodi${i}`];
+        const jenisKelamin =
+            normalizedRow[`l/p${i}`] ||
+            normalizedRow[`lp${i}`] ||
+            normalizedRow[`jeniskelamin${i}`];
+        const nomorHP =
+            normalizedRow[`hp${i}`] ||
+            normalizedRow[`nohp${i}`] ||
+            normalizedRow[`nomorhp${i}`];
+
+        // Validasi
+        if (nama && nim) {
             anggota.push({
-                nama,
-                nim: nim.toString(),
-                prodi,
-                email,
-                jenisKelamin,
-                nomorHP,
+                nama: String(nama).trim(),
+                nim: String(nim).trim(),
+                prodi: prodi ? String(prodi).trim() : "-",
+                email: email ? String(email).trim() : "-",
+                jenisKelamin: jenisKelamin ? String(jenisKelamin).trim() : "L",
+                nomorHP: nomorHP ? String(nomorHP).trim() : "-",
             });
         }
     }
