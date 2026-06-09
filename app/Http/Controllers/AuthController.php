@@ -203,7 +203,9 @@ class AuthController extends Controller
             
             try {
                 Mail::to($user->email)->send(new OtpMail($otp, $user));
-            } catch (\Exception $e) {}
+            } catch (\Exception $e) {
+                dd("Gagal kirim email OTP karena: " . $e->getMessage());
+            }
 
             session(['mfa_verified' => false]);
         } else {
