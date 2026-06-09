@@ -31,7 +31,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-                            <div class="text-primary fw-bold mb-3">#Profil unit</div>
+                            <div class="text-primary fw-bold mb-3">#Pelaksanaan KKN</div>
                             <form action="{{ route('unit.updateProfilUnit') }}" method="POST">
                                 @csrf
                                 @method('PUT')
@@ -91,7 +91,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-                            <div class="text-primary fw-bold mb-3">#Jabatan anggota</div>
+                            <div class="text-primary fw-bold mb-3">#Jabatan Anggota</div>
                             <form action="{{ route('unit.updateJabatanAnggota') }}" method="POST">
                                 @csrf
                                 @method('PUT')

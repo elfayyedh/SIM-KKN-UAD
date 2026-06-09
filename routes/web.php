@@ -169,6 +169,7 @@ Route::get('/admin/unit', [UnitController::class, 'adminShowUnits'])
 Route::middleware([Authenticate::class, 'role.dosen:dpl'])->prefix('dpl')->name('dpl.')->group(function () {
     Route::get('/dashboard', [UnitController::class, 'showUnits'])->name('dashboard');
     Route::get('/unit', [UnitController::class, 'showUnits'])->name('unit.index');
+    Route::get('/get-units-by-kkn/{kkn_id}', [UnitController::class, 'getUnitsByKkn'])->name('units.by.kkn');
 });
 
 // ! TIM MONEV

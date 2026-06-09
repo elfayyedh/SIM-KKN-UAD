@@ -158,7 +158,7 @@ class UserController extends Controller
                     $item->total_jkem_bidang = $totalJKEM;
                 });
 
-                return view('mahasiswa.profil-user', ['user' => $mahasiswa_data, 'prokerData' => $prokerData]);
+                return view('mahasiswa.profil-mahasiswa', ['user' => $mahasiswa_data, 'prokerData' => $prokerData]);
             
             } catch (\Exception $e) {
                 return view('not-found');

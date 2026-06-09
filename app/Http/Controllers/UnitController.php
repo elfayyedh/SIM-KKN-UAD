@@ -732,4 +732,25 @@ class UnitController extends Controller
             ->setOption('isRemoteEnabled', false);
         return $pdf->download('Rekap Kegiatan Unit ' . $unit->nama . '.pdf');
     }
+
+    public function getUnitsByKkn($kkn_id){
+        try {
+            $user = Auth::user();
+            $dosen = $user->dosen;
+
+            if (!$dosen) {
+                return response()->json(['error' => 'Profil Dosen tidak ditemukan.'], 404);
+            }
+
+            $units = \App\Models\Unit::where('id_kkn', $kkn_id)
+                ->whereHas('dpl', function($query) use ($dosen) {
+                    $query->where('id_dosen', $dosen->id);
+                })
+                ->get(['id', 'nama']);
+
+            return response()->json($data = $units);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }
