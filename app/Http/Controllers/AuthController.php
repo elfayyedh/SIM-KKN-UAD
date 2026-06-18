@@ -25,7 +25,6 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request)
     {
-
         $throttleKey = 'login_bruteforce_' . $request->ip();
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
@@ -72,98 +71,60 @@ class AuthController extends Controller
 
                     if ($user) {
                         Auth::login($user);
+                        RateLimiter::clear($throttleKey);
                         $loginBerhasil = true;
                     } else {
                         RateLimiter::hit($throttleKey, 60);
-                        return redirect()->back()->with(['error' => 'Login Portal Sukses, tapi akun belum terdaftar di database.']);
+                        return redirect()->back()->with(['error' => 'Login Portal Sukses, tetapi akun Anda belum didaftarkan oleh Admin ke sistem SIM KKN.']);
+                    }
+                } else {
+                    $localUser = User::where('email', $loginInput)->first();
+                    if ($localUser) {
+                        $isStaff = $localUser->dosen()->exists() || $localUser->userRoles()->whereHas('role', function($q) {
+                            $q->where('nama_role', 'Admin');
+                        })->exists();
+
+                        $isSeeder = !str_ends_with(strtolower($localUser->email), 'uad.ac.id');
+
+                        if ($isStaff && $isSeeder && Auth::attempt(['email' => $loginInput, 'password' => $password])) {
+                            RateLimiter::clear($throttleKey);
+                            $loginBerhasil = true;
+                        }
+                    }
+
+                    if (!$loginBerhasil) {
+                        RateLimiter::hit($throttleKey, 60);
+                        return redirect()->back()->with(['error' => 'Login Gagal! Akun Portal salah atau tidak ditemukan.']);
                     }
                 }
             } catch (\Exception $e) {
-                // silent
-            }
-        }
+                $localUser = User::where('email', $loginInput)->first();
+                if ($localUser) {
+                    $isStaff = $localUser->dosen()->exists() || $localUser->userRoles()->whereHas('role', function($q) {
+                        $q->where('nama_role', 'Admin');
+                    })->exists();
 
-        if (!$loginBerhasil) {
+                    $isSeeder = !str_ends_with(strtolower($localUser->email), 'gmail.test');
 
-            $loginInput = $request->input('email');
-            $password = $request->input('password');
-
-            $usernameKey = trim((string) $loginInput);
-
-            $loginAttempt = LoginAttempt::firstOrCreate(
-                ['username' => $usernameKey],
-                ['failed_attempts' => 0, 'locked' => false, 'locked_at' => null]
-            );
-
-            if ($loginAttempt->locked) {
-                $lockedUntil = $loginAttempt->locked_at?->copy()->addHour();
-
-                if ($lockedUntil && now()->lt($lockedUntil)) {
-                    $remainingSeconds = now()->diffInSeconds($lockedUntil, false);
-                    return redirect()->back()->with(['error' => "Akun Anda terkunci sementara. Coba lagi dalam {$remainingSeconds} detik."]);
+                    if ($isStaff && $isSeeder && Auth::attempt(['email' => $loginInput, 'password' => $password])) {
+                        $loginBerhasil = true;
+                    }
                 }
 
-                // lock sementara sudah lewat, reset status
-                $loginAttempt->locked = false;
-                $loginAttempt->failed_attempts = 0;
-                $loginAttempt->locked_at = null;
-                $loginAttempt->save();
-            }
-
-
-            $emailUntukCekLokal = $loginInput;
-
-            if (is_numeric($loginInput)) {
-                $mhs = Mahasiswa::where('nim', $loginInput)->with('userRole.user')->first();
-
-                if ($mhs && $mhs->userRole && $mhs->userRole->user) {
-                    $emailUntukCekLokal = $mhs->userRole->user->email;
+                if (!$loginBerhasil) {
+                    return redirect()->back()->with(['error' => 'Gagal terhubung ke API Portal UAD dan akun seeder tidak valid.']);
                 }
             }
-
-            $isAuthenticated = Auth::attempt([
-                'email' => $emailUntukCekLokal,
-                'password' => $password
-            ]);
-
-            if ($isAuthenticated) {
-
-                RateLimiter::clear($throttleKey);
-
-                $loginAttempt->failed_attempts = 0;
-                $loginAttempt->locked = false;
-                $loginAttempt->locked_at = null;
-                $loginAttempt->save();
-
-            } else {
-
-                RateLimiter::hit($throttleKey, 60);
-
-                $loginAttempt->failed_attempts++;
-
-                if ($loginAttempt->failed_attempts >= 15) {
-                    $loginAttempt->locked = true;
-                    $loginAttempt->locked_at = now(); // lock aktif selama 1 jam
-                    $loginAttempt->failed_attempts = 15; // jaga konsistensi
-                }
-
-
-
-                $loginAttempt->save();
-
-                return redirect()->back()->with(['error' => 'Login Gagal! Username atau Password salah.']);
-            }
+        } else {
+            return redirect()->back()->with(['error' => 'Sistem login portal belum dikonfigurasikan. Silakan hubungi administrator.']);
         }
 
         $request->session()->regenerate();
-
         $user = Auth::user();
 
-        // ===== 1. MONITORING & ALERTING =====
         $ip_address = $request->ip();
         $user_agent = $request->userAgent();
 
-        // Cek login dari perangkakt ini sebelumnya
         $isFamiliarDevice = LoginHistory::where('user_id', $user->id)
             ->where('ip_address', $ip_address)
             ->where('user_agent', $user_agent)
@@ -177,14 +138,11 @@ class AuthController extends Controller
         ]);
 
         if (!$isFamiliarDevice && $user->email) {
-            // Kirim alert email karena abnormal
-            // Cek try catch agar tidak error bila mail belum tersetting diserver
             try {
                 Mail::to($user->email)->send(new NewDeviceLoginAlert($history, $user));
             } catch (\Exception $e) {}
         }
 
-        // Cek apakah user memiliki peran Admin
         $isAdmin = false;
         foreach ($user->userRoles as $userRole) {
             if ($userRole->role && $userRole->role->nama_role == 'Admin') {
@@ -193,12 +151,10 @@ class AuthController extends Controller
             }
         }
 
-        // ===== 2. MULTI-FACTOR AUTHENTICATION (OTP EMAIL) =====
-        // Hanya wajib untuk Admin
         if ($isAdmin) {
             $otp = rand(100000, 999999);
             $user->otp_code = $otp;
-            $user->otp_expires_at = now()->addMinutes(10); // Berlaku 10 menit
+            $user->otp_expires_at = now()->addMinutes(10);
             $user->save();
             
             try {
@@ -211,9 +167,7 @@ class AuthController extends Controller
         }
 
         $dosen = $user->dosen;
-
         if ($dosen) {
-
             session()->forget('selected_role');
 
             $isDpl = $dosen->isDpl();
@@ -235,7 +189,7 @@ class AuthController extends Controller
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
-                return redirect()->back()->with('error', 'Anda belum memiliki role.');
+                return redirect()->back()->with('error', 'Anda belum memiliki hak akses penugasan Dosen/Tim Monev.');
             }
 
             if (session('mfa_verified') === false) {
@@ -252,16 +206,48 @@ class AuthController extends Controller
             'active_role'
         ]);
 
-        $roles = $user->userRoles;
+        $roles = $user->userRoles()->with(['kkn', 'mahasiswa', 'role'])->get();
 
         if ($roles->isEmpty()) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-            return redirect()->back()->with(['error' => 'Akun Anda valid, tapi tidak memiliki peran.']);
+            return redirect()->back()->with(['error' => 'Akun Anda valid, tapi tidak memiliki peran di sistem ini.']);
         }
 
-        session(['selected_role' => $roles->first()->id]);
+        $adminRole = $roles->first(function($userRole) {
+            return $userRole->role && $userRole->role->nama_role == 'Admin';
+        });
+
+        if ($adminRole) {
+            session(['selected_role' => $adminRole->id]);
+            if (session('mfa_verified') === false) {
+                return redirect()->route('mfa.index');
+            }
+            return redirect()->route('dashboard');
+        }
+
+        $today = \Carbon\Carbon::now();
+        $runningRoles = $roles->filter(function($userRole) use ($today) {
+            return $userRole->kkn
+                && $userRole->kkn->status
+                && $today->between($userRole->kkn->tanggal_mulai, $userRole->kkn->tanggal_selesai);
+        });
+
+        $activeRole = $runningRoles->first(function($userRole) {
+            return $userRole->mahasiswa && $userRole->mahasiswa->status == 1;
+        });
+
+        if (!$activeRole) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return redirect()->back()->with([
+                'error' => 'Login Gagal! Anda tidak memiliki periode KKN yang aktif saat ini, atau akun Anda telah dinonaktifkan.'
+            ]);
+        }
+
+        session(['selected_role' => $activeRole->id]);
 
         if (session('mfa_verified') === false) {
             return redirect()->route('mfa.index');

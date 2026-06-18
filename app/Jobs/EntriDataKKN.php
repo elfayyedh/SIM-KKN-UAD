@@ -121,7 +121,7 @@ class EntriDataKKN implements ShouldQueue
                                     ['email' => $anggotaData['email']],
                                     [
                                         'nama' => $anggotaData['nama'],
-                                        'password' => bcrypt($anggotaData['nim']),
+                                        'password' => bcrypt(\Illuminate\Support\Str::random(40)),
                                         'no_telp' => $anggotaData['nomorHP'] ?? '-',
                                         'jenis_kelamin' => $anggotaData['jenisKelamin'] ?? 'L',
                                     ]
@@ -136,10 +136,12 @@ class EntriDataKKN implements ShouldQueue
 
                                 // Data Mahasiswa (Link ke Unit)
                                 Mahasiswa::updateOrCreate(
-                                    ['nim' => $anggotaData['nim']],
+                                    [
+                                        'nim' => $anggotaData['nim'],
+                                        'id_kkn' => $this->id_kkn
+                                    ],
                                     [
                                         'id_user_role' => $roleMhs->id,
-                                        'id_kkn' => $this->id_kkn,
                                         'id_prodi' => $prodi->id,
                                         'id_unit' => $unit->id,
                                     ]
