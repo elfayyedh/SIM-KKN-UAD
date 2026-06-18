@@ -62,17 +62,30 @@
                                 <td>{{ $item->kkn->nama ?? 'N/A' }}</td>
                                 <td>{{ $item->total_jkem ?? 0 }}</td>
                                 <td class="text-center">
+                                    @php
+                                        $today = \Carbon\Carbon::now();
+                                        $isKknSelesai = false;
+                                        if (isset($item->kkn)) {
+                                            $isKknSelesai = !$item->kkn->status || $today->gt($item->kkn->tanggal_selesai);
+                                        }
+                                    @endphp
                                     <div class="d-flex align-items-center justify-content-center">
                                         <small class="status-label-{{ $item->id }} me-2 d-flex align-items-center">
-                                            <span class="badge {{ $item->status ? 'bg-success' : 'bg-danger' }}">
-                                                {{ $item->status ? 'Aktif' : 'Tidak Aktif' }}
-                                            </span>
+                                            @if (!$item->status)
+                                                <span class="badge bg-danger">Tidak Aktif</span>
+                                            @elseif ($isKknSelesai)
+                                                <span class="badge bg-secondary">Selesai</span>
+                                            @else
+                                                <span class="badge bg-success">Aktif</span>
+                                            @endif
                                         </small>
                                         <div class="form-check form-switch">
                                             <input class="form-check-input status-toggle" 
-                                                   type="checkbox" 
-                                                   data-id="{{ $item->id }}"
-                                                   {{ $item->status ? 'checked' : '' }}>
+                                                type="checkbox" 
+                                                data-id="{{ $item->id }}"
+                                                {{ $item->status ? 'checked' : '' }}
+                                                {{ $isKknSelesai ? 'disabled' : '' }}
+                                                title="{{ $isKknSelesai ? 'Periode KKN sudah selesai' : '' }}">
                                         </div>
                                     </div>
                                 </td>
@@ -97,8 +110,7 @@
         $(document).ready(function() {
             $(".datatable-buttons").DataTable();
 
-            // Handle status toggle
-            $('.status-toggle').on('change', function() {
+            $(document).on('change', '.status-toggle', function() {
                 const checkbox = $(this);
                 const mahasiswaId = checkbox.data('id');
                 const isActive = checkbox.is(':checked');
@@ -111,14 +123,11 @@
                     },
                     success: function(response) {
                         if (response.success) {
-                            // Update badge
                             const badgeClass = response.status ? 'bg-success' : 'bg-danger';
                             const badgeText = response.status ? 'Aktif' : 'Tidak Aktif';
                             $(`.status-label-${mahasiswaId}`).html(
                                 `<span class="badge ${badgeClass}">${badgeText}</span>`
                             );
-
-                            // Show success message
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Berhasil!',
@@ -129,7 +138,6 @@
                         }
                     },
                     error: function(xhr) {
-                        // Revert checkbox
                         checkbox.prop('checked', !isActive);
                         
                         Swal.fire({

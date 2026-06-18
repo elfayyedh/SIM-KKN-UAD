@@ -38,11 +38,33 @@ class UserController extends Controller
             }
         }
         
-        $roles = Auth::user()->userRoles;
+        $roles = Auth::user()->userRoles()->with(['kkn', 'mahasiswa', 'role'])->get();
+        
         if($roles->count() >= 1) {
-            $role = $roles->first();
-            session(['selected_role' => $role->id]);
-            return $role->role->nama_role;
+            $adminRole = $roles->first(function($userRole) {
+                return $userRole->role && $userRole->role->nama_role == 'Admin';
+            });
+
+            if ($adminRole) {
+                session(['selected_role' => $adminRole->id]);
+                return $adminRole->role->nama_role;
+            }
+
+            $today = \Carbon\Carbon::now();
+            $runningRoles = $roles->filter(function($userRole) use ($today) {
+                return $userRole->kkn 
+                    && $userRole->kkn->status 
+                    && $today->between($userRole->kkn->tanggal_mulai, $userRole->kkn->tanggal_selesai);
+            });
+
+            $activeRole = $runningRoles->first(function($userRole) {
+                return $userRole->mahasiswa && $userRole->mahasiswa->status == 1;
+            });
+
+            if ($activeRole) {
+                session(['selected_role' => $activeRole->id]);
+                return $activeRole->role->nama_role;
+            }
         }
 
         return 'Guest'; 
@@ -274,7 +296,16 @@ class UserController extends Controller
         }
 
         try {
-            $mahasiswa = Mahasiswa::findOrFail($id);
+            $mahasiswa = Mahasiswa::with('kkn')->findOrFail($id);
+            $today = \Carbon\Carbon::now();
+
+            if ($mahasiswa->kkn && (!$mahasiswa->kkn->status || $today->gt($mahasiswa->kkn->tanggal_selesai))) {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Gagal! Periode KKN ini sudah selesai, status tidak bisa diubah lagi.'
+                ], 422);
+            }
+
             $mahasiswa->status = !$mahasiswa->status;
             $mahasiswa->save();
 
