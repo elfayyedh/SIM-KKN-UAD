@@ -82,7 +82,7 @@
 
                                         <!-- Google reCAPTCHA v2 -->
                                         <div class="mb-3">
-                                            <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY', '') }}"></div>
+                                            <div class="g-recaptcha" data-sitekey="{{ config('services.recaptcha.site_key') }}"></div>                                            
                                             @error('g-recaptcha-response')
                                                 <span class="text-danger mt-2 d-block">
                                                     {{ $message }}
