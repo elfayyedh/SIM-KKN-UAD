@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+    ],
+
+    'portal' => [
+        'url' => env('PORTAL_LOGIN_URL'),
+        'api_key' => env('PORTAL_API_KEY'),
+        'logout_url' => env('PORTAL_LOGOUT_URL'),
+    ],
+
 ];

@@ -39,7 +39,7 @@ class AuthController extends Controller
         $verifyResponse = Http::withOptions(['verify' => false])
         ->asForm()
         ->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => env('RECAPTCHA_SECRET_KEY'),
+            'secret' => config('services.recaptcha.secret_key'),
             'response' => $recaptchaResponse,
             'remoteip' => $request->ip()
         ]);
@@ -51,13 +51,13 @@ class AuthController extends Controller
 
         $loginBerhasil = false;
 
-        if (env('PORTAL_LOGIN_URL')) {
+        if (config('services.portal.url')) {
             try {
                 $response = Http::withOptions(['verify' => false])
                     ->asForm()
                     ->withHeaders([
-                        'U4D-API-KEY' => env('PORTAL_API_KEY'),
-                    ])->post(env('PORTAL_LOGIN_URL'), [
+                        'U4D-API-KEY' => config('services.portal.api_key'),
+                    ])->post(config('services.portal.url'), [
                         'email' => $loginInput,
                         'password' => $password,
                     ]);
@@ -260,11 +260,11 @@ class AuthController extends Controller
     {
         $user = Auth::user();
 
-        if ($user && env('PORTAL_LOGOUT_URL')) {
+        if ($user && config('services.portal.logout_url')) {
             try {
                 Http::asForm()->withHeaders([
-                    'apikey' => env('PORTAL_API_KEY'),
-                ])->post(env('PORTAL_LOGOUT_URL'), [
+                    'apikey' => config('services.portal.api_key'),
+                ])->post(config('services.portal.logout_url'), [
                     'email' => $user->email,
                     'password' => '',
                 ]);
