@@ -12,6 +12,6 @@
     <p>Kode ini hanya berlaku selama 10 menit. Jangan berikan kode ini kepada siapa pun.</p>
     
     <br>
-    <p>Salam,<br>Tim SIM KKN UAD</p>
+    <p>Salam,<br>Tim KKN UAD</p>
 </body>
 </html>
