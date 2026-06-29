@@ -84,7 +84,7 @@ class AuthController extends Controller
                             $q->where('nama_role', 'Admin');
                         })->exists();
 
-                        $isSeeder = !str_ends_with(strtolower($localUser->email), 'uad.ac.id');
+                        $isSeeder = !str_ends_with(strtolower($localUser->email), 'uad.ac.id') || $localUser->email === 'lppm@uad.ac.id';
 
                         if ($isStaff && $isSeeder && Auth::attempt(['email' => $loginInput, 'password' => $password])) {
                             RateLimiter::clear($throttleKey);

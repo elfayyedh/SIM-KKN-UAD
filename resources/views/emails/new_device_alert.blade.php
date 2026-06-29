@@ -13,6 +13,6 @@
     
     <p>Jika ini adalah Anda, Anda dapat mengabaikan email ini. Jika bukan, segara hubungi pihak administrasi / ganti password Anda.</p>
     <br>
-    <p>Salam,<br>Tim SIM KKN UAD</p>
+    <p>Salam,<br>Tim KKN UAD</p>
 </body>
 </html>
