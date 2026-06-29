@@ -51,72 +51,60 @@ class AuthController extends Controller
 
         $loginBerhasil = false;
 
-        if (config('services.portal.url')) {
-            try {
-                $response = Http::withOptions(['verify' => false])
-                    ->asForm()
-                    ->withHeaders([
-                        'U4D-API-KEY' => config('services.portal.api_key'),
-                    ])->post(config('services.portal.url'), [
-                        'email' => $loginInput,
-                        'password' => $password,
-                    ]);
+        $localUser = User::where('email', $loginInput)->first();
+        $isSeeder = false;
 
-                $hasilApi = $response->json();
+        if ($localUser) {
+            $isSeeder = !str_ends_with(strtolower($localUser->email), 'uad.ac.id') 
+                        || str_contains($localUser->email, '.test')
+                        || $localUser->email === 'lppm@uad.ac.id';
+        }
 
-                if ($response->successful() && isset($hasilApi['status_code']) && $hasilApi['status_code'] == 'success') {
-                    $emailResmi = $hasilApi['user_email'];
+        if ($isSeeder) {
+            if (Auth::attempt(['email' => $loginInput, 'password' => $password])) {
+                RateLimiter::clear($throttleKey);
+                $loginBerhasil = true;
+            } else {
+                RateLimiter::hit($throttleKey, 60);
+                return redirect()->back()->with(['error' => 'Login Gagal! Password akun seeder salah.']);
+            }
+        } 
+        else {
+            if (config('services.portal.url')) {
+                try {
+                    $response = Http::withOptions(['verify' => false])
+                        ->asForm()
+                        ->withHeaders([
+                            'U4D-API-KEY' => config('services.portal.api_key'),
+                        ])->post(config('services.portal.url'), [
+                            'email' => $loginInput,
+                            'password' => $password,
+                        ]);
 
-                    $user = User::where('email', $emailResmi)->first();
+                    $hasilApi = $response->json();
 
-                    if ($user) {
-                        Auth::login($user);
-                        RateLimiter::clear($throttleKey);
-                        $loginBerhasil = true;
-                    } else {
-                        RateLimiter::hit($throttleKey, 60);
-                        return redirect()->back()->with(['error' => 'Login Portal Sukses, tetapi akun Anda belum didaftarkan oleh Admin ke sistem SIM KKN.']);
-                    }
-                } else {
-                    $localUser = User::where('email', $loginInput)->first();
-                    if ($localUser) {
-                        $isStaff = $localUser->dosen()->exists() || $localUser->userRoles()->whereHas('role', function($q) {
-                            $q->where('nama_role', 'Admin');
-                        })->exists();
+                    if ($response->successful() && isset($hasilApi['status_code']) && $hasilApi['status_code'] == 'success') {
+                        $emailResmi = $hasilApi['user_email'];
+                        $user = User::where('email', $emailResmi)->first();
 
-                        $isSeeder = !str_ends_with(strtolower($localUser->email), 'uad.ac.id') || $localUser->email === 'lppm@uad.ac.id';
-
-                        if ($isStaff && $isSeeder && Auth::attempt(['email' => $loginInput, 'password' => $password])) {
+                        if ($user) {
+                            Auth::login($user);
                             RateLimiter::clear($throttleKey);
                             $loginBerhasil = true;
+                        } else {
+                            RateLimiter::hit($throttleKey, 60);
+                            return redirect()->back()->with(['error' => 'Akun Anda belum didaftarkan oleh Admin.']);
                         }
-                    }
-
-                    if (!$loginBerhasil) {
+                    } else {
                         RateLimiter::hit($throttleKey, 60);
                         return redirect()->back()->with(['error' => 'Login Gagal! Akun Portal salah atau tidak ditemukan.']);
                     }
+                } catch (\Exception $e) {
+                    return redirect()->back()->with(['error' => 'Gagal terhubung ke API Portal UAD. Silakan coba beberapa saat lagi.']);
                 }
-            } catch (\Exception $e) {
-                $localUser = User::where('email', $loginInput)->first();
-                if ($localUser) {
-                    $isStaff = $localUser->dosen()->exists() || $localUser->userRoles()->whereHas('role', function($q) {
-                        $q->where('nama_role', 'Admin');
-                    })->exists();
-
-                    $isSeeder = !str_ends_with(strtolower($localUser->email), 'gmail.test');
-
-                    if ($isStaff && $isSeeder && Auth::attempt(['email' => $loginInput, 'password' => $password])) {
-                        $loginBerhasil = true;
-                    }
-                }
-
-                if (!$loginBerhasil) {
-                    return redirect()->back()->with(['error' => 'Gagal terhubung ke API Portal UAD dan akun seeder tidak valid.']);
-                }
+            } else {
+                return redirect()->back()->with(['error' => 'Sistem login portal belum dikonfigurasikan. Silakan hubungi administrator.']);
             }
-        } else {
-            return redirect()->back()->with(['error' => 'Sistem login portal belum dikonfigurasikan. Silakan hubungi administrator.']);
         }
 
         $request->session()->regenerate();
